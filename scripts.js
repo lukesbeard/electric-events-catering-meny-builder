@@ -77,7 +77,7 @@ function parseSheetData(rows) {
 // Error handling UI
 function showError(message) {
     const errorDiv = document.createElement('div');
-    errorDiv.className = 'bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4';
+    errorDiv.className = 'bg-red-900 border border-red-600 text-white px-4 py-3 rounded relative mb-4';
     errorDiv.innerHTML = `
         <strong class="font-bold">Error!</strong>
         <span class="block sm:inline">${message}</span>
@@ -115,26 +115,26 @@ async function initializeMenuTables() {
     setLoadingState(true);
     try {
         // Fetch all data concurrently
-        const [mainsData, sidesData, dessertsData] = await Promise.all([
+        const [mainsData, sidesData, desertsData] = await Promise.all([
             fetchSheetData(SHEETS.mains),
             fetchSheetData(SHEETS.sides),
-            fetchSheetData(SHEETS.deserts)
+            fetchSheetData(SHEETS.deserts)  // Match the key in SHEETS object
         ]);
 
         // Debug log to see the parsed data
-        console.log('Parsed data:', { mainsData, sidesData, dessertsData });
+        console.log('Parsed data:', { mainsData, sidesData, desertsData });
 
         // Update the menuData object
         window.menuData = {
             mains: mainsData,
             sides: sidesData,
-            desserts: dessertsData
+            deserts: desertsData  // Match the key in SHEETS object
         };
 
         // Initialize tables with the fetched data
         initializeTable('mainsTable', mainsData);
         initializeTable('sidesTable', sidesData);
-        initializeTable('desertsTable', dessertsData);
+        initializeTable('desertsTable', desertsData);
 
         // Add event listeners to quantity inputs
         document.querySelectorAll('.quantity-input').forEach(input => {
@@ -159,18 +159,18 @@ function createMenuRow(item) {
     
     row.innerHTML = `
         <td class="px-4 py-3">
-            <div class="font-medium text-gray-900">${item.name}</div>
+            <div class="font-medium text-white">${item.name}</div>
             ${servingInfo ? 
-                `<div class="text-xs text-gray-500 italic">${servingInfo}</div>` : 
+                `<div class="text-xs text-gray-400 italic">${servingInfo}</div>` : 
                 ''}
         </td>
-        <td class="px-4 py-3 item-description text-sm text-gray-500">${item.description}</td>
-        <td class="px-4 py-3 text-sm">$${item.price.toFixed(2)}</td>
+        <td class="px-4 py-3 item-description text-sm text-gray-300">${item.description}</td>
+        <td class="px-4 py-3 text-sm text-white">$${item.price.toFixed(2)}</td>
         <td class="px-4 py-3">
             <input type="number" class="quantity-input" min="0" value="0" 
                    data-price="${item.price}" data-item-name="${item.name}">
         </td>
-        <td class="px-4 py-3 subtotal font-medium">$0.00</td>
+        <td class="px-4 py-3 subtotal font-medium text-white">$0.00</td>
     `;
     return row;
 }
@@ -188,7 +188,22 @@ function updateTotal() {
     const subtotals = Array.from(document.querySelectorAll('.subtotal'))
         .map(cell => parseFloat(cell.textContent.replace('$', '')) || 0);
     const total = subtotals.reduce((sum, value) => sum + value, 0);
-    document.getElementById('totalPrice').textContent = `$${total.toFixed(2)}`;
+    const totalPrice = document.getElementById('totalPrice');
+    const submitButton = document.getElementById('submitButton');
+    const stickyBar = document.querySelector('.sticky-bar');
+    
+    totalPrice.textContent = `$${total.toFixed(2)}`;
+    
+    // Handle button and sticky bar state
+    if (total <= 0) {
+        submitButton.disabled = true;
+        submitButton.title = 'Add items to your quote to continue';
+        stickyBar.classList.remove('visible');
+    } else {
+        submitButton.disabled = false;
+        submitButton.removeAttribute('title');
+        stickyBar.classList.add('visible');
+    }
 }
 
 function initializeTable(tableId, items) {
@@ -238,11 +253,325 @@ document.addEventListener('DOMContentLoaded', () => {
 // Add a loading spinner function
 function addLoadingSpinner(table) {
     const spinner = document.createElement('div');
-    spinner.className = 'loading-spinner absolute inset-0 flex items-center justify-center bg-white bg-opacity-75';
+    spinner.className = 'loading-spinner absolute inset-0 flex items-center justify-center bg-background bg-opacity-75';
     spinner.innerHTML = `
         <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
     `;
     table.parentNode.style.position = 'relative';
     table.parentNode.appendChild(spinner);
     return spinner;
-} 
+}
+
+// Add this new validation function
+function validateContactDetails() {
+    const requiredFields = [
+        { id: 'contactName', label: 'Contact Name' },
+        { id: 'contactEmail', label: 'Email Address' },
+        { id: 'contactPhone', label: 'Phone Number' },
+        { id: 'locationStreet', label: 'Street Address' },
+        { id: 'locationCity', label: 'City' },
+        { id: 'locationZip', label: 'ZIP Code' },
+        { id: 'dropoffTime', label: 'Dropoff Time' }
+    ];
+
+    const missingFields = [];
+    const invalidFields = [];
+
+    // Check party size
+    const isExact = document.getElementById('exactSize').checked;
+    const exactSize = document.getElementById('exactPartySize').value;
+    const minSize = document.getElementById('partySizeMin').value;
+    const maxSize = document.getElementById('partySizeMax').value;
+
+    if (isExact && !exactSize) {
+        missingFields.push('Party Size');
+    }
+    if (!isExact && (!minSize || !maxSize)) {
+        missingFields.push('Party Size Range');
+    }
+
+    // Validate each required field
+    for (const field of requiredFields) {
+        const element = document.getElementById(field.id);
+        const value = element.value.trim();
+
+        if (!value) {
+            missingFields.push(field.label);
+            element.classList.add('border-red-500');
+            continue;
+        }
+
+        // Email validation
+        if (field.id === 'contactEmail') {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(value)) {
+                invalidFields.push('Email Address (invalid format)');
+                element.classList.add('border-red-500');
+                continue;
+            }
+        }
+
+        // Phone validation
+        if (field.id === 'contactPhone') {
+            const phoneRegex = /^[\d\s-()]+$/;
+            if (!phoneRegex.test(value)) {
+                invalidFields.push('Phone Number (invalid format)');
+                element.classList.add('border-red-500');
+                continue;
+            }
+        }
+
+        // ZIP code validation
+        if (field.id === 'locationZip') {
+            const zipRegex = /^\d{5}(-\d{4})?$/;
+            if (!zipRegex.test(value)) {
+                invalidFields.push('ZIP Code (must be 5 digits)');
+                element.classList.add('border-red-500');
+                continue;
+            }
+        }
+
+        element.classList.remove('border-red-500');
+    }
+
+    if (missingFields.length > 0 || invalidFields.length > 0) {
+        let errorMessage = '';
+        
+        if (missingFields.length > 0) {
+            errorMessage += 'Required fields missing:\n• ' + missingFields.join('\n• ');
+        }
+        
+        if (invalidFields.length > 0) {
+            if (errorMessage) errorMessage += '\n\n';
+            errorMessage += 'Invalid fields:\n• ' + invalidFields.join('\n• ');
+        }
+
+        showNotification(errorMessage, 'error');
+        
+        // Focus the first missing or invalid field
+        const firstFieldId = missingFields.length > 0 ? 
+            requiredFields.find(f => missingFields.includes(f.label))?.id :
+            requiredFields.find(f => invalidFields.includes(f.label))?.id;
+            
+        if (firstFieldId) {
+            document.getElementById(firstFieldId).focus();
+        }
+
+        return false;
+    }
+
+    return true;
+}
+
+// Add this new function to format the order details
+function formatOrderDetails(orders) {
+    return orders.map(item => 
+        `   • ${item.name} - ${item.quantity} units - ${item.subtotal}`
+    ).join('\n');
+}
+
+// Update the formatEmailMessage function to include a better intro
+function formatEmailMessage(formData) {
+    return `
+Thank you for your catering quote request! We'll review your details and get back to you shortly.
+
+${formData.contact.name}, we've received your request for a party of ${formData.partySize}.
+
+Quote Details Below
+======================
+
+Contact Information
+------------------
+Name: ${formData.contact.name}
+Email: ${formData.contact.email}
+Phone: ${formData.contact.phone}
+
+Delivery Details
+---------------
+Address: ${formData.delivery.address}
+City: ${formData.delivery.city}, ${formData.delivery.zip}
+Dropoff Time: ${formData.delivery.time}
+
+Party Size: ${formData.partySize}
+
+Quote Details
+------------
+${formatOrderDetails(formData.order)}
+
+Total: ${formData.total}
+
+${formData.comments ? `Additional Comments
+------------------
+${formData.comments}` : ''}
+
+If you have any questions, please don't hesitate to reach out.
+
+Best regards,
+Ladybird Catering Team
+`;
+}
+
+// Update the email subject in the fetch request
+const response = await fetch('https://api.web3forms.com/submit', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+    },
+    body: JSON.stringify({
+        access_key: 'f890e702-fef2-4b76-84bf-0e5bf3262032',
+        subject: `Catering Quote Request - ${formData.contact.name} - Party of ${formData.partySize}`,
+        name: formData.contact.name,
+        email: formData.contact.email,
+        cc: 'luke@beard.co',
+        message: formattedMessage
+    })
+});
+
+// Update the sendOrderEmail function to use the new formatting
+async function sendOrderEmail(event) {
+    event.preventDefault();
+    
+    if (!validateContactDetails()) {
+        return;
+    }
+
+    const submitButton = document.getElementById('submitButton');
+    const submitSpinner = document.getElementById('submitSpinner');
+    const buttonText = submitButton.querySelector('span');
+
+    try {
+        // Show spinner and disable button
+        submitButton.disabled = true;
+        submitSpinner.classList.remove('hidden');
+        buttonText.textContent = 'Sending...';
+
+        // Get all form data
+        const formData = {
+            contact: {
+                name: document.getElementById('contactName').value,
+                email: document.getElementById('contactEmail').value,
+                phone: document.getElementById('contactPhone').value
+            },
+            delivery: {
+                address: document.getElementById('locationStreet').value,
+                city: document.getElementById('locationCity').value,
+                zip: document.getElementById('locationZip').value,
+                time: document.getElementById('dropoffTime').value
+            },
+            partySize: getPartySize(),
+            order: getOrderDetails(),
+            total: document.getElementById('totalPrice').textContent,
+            comments: document.getElementById('comments').value
+        };
+
+        // Format the message
+        const formattedMessage = formatEmailMessage(formData);
+
+        const response = await fetch('https://api.web3forms.com/submit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                access_key: 'f890e702-fef2-4b76-84bf-0e5bf3262032',
+                subject: `Catering Quote Request - ${formData.contact.name} - Party of ${formData.partySize}`,
+                name: formData.contact.name,
+                email: formData.contact.email,
+                cc: 'luke@beard.co',
+                message: formattedMessage
+            })
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification('Quote request submitted successfully! We\'ll be in touch soon.', 'success');
+            // Optionally reset form here
+        } else {
+            throw new Error(result.message || 'Failed to submit quote request');
+        }
+    } catch (error) {
+        console.error('Failed to send email:', error);
+        showNotification('Failed to submit quote request. Please try again.', 'error');
+    } finally {
+        // Reset button state
+        submitButton.disabled = false;
+        submitSpinner.classList.add('hidden');
+        buttonText.textContent = 'Get Quote';
+    }
+}
+
+// Add event listener for form submission
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('orderForm');
+    form.addEventListener('submit', sendOrderEmail);
+    
+    // ... rest of your existing initialization code ...
+});
+
+// Add notification UI
+function showNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 p-4 rounded-lg ${
+        type === 'success' ? 'bg-green-900' : 'bg-red-900'
+    } text-white max-w-md whitespace-pre-line`;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 7000); // Increased timeout for longer messages
+}
+
+// Helper functions
+function getPartySize() {
+    const isExact = document.getElementById('exactSize').checked;
+    if (isExact) {
+        return document.getElementById('exactPartySize').value;
+    }
+    return `${document.getElementById('partySizeMin').value} - ${document.getElementById('partySizeMax').value}`;
+}
+
+function getOrderDetails() {
+    const orders = [];
+    document.querySelectorAll('.quantity-input').forEach(input => {
+        const quantity = parseInt(input.value);
+        if (quantity > 0) {
+            orders.push({
+                name: input.dataset.itemName,
+                quantity: quantity,
+                subtotal: input.closest('tr').querySelector('.subtotal').textContent
+            });
+        }
+    });
+    return orders;
+}
+
+// Add visual feedback for required fields
+function addRequiredFieldsIndicators() {
+    document.querySelectorAll('input[required]').forEach(input => {
+        // Add red asterisk to required field labels
+        const label = input.previousElementSibling;
+        if (label && label.tagName === 'LABEL') {
+            label.innerHTML += ' <span class="text-red-500">*</span>';
+        }
+
+        // Add validation styling
+        input.addEventListener('blur', () => {
+            if (!input.value.trim()) {
+                input.classList.add('border-red-500');
+            } else {
+                input.classList.remove('border-red-500');
+            }
+        });
+    });
+}
+
+// Update the DOMContentLoaded event listener
+document.addEventListener('DOMContentLoaded', () => {
+    initializeMenuTables();
+    initializeEventListeners();
+    addRequiredFieldsIndicators();
+    
+    const form = document.getElementById('orderForm');
+    form.addEventListener('submit', sendOrderEmail);
+}); 
