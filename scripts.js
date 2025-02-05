@@ -266,6 +266,12 @@ function initializeGuestCount() {
 function initializeEventListeners() {
     initializePartySizeToggle();
     initializeGuestCount();
+    
+    // Set default date to today
+    const today = new Date().toISOString().split('T')[0];
+    const dateInput = document.getElementById('dropoffDate');
+    dateInput.min = today;  // Prevent past dates
+    dateInput.value = today;
 }
 
 // Enhance the existing DOMContentLoaded handler
@@ -414,6 +420,7 @@ Delivery Details
 ---------------
 Address: ${formData.delivery.address}
 City: ${formData.delivery.city}, ${formData.delivery.zip}
+Dropoff Date: ${new Date(formData.delivery.date).toLocaleDateString()}
 Dropoff Time: ${formData.delivery.time}
 
 Party Size: ${formData.partySize}
@@ -436,14 +443,10 @@ Ladybird Catering Team
 }
 
 // Simple local storage functions
-function saveToLocalStorage(quantities) {
+function saveToLocalStorage(data) {
     try {
-        const data = {
-            quantities: quantities,
-            timestamp: new Date().getTime()
-        };
         localStorage.setItem('cateringFormData', JSON.stringify(data));
-        console.log('Saved quantities:', quantities);
+        console.log('Saved data:', data);
     } catch (error) {
         console.error('Error saving to localStorage:', error);
     }
@@ -459,51 +462,73 @@ function getFromLocalStorage() {
     }
 }
 
-// Simplified save function
+// Update saveFormProgress to include date and time
 function saveFormProgress() {
     const quantities = Array.from(document.querySelectorAll('.quantity-input'))
         .map(input => ({
             itemName: input.dataset.itemName,
             quantity: input.value || '0'
         }))
-        .filter(item => item.itemName); // Only save if itemName exists
+        .filter(item => item.itemName);
 
-    saveToLocalStorage(quantities);
+    const data = {
+        quantities: quantities,
+        timestamp: new Date().getTime(),
+        delivery: {
+            date: document.getElementById('dropoffDate')?.value || '',
+            time: document.getElementById('dropoffTime')?.value || ''
+        }
+    };
+
+    saveToLocalStorage(data);
 }
 
-// Simplified restore function
+// Update restoreFormProgress to handle date and time
 function restoreFormProgress() {
     const savedData = getFromLocalStorage();
-    if (!savedData?.quantities) return;
+    if (!savedData) return;
 
-    function applyQuantities() {
-        const inputs = document.querySelectorAll('.quantity-input');
-        if (!inputs.length) return false;
-
-        savedData.quantities.forEach(saved => {
-            const input = Array.from(inputs)
-                .find(input => input.dataset.itemName === saved.itemName);
-            
-            if (input) {
-                input.value = saved.quantity;
-                updateSubtotal(input);
-            }
-        });
-
-        updateTotal();
-        return true;
+    // Restore date and time if they exist
+    if (savedData.delivery) {
+        if (savedData.delivery.date) {
+            document.getElementById('dropoffDate').value = savedData.delivery.date;
+        }
+        if (savedData.delivery.time) {
+            document.getElementById('dropoffTime').value = savedData.delivery.time;
+        }
     }
 
-    // Try immediately after menu loads
-    if (!applyQuantities()) {
-        const checkInterval = setInterval(() => {
-            if (applyQuantities()) {
-                clearInterval(checkInterval);
-            }
-        }, 100);
+    // Restore quantities
+    if (savedData.quantities) {
+        function applyQuantities() {
+            const inputs = document.querySelectorAll('.quantity-input');
+            if (!inputs.length) return false;
 
-        // Safety cleanup after 5 seconds
-        setTimeout(() => clearInterval(checkInterval), 5000);
+            savedData.quantities.forEach(saved => {
+                const input = Array.from(inputs)
+                    .find(input => input.dataset.itemName === saved.itemName);
+                
+                if (input) {
+                    input.value = saved.quantity;
+                    updateSubtotal(input);
+                }
+            });
+
+            updateTotal();
+            return true;
+        }
+
+        // Try immediately after menu loads
+        if (!applyQuantities()) {
+            const checkInterval = setInterval(() => {
+                if (applyQuantities()) {
+                    clearInterval(checkInterval);
+                }
+            }, 100);
+
+            // Safety cleanup after 5 seconds
+            setTimeout(() => clearInterval(checkInterval), 5000);
+        }
     }
 }
 
@@ -547,6 +572,7 @@ async function sendOrderEmail(event) {
                 address: document.getElementById('locationStreet').value,
                 city: document.getElementById('locationCity').value,
                 zip: document.getElementById('locationZip').value,
+                date: document.getElementById('dropoffDate').value,
                 time: document.getElementById('dropoffTime').value
             },
             partySize: getPartySize(),
