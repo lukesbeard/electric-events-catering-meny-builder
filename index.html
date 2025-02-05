@@ -66,6 +66,11 @@
             .item-description {
                 display: none;
             }
+            
+            /* Add this to hide table headers on mobile */
+            thead {
+                display: none;
+            }
         }
 
         /* Add styles for headings and labels */
@@ -122,6 +127,17 @@
         .space-y-3 > * + * {
             margin-top: 0;
         }
+
+        /* Update all table tbody elements */
+        .divide-y.divide-none {
+            border-top-width: 0;
+            border-bottom-width: 0;
+        }
+
+        /* Remove divider lines between rows */
+        .divide-y > :not([hidden]) ~ :not([hidden]) {
+            border: none !important;
+        }
     </style>
 </head>
 <body class="bg-background text-white min-h-screen pb-20">
@@ -130,11 +146,13 @@
     
     <!-- Add centered header section -->
     <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-        <div class="flex flex-col items-center mb-12">
+        <div class="flex flex-col items-center mb-7">
             <a href="https://www.electriceventsatl.com/" target="_blank" rel="noopener noreferrer">
-                <img src="EE-wordmark.png" alt="Electric Events Logo" class="w-[150px] mb-6">
+                <img src="EE-wordmark.png" alt="Electric Events Logo" class="w-[100px] mb-6">
             </a>
-            <img src="Ladybird_logo.png" alt="Ladybird Logo" class="w-[400px] mb-6 mt-10">
+            <img src="Ladybird_logo.png" 
+                 alt="Ladybird Logo" 
+                 class="w-[300px] md:w-[450px] mb-6 mt-10">
             <h1 class="text-4xl font-heading text-primary">Catering Quote Builder</h1>
         </div>
     </div>
@@ -144,7 +162,7 @@
     <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         <!-- Contact & Delivery Section -->
         <div class="bg-surface rounded-lg shadow-sm p-8 mb-8">
-            <h2 class="text-2xl font-heading text-primary mb-8">Your Event</h2>
+            <h2 class="text-4xl font-heading text-primary mb-8">Your Event</h2>
             <div class="grid grid-cols-1 gap-8">
                 <!-- Contact Info Row -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -219,7 +237,7 @@
                     
                     <div class="md:col-span-3 space-y-3">
                         <label class="block text-lg font-heading text-white mb-2">Party Size</label>
-                        <div class="flex items-center space-x-8">
+                        <div class="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-8">
                             <div class="flex items-center space-x-4">
                                 <input type="radio" id="exactSize" name="partySizeType" value="exact" checked 
                                        class="w-5 h-5">
@@ -246,64 +264,64 @@
         <!-- Menu Sections -->
         <div class="space-y-8">
             <!-- Mains Section -->
-            <div class="bg-surface rounded-lg shadow-sm p-8">
-                <h2 class="text-7xl font-heading text-primary mb-8">Mains</h2>
+            <div class="bg-surface rounded-lg shadow-sm p-4 md:p-8 mb-8">
+                <h2 class="text-4xl md:text-7xl font-heading text-primary mb-8">Mains</h2>
                 <table id="mainsTable" class="w-full">
                     <thead class="bg-background">
                         <tr>
-                            <th class="px-4 py-3 text-left text-lg font-heading text-white">Item</th>
-                            <th class="px-4 py-3 text-left text-lg font-heading text-white">Description</th>
-                            <th class="px-4 py-3 text-left text-lg font-heading text-white">Price</th>
-                            <th class="px-4 py-3 text-left text-lg font-heading text-white">Quantity</th>
-                            <th class="px-4 py-3 text-left text-lg font-heading text-white">Subtotal</th>
+                            <th class="px-2 md:px-4 py-3 text-left text-lg font-heading text-white">Item</th>
+                            <th class="px-2 md:px-4 py-3 text-left text-lg font-heading text-white">Description</th>
+                            <th class="px-2 md:px-4 py-3 text-left text-lg font-heading text-white">Price</th>
+                            <th class="px-2 md:px-4 py-3 text-left text-lg font-heading text-white">Quantity</th>
+                            <th class="px-2 md:px-4 py-3 text-left text-lg font-heading text-white">Subtotal</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-800"></tbody>
+                    <tbody class="divide-y divide-none"></tbody>
                 </table>
             </div>
 
             <!-- Sides Section -->
-            <div class="bg-surface rounded-lg shadow-sm p-8">
-                <h2 class="text-7xl font-heading text-primary mb-8">Sides</h2>
+            <div class="bg-surface rounded-lg shadow-sm p-4 md:p-8 mb-8">
+                <h2 class="text-4xl md:text-7xl font-heading text-primary mb-8">Sides</h2>
                 <table id="sidesTable" class="w-full">
                     <thead class="bg-background">
                         <tr>
-                            <th class="px-4 py-3 text-left text-lg font-heading text-white">Item</th>
-                            <th class="px-4 py-3 text-left text-lg font-heading text-white">Description</th>
-                            <th class="px-4 py-3 text-left text-lg font-heading text-white">Price</th>
-                            <th class="px-4 py-3 text-left text-lg font-heading text-white">Quantity</th>
-                            <th class="px-4 py-3 text-left text-lg font-heading text-white">Subtotal</th>
+                            <th class="px-2 md:px-4 py-3 text-left text-lg font-heading text-white">Item</th>
+                            <th class="px-2 md:px-4 py-3 text-left text-lg font-heading text-white">Description</th>
+                            <th class="px-2 md:px-4 py-3 text-left text-lg font-heading text-white">Price</th>
+                            <th class="px-2 md:px-4 py-3 text-left text-lg font-heading text-white">Quantity</th>
+                            <th class="px-2 md:px-4 py-3 text-left text-lg font-heading text-white">Subtotal</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-800"></tbody>
+                    <tbody class="divide-y divide-none"></tbody>
                 </table>
             </div>
 
             <!-- Deserts Section -->
-            <div class="bg-surface rounded-lg shadow-sm p-8">
-                <h2 class="text-7xl font-heading text-primary mb-8">Deserts</h2>
+            <div class="bg-surface rounded-lg shadow-sm p-4 md:p-8 mb-8">
+                <h2 class="text-4xl md:text-7xl font-heading text-primary mb-8">Deserts</h2>
                 <table id="desertsTable" class="w-full">
                     <thead class="bg-background">
                         <tr>
-                            <th class="px-4 py-3 text-left text-lg font-heading text-white">Item</th>
-                            <th class="px-4 py-3 text-left text-lg font-heading text-white">Description</th>
-                            <th class="px-4 py-3 text-left text-lg font-heading text-white">Price</th>
-                            <th class="px-4 py-3 text-left text-lg font-heading text-white">Quantity</th>
-                            <th class="px-4 py-3 text-left text-lg font-heading text-white">Subtotal</th>
+                            <th class="px-2 md:px-4 py-3 text-left text-lg font-heading text-white">Item</th>
+                            <th class="px-2 md:px-4 py-3 text-left text-lg font-heading text-white">Description</th>
+                            <th class="px-2 md:px-4 py-3 text-left text-lg font-heading text-white">Price</th>
+                            <th class="px-2 md:px-4 py-3 text-left text-lg font-heading text-white">Quantity</th>
+                            <th class="px-2 md:px-4 py-3 text-left text-lg font-heading text-white">Subtotal</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-800"></tbody>
+                    <tbody class="divide-y divide-none"></tbody>
                 </table>
             </div>
 
             <!-- Comments Section -->
             <div class="bg-surface rounded-lg shadow-sm p-8">
-                <h2 class="text-2xl font-heading text-primary mb-8">Additional Comments</h2>
+                <h2 class="text-4xl font-heading text-primary mb-2">Additional Comments</h2>
                 <div class="space-y-3">
-                    <label for="comments" class="block text-lg font-heading text-white mb-2">Need something else? Let us know:</label>
+                    <label for="comments" class="block text-md text-white mb-3">Need something else? Let us know:</label>
                     <textarea id="comments" 
                               rows="4" 
-                              class="w-full rounded-md border-gray-700 bg-background text-white shadow-sm focus:border-primary focus:ring-primary p-3"></textarea>
+                              class="w-full rounded-md border-gray-700 bg-background text-white shadow-sm focus:border-primary focus:ring-primary p-3" placeholder="We are happy to hear what you need even if it's not on our menu."></textarea>
                 </div>
             </div>
         </div>

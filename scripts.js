@@ -157,21 +157,36 @@ function createMenuRow(item) {
     const row = document.createElement('tr');
     const servingInfo = item.measurement || item.servingSuggestion;
     
+    // Create main row
     row.innerHTML = `
-        <td class="px-4 py-3">
+        <td class="px-2 md:px-4 py-3">
             <div class="font-medium text-white">${item.name}</div>
             ${servingInfo ? 
                 `<div class="text-xs text-gray-400 italic">${servingInfo}</div>` : 
                 ''}
         </td>
-        <td class="px-4 py-3 item-description text-sm text-gray-300">${item.description}</td>
-        <td class="px-4 py-3 text-sm text-white">$${item.price.toFixed(2)}</td>
-        <td class="px-4 py-3">
+        <td class="px-2 md:px-4 py-3 hidden md:table-cell text-sm text-gray-300">${item.description}</td>
+        <td class="px-2 md:px-4 py-3 text-sm text-white">$${item.price.toFixed(2)}</td>
+        <td class="px-2 md:px-4 py-3">
             <input type="number" class="quantity-input" min="0" value="0" 
                    data-price="${item.price}" data-item-name="${item.name}">
         </td>
-        <td class="px-4 py-3 subtotal font-medium text-white">$0.00</td>
+        <td class="px-2 md:px-4 py-3 subtotal font-medium text-white">$0.00</td>
     `;
+
+    // Create description row for mobile with simpler styling
+    if (item.description) {
+        const descriptionRow = document.createElement('tr');
+        descriptionRow.className = 'md:hidden';
+        descriptionRow.innerHTML = `
+            <td colspan="5" class="px-2 md:px-4 pb-3 pt-0 text-sm text-gray-300" 
+                style="border-bottom: solid 1px rgba(255, 255, 255, 0.1); padding: 0 0 15px 0;">
+                ${item.description}
+            </td>
+        `;
+        return [row, descriptionRow];
+    }
+
     return row;
 }
 
@@ -210,8 +225,12 @@ function initializeTable(tableId, items) {
     const tbody = document.querySelector(`#${tableId} tbody`);
     tbody.innerHTML = ''; // Clear existing rows
     items.forEach(item => {
-        const row = createMenuRow(item);
-        tbody.appendChild(row);
+        const rows = createMenuRow(item);
+        if (Array.isArray(rows)) {
+            rows.forEach(row => tbody.appendChild(row));
+        } else {
+            tbody.appendChild(rows);
+        }
     });
 }
 
@@ -462,7 +481,7 @@ async function sendOrderEmail(event) {
                 subject: `Catering Quote Request - ${formData.contact.name} - Party of ${formData.partySize}`,
                 name: formData.contact.name,
                 email: formData.contact.email,
-                cc: 'luke@beard.co',
+                cc: 'michael@electric-hospitality.com',
                 message: formattedMessage
             })
         });
