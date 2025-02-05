@@ -168,8 +168,14 @@ function createMenuRow(item) {
         <td class="px-2 md:px-4 py-3 hidden md:table-cell text-sm text-gray-300">${item.description}</td>
         <td class="px-2 md:px-4 py-3 text-sm text-white">$${item.price.toFixed(2)}</td>
         <td class="px-2 md:px-4 py-3">
-            <input type="number" class="quantity-input" min="0" value="0" 
-                   data-price="${item.price}" data-item-name="${item.name}">
+            <input type="number" 
+                   inputmode="numeric" 
+                   pattern="[0-9]*"
+                   class="quantity-input" 
+                   min="0" 
+                   value="0" 
+                   data-price="${item.price}" 
+                   data-item-name="${item.name}">
         </td>
         <td class="px-2 md:px-4 py-3 subtotal font-medium text-white">$0.00</td>
     `;
