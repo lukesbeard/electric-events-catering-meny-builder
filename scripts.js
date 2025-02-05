@@ -166,7 +166,7 @@ function createMenuRow(item) {
                value="0" 
                data-price="${item.price}" 
                data-item-name="${item.name}"
-               oninput="updateSubtotalAndSave(this)">
+               oninput="handleQuantityChange(this)">
     `;
     
     row.innerHTML = `
@@ -599,6 +599,7 @@ function restoreFormProgress() {
 
     try {
         const formData = JSON.parse(savedData);
+        console.log('Restoring data:', formData); // Debug log
 
         // Restore contact and delivery info
         document.getElementById('contactName').value = formData.contact.name || '';
@@ -625,16 +626,19 @@ function restoreFormProgress() {
         // Restore comments
         document.getElementById('comments').value = formData.comments || '';
 
-        // Update restore quantities with proper total calculations
-        if (formData.quantities && formData.quantities.length > 0) {
+        // Update restore quantities
+        if (formData.quantities) {
             const restoreQuantities = () => {
                 const inputs = document.querySelectorAll('.quantity-input');
                 if (inputs.length === 0) return false;
+
+                console.log('Found inputs:', inputs.length); // Debug log
 
                 formData.quantities.forEach(item => {
                     const input = Array.from(inputs)
                         .find(input => input.dataset.itemName === item.itemName);
                     if (input) {
+                        console.log('Restoring quantity for:', item.itemName, item.quantity); // Debug log
                         input.value = item.quantity;
                         updateSubtotal(input);
                     }
@@ -644,20 +648,16 @@ function restoreFormProgress() {
                 return true;
             };
 
-            // Try to restore immediately
-            if (!restoreQuantities()) {
-                // If failed, wait for menu to load
-                const observer = new MutationObserver((mutations, obs) => {
-                    if (restoreQuantities()) {
-                        obs.disconnect();
-                    }
-                });
+            // Try to restore immediately after menu is loaded
+            const waitForMenu = setInterval(() => {
+                if (document.querySelector('.quantity-input')) {
+                    restoreQuantities();
+                    clearInterval(waitForMenu);
+                }
+            }, 100);
 
-                observer.observe(document.body, {
-                    childList: true,
-                    subtree: true
-                });
-            }
+            // Clear interval after 5 seconds to prevent infinite waiting
+            setTimeout(() => clearInterval(waitForMenu), 5000);
         }
     } catch (error) {
         console.error('Error restoring form data:', error);
@@ -666,52 +666,20 @@ function restoreFormProgress() {
 
 // Update the saveFormProgress function to be more reliable
 function saveFormProgress() {
+    // Get all quantities, including zeros
+    const quantities = Array.from(document.querySelectorAll('.quantity-input')).map(input => ({
+        itemName: input.dataset.itemName,
+        quantity: input.value,
+        price: input.dataset.price
+    }));
+
     const formData = {
-        quantities: Array.from(document.querySelectorAll('.quantity-input'))
-            .map(input => ({
-                itemName: input.dataset.itemName,
-                quantity: input.value
-            }))
-            .filter(item => item.quantity > 0) // Only save non-zero quantities
+        quantities: quantities,  // Save all quantities
+        // ... rest of form data
     };
 
-    // Only add other form data if the elements exist
-    // Contact info
-    if (document.getElementById('contactName')) {
-        formData.contact = {
-            name: document.getElementById('contactName')?.value || '',
-            email: document.getElementById('contactEmail')?.value || '',
-            phone: document.getElementById('contactPhone')?.value || ''
-        };
-    }
-
-    // Delivery info
-    if (document.getElementById('locationStreet')) {
-        formData.delivery = {
-            address: document.getElementById('locationStreet')?.value || '',
-            city: document.getElementById('locationCity')?.value || '',
-            zip: document.getElementById('locationZip')?.value || '',
-            time: document.getElementById('dropoffTime')?.value || ''
-        };
-    }
-
-    // Party size
-    if (document.getElementById('exactSize')) {
-        formData.partySize = {
-            isExact: document.getElementById('exactSize')?.checked || false,
-            exactSize: document.getElementById('exactPartySize')?.value || '',
-            minSize: document.getElementById('partySizeMin')?.value || '',
-            maxSize: document.getElementById('partySizeMax')?.value || ''
-        };
-    }
-
-    // Comments
-    if (document.getElementById('comments')) {
-        formData.comments = document.getElementById('comments')?.value || '';
-    }
-
     localStorage.setItem('cateringFormData', JSON.stringify(formData));
-    console.log('Saved form data:', formData); // Debug log
+    console.log('Saved quantities:', quantities); // Debug log
 }
 
 // Update the DOMContentLoaded event listener
@@ -724,4 +692,10 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const form = document.getElementById('orderForm');
     form.addEventListener('submit', sendOrderEmail);
-}); 
+});
+
+// New function to handle quantity changes
+function handleQuantityChange(input) {
+    updateSubtotal(input);
+    saveFormProgress();
+} 
