@@ -1,25 +1,49 @@
-// Google Sheets IDs and configuration
-const SPREADSHEET_ID = '1AHaAHIYUStyGmZkEqNhFAp-qTwvCDhLkAkQATJSiZnk';
-const API_KEY = 'AIzaSyAILUy99UCHJ6eV341T33UR4Hkj1JlCuNE';
-
-const SHEETS = {
-    mains: {
-        name: 'Mains!A2:D14',  // Using actual sheet name "Mains"
-        title: 'Mains'
+// Google Sheets configuration
+const SHEET_CONFIGS = {
+    ladybird: {
+        id: '1AHaAHIYUStyGmZkEqNhFAp-qTwvCDhLkAkQATJSiZnk',
+        sheets: {
+            mains: {
+                name: 'Mains!A2:D14',
+                title: 'Mains'
+            },
+            sides: {
+                name: 'Sides!A2:D10',
+                title: 'Sides'
+            },
+            deserts: {
+                name: 'Deserts!A2:D6',
+                title: 'Deserts'
+            }
+        }
     },
-    sides: {
-        name: 'Sides!A2:D10',  // Using actual sheet name "Sides"
-        title: 'Sides'
-    },
-    deserts: {  // Fixed spelling
-        name: 'Deserts!A2:D6',  // Using correct sheet name
-        title: 'Deserts'  // Fixed spelling in title
+    muchacho: {
+        id: '1nhmXLYpzWOwM9DIobMSjA-rbTge5UZF__1uCzUVpZ1Q',
+        sheets: {
+            mains: {
+                name: 'Mains!A2:D16',  // Adjusted range for Muchacho menu
+                title: 'Package Options'
+            },
+            sides: {
+                name: 'Sides!A2:D8',  // Adjusted range for Muchacho sides
+                title: 'Sides'
+            }
+        }
     }
 };
 
+const API_KEY = 'AIzaSyAILUy99UCHJ6eV341T33UR4Hkj1JlCuNE';
+
+// Determine which configuration to use based on the page
+function getCurrentConfig() {
+    const isMuchacho = document.body.classList.contains('muchacho-menu');
+    return isMuchacho ? SHEET_CONFIGS.muchacho : SHEET_CONFIGS.ladybird;
+}
+
 // Fetch data from Google Sheets
 async function fetchSheetData(sheetConfig) {
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetConfig.name}?key=${API_KEY}`;
+    const currentConfig = getCurrentConfig();
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${currentConfig.id}/values/${sheetConfig.name}?key=${API_KEY}`;
     
     try {
         console.log(`Fetching ${sheetConfig.title} from: ${sheetConfig.name}`);
@@ -114,16 +138,28 @@ function setLoadingState(isLoading) {
 async function initializeMenuTables() {
     setLoadingState(true);
     try {
-        const [mainsData, sidesData, desertsData] = await Promise.all([
-            fetchSheetData(SHEETS.mains),
-            fetchSheetData(SHEETS.sides),
-            fetchSheetData(SHEETS.deserts)
-        ]);
+        const currentConfig = getCurrentConfig();
+        const promises = [];
+        const menuData = {};
 
-        // Initialize menus with the fetched data
-        initializeTable('mainsTable', mainsData);
-        initializeTable('sidesTable', sidesData);
-        initializeTable('desertsTable', desertsData);
+        // Build array of promises based on available sheets
+        Object.entries(currentConfig.sheets).forEach(([key, sheet]) => {
+            promises.push(
+                fetchSheetData(sheet).then(data => {
+                    menuData[key] = data;
+                })
+            );
+        });
+
+        await Promise.all(promises);
+
+        // Initialize each menu section that exists in the current page
+        Object.entries(currentConfig.sheets).forEach(([key, sheet]) => {
+            const menuId = `${key}Menu`;
+            if (document.getElementById(menuId)) {
+                initializeTable(key + 'Table', menuData[key]);
+            }
+        });
 
     } catch (error) {
         console.error('Error initializing menu tables:', error);
@@ -151,7 +187,7 @@ function createMenuRow(item) {
                     <span class="text-primary">$${item.price.toFixed(2)}</span>
                     ${servingInfo ? `<span class="text-white text-base"> ${servingInfo}</span>` : ''}
                 </div>
-                <div class="text-md text-gray-300 mt-1 max-w-[600px]">${item.description}</div>
+                <div class="text-md mt-1 max-w-[600px]">${item.description}</div>
             </div>
         </div>
         <div class="flex items-center gap-4 md:min-w-[200px]">
@@ -455,7 +491,7 @@ function saveFormProgress() {
         timestamp: new Date().getTime(),
         delivery: {
             date: document.getElementById('dropoffDate')?.value || '',
-            time: document.getElementById('dropoffTime')?.value || ''
+            time: document.getElementById('dropoffTime').value || ''
         }
     };
 
