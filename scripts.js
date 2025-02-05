@@ -579,7 +579,8 @@ async function sendOrderEmail(event) {
                 replyto: "brad@electric-hospitality.com",
                 message: formattedMessage,
                 redirect: 'thank-you.html',
-                botcheck: ''
+                botcheck: '',
+                autoresponse: true  // Add this to enable auto-response
             })
         });
 
