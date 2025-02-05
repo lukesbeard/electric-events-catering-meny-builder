@@ -627,15 +627,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // ... rest of your existing initialization code ...
 });
 
-// Add notification UI
+// Update the showNotification function
 function showNotification(message, type) {
     const notification = document.createElement('div');
     notification.className = `fixed top-4 right-4 p-4 rounded-lg ${
         type === 'success' ? 'bg-green-900' : 'bg-red-900'
-    } text-white max-w-md whitespace-pre-line`;
+    } text-white max-w-md whitespace-pre-line z-[33333]`; // Added z-index
     notification.textContent = message;
     document.body.appendChild(notification);
-    setTimeout(() => notification.remove(), 7000); // Increased timeout for longer messages
+    setTimeout(() => notification.remove(), 7000);
 }
 
 // Helper functions
