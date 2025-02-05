@@ -595,7 +595,9 @@ async function sendOrderEmail(event) {
                 subject: `Catering Quote Request - ${formData.contact.name} - Party of ${formData.partySize}`,
                 name: formData.contact.name,
                 email: formData.contact.email,
-                cc: 'michael@electric-hospitality.com, brad@electric-hospitality.com',
+                from_name: "Ladybird Catering Quote Builder",
+                to_email: "michael@electric-hospitality.com",
+                cc: ["brad@electric-hospitality.com", "luke@exposure.co"],
                 message: formattedMessage
             })
         });
