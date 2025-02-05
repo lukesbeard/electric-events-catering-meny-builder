@@ -213,19 +213,16 @@ function updateTotal() {
     const total = subtotals.reduce((sum, value) => sum + value, 0);
     const totalPrice = document.getElementById('totalPrice');
     const submitButton = document.getElementById('submitButton');
-    const stickyBar = document.querySelector('.sticky-bar');
     
     totalPrice.textContent = `$${total.toFixed(2)}`;
     
-    // Handle button and sticky bar state
+    // Only handle button state
     if (total <= 0) {
         submitButton.disabled = true;
         submitButton.title = 'Add items to your quote to continue';
-        stickyBar.classList.remove('visible');
     } else {
         submitButton.disabled = false;
         submitButton.removeAttribute('title');
-        stickyBar.classList.add('visible');
     }
 }
 
