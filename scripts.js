@@ -157,7 +157,18 @@ function createMenuRow(item) {
     const row = document.createElement('tr');
     const servingInfo = item.measurement || item.servingSuggestion;
     
-    // Create main row
+    const input = `
+        <input type="number" 
+               inputmode="numeric" 
+               pattern="[0-9]*"
+               class="quantity-input" 
+               min="0" 
+               value="0" 
+               data-price="${item.price}" 
+               data-item-name="${item.name}"
+               oninput="updateSubtotalAndSave(this)">
+    `;
+    
     row.innerHTML = `
         <td class="px-2 md:px-4 py-3">
             <div class="font-medium text-white">${item.name}</div>
@@ -167,16 +178,7 @@ function createMenuRow(item) {
         </td>
         <td class="px-2 md:px-4 py-3 hidden md:table-cell text-sm text-gray-300">${item.description}</td>
         <td class="px-2 md:px-4 py-3 text-sm text-white">$${item.price.toFixed(2)}</td>
-        <td class="px-2 md:px-4 py-3">
-            <input type="number" 
-                   inputmode="numeric" 
-                   pattern="[0-9]*"
-                   class="quantity-input" 
-                   min="0" 
-                   value="0" 
-                   data-price="${item.price}" 
-                   data-item-name="${item.name}">
-        </td>
+        <td class="px-2 md:px-4 py-3">${input}</td>
         <td class="px-2 md:px-4 py-3 subtotal font-medium text-white">$0.00</td>
     `;
 
@@ -574,37 +576,26 @@ function addRequiredFieldsIndicators() {
     });
 }
 
-// Add these new functions for handling local storage
-
-function saveFormProgress() {
-    const formData = {
-        contact: {
-            name: document.getElementById('contactName').value,
-            email: document.getElementById('contactEmail').value,
-            phone: document.getElementById('contactPhone').value
-        },
-        delivery: {
-            address: document.getElementById('locationStreet').value,
-            city: document.getElementById('locationCity').value,
-            zip: document.getElementById('locationZip').value,
-            time: document.getElementById('dropoffTime').value
-        },
-        partySize: {
-            isExact: document.getElementById('exactSize').checked,
-            exactSize: document.getElementById('exactPartySize').value,
-            minSize: document.getElementById('partySizeMin').value,
-            maxSize: document.getElementById('partySizeMax').value
-        },
-        quantities: Array.from(document.querySelectorAll('.quantity-input')).map(input => ({
-            itemName: input.dataset.itemName,
-            quantity: input.value
-        })),
-        comments: document.getElementById('comments').value
-    };
-
-    localStorage.setItem('cateringFormData', JSON.stringify(formData));
+// Add new function to handle both subtotal update and saving
+function updateSubtotalAndSave(input) {
+    updateSubtotal(input);
+    saveFormProgress();
 }
 
+// Update the initializeAutoSave function
+function initializeAutoSave() {
+    // Save on any input change immediately
+    document.addEventListener('input', (e) => {
+        saveFormProgress();
+    });
+
+    // Save on any change event
+    document.addEventListener('change', (e) => {
+        saveFormProgress();
+    });
+}
+
+// Update the restore function to ensure quantities are properly restored
 function restoreFormProgress() {
     const savedData = localStorage.getItem('cateringFormData');
     if (!savedData) return;
@@ -637,27 +628,30 @@ function restoreFormProgress() {
         // Restore comments
         document.getElementById('comments').value = formData.comments || '';
 
-        // Restore quantities after menu is loaded
-        if (formData.quantities) {
+        // Update restore quantities with proper total calculations
+        if (formData.quantities && formData.quantities.length > 0) {
             const restoreQuantities = () => {
+                const inputs = document.querySelectorAll('.quantity-input');
+                if (inputs.length === 0) return false;
+
                 formData.quantities.forEach(item => {
-                    const input = Array.from(document.querySelectorAll('.quantity-input'))
+                    const input = Array.from(inputs)
                         .find(input => input.dataset.itemName === item.itemName);
                     if (input) {
                         input.value = item.quantity;
                         updateSubtotal(input);
                     }
                 });
+
+                updateTotal();
+                return true;
             };
 
-            // If menu is already loaded, restore now, otherwise wait
-            if (document.querySelector('.quantity-input')) {
-                restoreQuantities();
-            } else {
-                // Wait for menu to be initialized
+            // Try to restore immediately
+            if (!restoreQuantities()) {
+                // If failed, wait for menu to load
                 const observer = new MutationObserver((mutations, obs) => {
-                    if (document.querySelector('.quantity-input')) {
-                        restoreQuantities();
+                    if (restoreQuantities()) {
                         obs.disconnect();
                     }
                 });
@@ -673,20 +667,54 @@ function restoreFormProgress() {
     }
 }
 
-// Add event listeners for saving progress
-function initializeAutoSave() {
-    const debounceTime = 1000; // 1 second
-    const debouncedSave = _.debounce(saveFormProgress, debounceTime);
+// Update the saveFormProgress function to be more reliable
+function saveFormProgress() {
+    const formData = {
+        quantities: Array.from(document.querySelectorAll('.quantity-input'))
+            .map(input => ({
+                itemName: input.dataset.itemName,
+                quantity: input.value
+            }))
+            .filter(item => item.quantity > 0) // Only save non-zero quantities
+    };
 
-    // Save on input changes
-    document.querySelectorAll('input, textarea').forEach(element => {
-        element.addEventListener('input', debouncedSave);
-    });
+    // Only add other form data if the elements exist
+    // Contact info
+    if (document.getElementById('contactName')) {
+        formData.contact = {
+            name: document.getElementById('contactName')?.value || '',
+            email: document.getElementById('contactEmail')?.value || '',
+            phone: document.getElementById('contactPhone')?.value || ''
+        };
+    }
 
-    // Save on radio button changes
-    document.querySelectorAll('input[type="radio"]').forEach(radio => {
-        radio.addEventListener('change', debouncedSave);
-    });
+    // Delivery info
+    if (document.getElementById('locationStreet')) {
+        formData.delivery = {
+            address: document.getElementById('locationStreet')?.value || '',
+            city: document.getElementById('locationCity')?.value || '',
+            zip: document.getElementById('locationZip')?.value || '',
+            time: document.getElementById('dropoffTime')?.value || ''
+        };
+    }
+
+    // Party size
+    if (document.getElementById('exactSize')) {
+        formData.partySize = {
+            isExact: document.getElementById('exactSize')?.checked || false,
+            exactSize: document.getElementById('exactPartySize')?.value || '',
+            minSize: document.getElementById('partySizeMin')?.value || '',
+            maxSize: document.getElementById('partySizeMax')?.value || ''
+        };
+    }
+
+    // Comments
+    if (document.getElementById('comments')) {
+        formData.comments = document.getElementById('comments')?.value || '';
+    }
+
+    localStorage.setItem('cateringFormData', JSON.stringify(formData));
+    console.log('Saved form data:', formData); // Debug log
 }
 
 // Update the DOMContentLoaded event listener
