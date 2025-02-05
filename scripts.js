@@ -141,7 +141,7 @@ function createMenuRow(item) {
     const servingInfo = item.measurement || item.servingSuggestion;
     
     const menuItem = document.createElement('div');
-    menuItem.className = 'flex flex-col md:flex-row gap-4 border-b border-white/10 pb-6';
+    menuItem.className = 'flex flex-col md:flex-row gap-4 border-b border-white/10 pb-6 last:border-b-0';
     
     menuItem.innerHTML = `
         <div class="flex-1">
