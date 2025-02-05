@@ -147,11 +147,11 @@ function createMenuRow(item) {
         <div class="flex-1">
             <div class="flex flex-col gap-1">
                 <h3 class="text-2xl font-medium text-white">${item.name}</h3>
-                <div class="text-lg text-primary font-medium">$${item.price.toFixed(2)}</div>
-                ${servingInfo ? 
-                    `<div class="text-xs text-gray-400 italic">${servingInfo}</div>` : 
-                    ''}
-                <div class="text-sm text-gray-300 mt-1">${item.description}</div>
+                <div class="text-lg font-medium">
+                    <span class="text-primary">$${item.price.toFixed(2)}</span>
+                    ${servingInfo ? `<span class="text-white text-base"> ${servingInfo}</span>` : ''}
+                </div>
+                <div class="text-md text-gray-300 mt-1 max-w-[600px]">${item.description}</div>
             </div>
         </div>
         <div class="flex items-center gap-4 md:min-w-[200px]">
@@ -166,7 +166,7 @@ function createMenuRow(item) {
                        data-item-name="${item.name}"
                        oninput="handleQuantityChange(this)">
             </div>
-            <div class="subtotal font-medium text-white whitespace-nowrap">$0.00</div>
+            <div class="subtotal font-medium text-2xl text-white whitespace-nowrap">$0.00</div>
         </div>
     `;
 
