@@ -577,6 +577,7 @@ async function sendOrderEmail(event) {
                 from_name: "Ladybird Catering Quote Builder",
                 to_email: "michael@electric-hospitality.com",
                 cc: ["brad@electric-hospitality.com", "luke@exposure.co"],
+                replyto: "brad@electric-hospitality.com",
                 message: formattedMessage
             })
         });
