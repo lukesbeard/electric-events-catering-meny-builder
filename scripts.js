@@ -495,8 +495,8 @@ async function sendOrderEmail(event) {
         const result = await response.json();
         
         if (result.success) {
+            localStorage.removeItem('cateringFormData'); // Clear saved data after successful submission
             showNotification('Quote request submitted successfully! We\'ll be in touch soon.', 'success');
-            // Optionally reset form here
         } else {
             throw new Error(result.message || 'Failed to submit quote request');
         }
@@ -574,11 +574,128 @@ function addRequiredFieldsIndicators() {
     });
 }
 
+// Add these new functions for handling local storage
+
+function saveFormProgress() {
+    const formData = {
+        contact: {
+            name: document.getElementById('contactName').value,
+            email: document.getElementById('contactEmail').value,
+            phone: document.getElementById('contactPhone').value
+        },
+        delivery: {
+            address: document.getElementById('locationStreet').value,
+            city: document.getElementById('locationCity').value,
+            zip: document.getElementById('locationZip').value,
+            time: document.getElementById('dropoffTime').value
+        },
+        partySize: {
+            isExact: document.getElementById('exactSize').checked,
+            exactSize: document.getElementById('exactPartySize').value,
+            minSize: document.getElementById('partySizeMin').value,
+            maxSize: document.getElementById('partySizeMax').value
+        },
+        quantities: Array.from(document.querySelectorAll('.quantity-input')).map(input => ({
+            itemName: input.dataset.itemName,
+            quantity: input.value
+        })),
+        comments: document.getElementById('comments').value
+    };
+
+    localStorage.setItem('cateringFormData', JSON.stringify(formData));
+}
+
+function restoreFormProgress() {
+    const savedData = localStorage.getItem('cateringFormData');
+    if (!savedData) return;
+
+    try {
+        const formData = JSON.parse(savedData);
+
+        // Restore contact and delivery info
+        document.getElementById('contactName').value = formData.contact.name || '';
+        document.getElementById('contactEmail').value = formData.contact.email || '';
+        document.getElementById('contactPhone').value = formData.contact.phone || '';
+        document.getElementById('locationStreet').value = formData.delivery.address || '';
+        document.getElementById('locationCity').value = formData.delivery.city || '';
+        document.getElementById('locationZip').value = formData.delivery.zip || '';
+        document.getElementById('dropoffTime').value = formData.delivery.time || '';
+
+        // Restore party size
+        if (formData.partySize) {
+            const isExact = formData.partySize.isExact;
+            document.getElementById('exactSize').checked = isExact;
+            document.getElementById('rangeSize').checked = !isExact;
+            document.getElementById('exactPartySize').value = formData.partySize.exactSize || '';
+            document.getElementById('exactPartySize').disabled = !isExact;
+            document.getElementById('partySizeMin').value = formData.partySize.minSize || '';
+            document.getElementById('partySizeMin').disabled = isExact;
+            document.getElementById('partySizeMax').value = formData.partySize.maxSize || '';
+            document.getElementById('partySizeMax').disabled = isExact;
+        }
+
+        // Restore comments
+        document.getElementById('comments').value = formData.comments || '';
+
+        // Restore quantities after menu is loaded
+        if (formData.quantities) {
+            const restoreQuantities = () => {
+                formData.quantities.forEach(item => {
+                    const input = Array.from(document.querySelectorAll('.quantity-input'))
+                        .find(input => input.dataset.itemName === item.itemName);
+                    if (input) {
+                        input.value = item.quantity;
+                        updateSubtotal(input);
+                    }
+                });
+            };
+
+            // If menu is already loaded, restore now, otherwise wait
+            if (document.querySelector('.quantity-input')) {
+                restoreQuantities();
+            } else {
+                // Wait for menu to be initialized
+                const observer = new MutationObserver((mutations, obs) => {
+                    if (document.querySelector('.quantity-input')) {
+                        restoreQuantities();
+                        obs.disconnect();
+                    }
+                });
+
+                observer.observe(document.body, {
+                    childList: true,
+                    subtree: true
+                });
+            }
+        }
+    } catch (error) {
+        console.error('Error restoring form data:', error);
+    }
+}
+
+// Add event listeners for saving progress
+function initializeAutoSave() {
+    const debounceTime = 1000; // 1 second
+    const debouncedSave = _.debounce(saveFormProgress, debounceTime);
+
+    // Save on input changes
+    document.querySelectorAll('input, textarea').forEach(element => {
+        element.addEventListener('input', debouncedSave);
+    });
+
+    // Save on radio button changes
+    document.querySelectorAll('input[type="radio"]').forEach(radio => {
+        radio.addEventListener('change', debouncedSave);
+    });
+}
+
 // Update the DOMContentLoaded event listener
 document.addEventListener('DOMContentLoaded', () => {
     initializeMenuTables();
     initializeEventListeners();
     addRequiredFieldsIndicators();
+    initializeAutoSave();
+    restoreFormProgress();
     
     const form = document.getElementById('orderForm');
     form.addEventListener('submit', sendOrderEmail);
