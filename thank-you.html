@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thank You - Ladybird Catering</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: 'rgb(255, 199, 0)',
+                        background: '#000000',
+                        surface: '#121212',
+                    },
+                    fontFamily: {
+                        'heading': ['"Bebas Neue"', 'cursive'],
+                        'sans': ['"DM Sans"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: url('Ladybird-footer.jpg') no-repeat center center fixed;
+            background-size: cover;
+            position: relative;
+        }
+        
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 0;
+        }
+
+        .content-wrapper {
+            position: relative;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body class="bg-background text-white min-h-screen">
+    <div class="content-wrapper">
+        <div class="max-w-4xl mx-auto px-4 py-20 text-center">
+            <img src="Ladybird_logo.png" 
+                 alt="Ladybird Logo" 
+                 class="w-[300px] mx-auto mb-12">
+            
+            <h1 class="text-5xl md:text-7xl font-heading text-primary mb-8">Thanks partner!</h1>
+            
+            <div class="bg-surface rounded-lg p-8 mb-12">
+                <p class="text-xl mb-6">
+                    We've received your catering quote request and will be in touch soon.
+                </p>
+                <p class="text-gray-400 mb-8">
+                    A confirmation email has been sent to your inbox. If you don't see it, please check your spam folder.
+                </p>
+                <a href="index.html" 
+                   class="inline-block bg-primary text-black px-8 py-3 rounded-lg font-heading text-xl hover:bg-opacity-90">
+                    Return to Quote Builder
+                </a>
+            </div>
+
+            <div class="text-sm text-gray-400">
+                <p>
+                    Questions? Contact us at 
+                    <a href="mailto:hello@electriceventsatl.com" 
+                       class="text-primary hover:underline">hello@electriceventsatl.com</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Clear form data on page load
+        window.onload = function() {
+            localStorage.removeItem('cateringFormData');
+        };
+    </script>
+</body>
+</html> 
