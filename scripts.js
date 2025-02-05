@@ -569,7 +569,7 @@ async function sendOrderEmail(event) {
                 subject: `Catering Quote Request - ${formData.contact.name} - Party of ${formData.partySize}`,
                 name: formData.contact.name,
                 email: formData.contact.email,
-                cc: 'michael@electric-hospitality.com',
+                cc: 'michael@electric-hospitality.com, brad@electric-hospitality.com',
                 message: formattedMessage
             })
         });
