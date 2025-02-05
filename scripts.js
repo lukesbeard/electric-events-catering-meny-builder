@@ -114,32 +114,16 @@ function setLoadingState(isLoading) {
 async function initializeMenuTables() {
     setLoadingState(true);
     try {
-        // Fetch all data concurrently
         const [mainsData, sidesData, desertsData] = await Promise.all([
             fetchSheetData(SHEETS.mains),
             fetchSheetData(SHEETS.sides),
-            fetchSheetData(SHEETS.deserts)  // Match the key in SHEETS object
+            fetchSheetData(SHEETS.deserts)
         ]);
 
-        // Debug log to see the parsed data
-        console.log('Parsed data:', { mainsData, sidesData, desertsData });
-
-        // Update the menuData object
-        window.menuData = {
-            mains: mainsData,
-            sides: sidesData,
-            deserts: desertsData  // Match the key in SHEETS object
-        };
-
-        // Initialize tables with the fetched data
+        // Initialize menus with the fetched data
         initializeTable('mainsTable', mainsData);
         initializeTable('sidesTable', sidesData);
         initializeTable('desertsTable', desertsData);
-
-        // Add event listeners to quantity inputs
-        document.querySelectorAll('.quantity-input').forEach(input => {
-            input.addEventListener('input', () => updateSubtotal(input));
-        });
 
     } catch (error) {
         console.error('Error initializing menu tables:', error);
@@ -154,69 +138,59 @@ document.addEventListener('DOMContentLoaded', initializeMenuTables);
 
 // UI Helper Functions
 function createMenuRow(item) {
-    const row = document.createElement('tr');
     const servingInfo = item.measurement || item.servingSuggestion;
     
-    const input = `
-        <input type="number" 
-               inputmode="numeric" 
-               pattern="[0-9]*"
-               class="quantity-input" 
-               min="0" 
-               value="0" 
-               data-price="${item.price}" 
-               data-item-name="${item.name}"
-               oninput="handleQuantityChange(this)">
-    `;
+    const menuItem = document.createElement('div');
+    menuItem.className = 'flex flex-col md:flex-row gap-4 border-b border-white/10 pb-6';
     
-    row.innerHTML = `
-        <td class="px-2 md:px-4 py-3">
-            <div class="font-medium text-white">${item.name}</div>
-            ${servingInfo ? 
-                `<div class="text-xs text-gray-400 italic">${servingInfo}</div>` : 
-                ''}
-        </td>
-        <td class="px-2 md:px-4 py-3 hidden md:table-cell text-sm text-gray-300">${item.description}</td>
-        <td class="px-2 md:px-4 py-3 text-sm text-white">$${item.price.toFixed(2)}</td>
-        <td class="px-2 md:px-4 py-3">${input}</td>
-        <td class="px-2 md:px-4 py-3 subtotal font-medium text-white">$0.00</td>
+    menuItem.innerHTML = `
+        <div class="flex-1">
+            <div class="flex flex-col gap-1">
+                <h3 class="text-2xl font-medium text-white">${item.name}</h3>
+                <div class="text-lg text-primary font-medium">$${item.price.toFixed(2)}</div>
+                ${servingInfo ? 
+                    `<div class="text-xs text-gray-400 italic">${servingInfo}</div>` : 
+                    ''}
+                <div class="text-sm text-gray-300 mt-1">${item.description}</div>
+            </div>
+        </div>
+        <div class="flex items-center gap-4 md:min-w-[200px]">
+            <div class="flex-1 md:flex-none">
+                <input type="number" 
+                       inputmode="numeric" 
+                       pattern="[0-9]*"
+                       class="quantity-input" 
+                       min="0" 
+                       value="0" 
+                       data-price="${item.price}" 
+                       data-item-name="${item.name}"
+                       oninput="handleQuantityChange(this)">
+            </div>
+            <div class="subtotal font-medium text-white whitespace-nowrap">$0.00</div>
+        </div>
     `;
 
-    // Create description row for mobile with simpler styling
-    if (item.description) {
-        const descriptionRow = document.createElement('tr');
-        descriptionRow.className = 'md:hidden';
-        descriptionRow.innerHTML = `
-            <td colspan="5" class="px-2 md:px-4 pb-3 pt-0 text-sm text-gray-300" 
-                style="border-bottom: solid 1px rgba(255, 255, 255, 0.1); padding: 0 0 15px 0;">
-                ${item.description}
-            </td>
-        `;
-        return [row, descriptionRow];
-    }
-
-    return row;
+    return menuItem;
 }
 
 function updateSubtotal(input) {
     const price = parseFloat(input.dataset.price);
     const quantity = parseInt(input.value) || 0;
     const subtotal = price * quantity;
-    const subtotalCell = input.closest('tr').querySelector('.subtotal');
-    subtotalCell.textContent = `$${subtotal.toFixed(2)}`;
+    const subtotalElement = input.closest('div.flex').querySelector('.subtotal');
+    subtotalElement.textContent = `$${subtotal.toFixed(2)}`;
     updateTotal();
 }
 
 function updateTotal() {
     const subtotals = Array.from(document.querySelectorAll('.subtotal'))
-        .map(cell => parseFloat(cell.textContent.replace('$', '')) || 0);
+        .map(element => parseFloat(element.textContent.replace('$', '')) || 0);
     const total = subtotals.reduce((sum, value) => sum + value, 0);
     const totalPrice = document.getElementById('totalPrice');
     const submitButton = document.getElementById('submitButton');
     
     totalPrice.textContent = `$${total.toFixed(2)}`;
     
-    // Only handle button state
     if (total <= 0) {
         submitButton.disabled = true;
         submitButton.title = 'Add items to your quote to continue';
@@ -227,15 +201,20 @@ function updateTotal() {
 }
 
 function initializeTable(tableId, items) {
-    const tbody = document.querySelector(`#${tableId} tbody`);
-    tbody.innerHTML = ''; // Clear existing rows
+    // Convert old table IDs to new menu IDs
+    const menuId = tableId.replace('Table', 'Menu');
+    const menuContainer = document.querySelector(`#${menuId}`);
+    
+    if (!menuContainer) {
+        console.error(`Menu container not found for ID: ${menuId}`);
+        return;
+    }
+    
+    menuContainer.innerHTML = ''; // Clear existing items
+    
     items.forEach(item => {
-        const rows = createMenuRow(item);
-        if (Array.isArray(rows)) {
-            rows.forEach(row => tbody.appendChild(row));
-        } else {
-            tbody.appendChild(rows);
-        }
+        const menuItem = createMenuRow(item);
+        menuContainer.appendChild(menuItem);
     });
 }
 
@@ -657,7 +636,7 @@ function getOrderDetails() {
             orders.push({
                 name: input.dataset.itemName,
                 quantity: quantity,
-                subtotal: input.closest('tr').querySelector('.subtotal').textContent
+                subtotal: input.closest('div.flex').querySelector('.subtotal').textContent
             });
         }
     });
