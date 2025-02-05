@@ -11,6 +11,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
@@ -23,6 +24,7 @@
                     },
                     fontFamily: {
                         'heading': ['"Bebas Neue"', 'cursive'],
+                        'sans': ['"DM Sans"', 'sans-serif'],
                     }
                 }
             }
@@ -81,15 +83,68 @@
         .sticky-bar.visible {
             transform: translateY(0);
         }
+
+        @keyframes wobble {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(-10deg); }
+            50% { transform: rotate(10deg); }
+            75% { transform: rotate(-5deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        .wobble-animation {
+            animation: wobble 1s ease-in-out;
+            animation-iteration-count: 1;
+        }
+
+        /* Add hover animation */
+        #wobbleLogo:hover {
+            animation: wobble 1s ease-in-out;
+            cursor: pointer;
+        }
+
+        /* Add this class when you want to trigger the animation */
+        .wobble-active {
+            animation: wobble 1s ease-in-out;
+        }
+
+        /* Add base font for body */
+        body {
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        /* Remove top margin from all inputs */
+        input, textarea {
+            margin-top: 0 !important;
+        }
+
+        /* Adjust the spacing in the input containers */
+        .space-y-3 > * + * {
+            margin-top: 0;
+        }
     </style>
 </head>
 <body class="bg-background text-white min-h-screen pb-20">
+
+<div style="position: relative;background-color: #000000;z-index: 100;margin-bottom: 600px;">
+    
+    <!-- Add centered header section -->
     <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-        <h1 class="text-4xl font-heading text-primary mb-8">Ladybird Catering Quote Builder</h1>
-        
+        <div class="flex flex-col items-center mb-12">
+            <a href="https://www.electriceventsatl.com/" target="_blank" rel="noopener noreferrer">
+                <img src="EE-wordmark.png" alt="Electric Events Logo" class="w-[150px] mb-6">
+            </a>
+            <img src="Ladybird_logo.png" alt="Ladybird Logo" class="w-[400px] mb-6 mt-10">
+            <h1 class="text-4xl font-heading text-primary">Catering Quote Builder</h1>
+        </div>
+    </div>
+
+
+    <!-- Main content container -->
+    <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         <!-- Contact & Delivery Section -->
         <div class="bg-surface rounded-lg shadow-sm p-8 mb-8">
-            <h2 class="text-2xl font-heading text-primary mb-8">Contact & Delivery Details</h2>
+            <h2 class="text-2xl font-heading text-primary mb-8">Your Event</h2>
             <div class="grid grid-cols-1 gap-8">
                 <!-- Contact Info Row -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -192,7 +247,7 @@
         <div class="space-y-8">
             <!-- Mains Section -->
             <div class="bg-surface rounded-lg shadow-sm p-8">
-                <h2 class="text-2xl font-heading text-primary mb-8">Mains</h2>
+                <h2 class="text-7xl font-heading text-primary mb-8">Mains</h2>
                 <table id="mainsTable" class="w-full">
                     <thead class="bg-background">
                         <tr>
@@ -209,7 +264,7 @@
 
             <!-- Sides Section -->
             <div class="bg-surface rounded-lg shadow-sm p-8">
-                <h2 class="text-2xl font-heading text-primary mb-8">Sides</h2>
+                <h2 class="text-7xl font-heading text-primary mb-8">Sides</h2>
                 <table id="sidesTable" class="w-full">
                     <thead class="bg-background">
                         <tr>
@@ -226,7 +281,7 @@
 
             <!-- Deserts Section -->
             <div class="bg-surface rounded-lg shadow-sm p-8">
-                <h2 class="text-2xl font-heading text-primary mb-8">Deserts</h2>
+                <h2 class="text-7xl font-heading text-primary mb-8">Deserts</h2>
                 <table id="desertsTable" class="w-full">
                     <thead class="bg-background">
                         <tr>
@@ -270,7 +325,7 @@
                             <button type="submit" 
                                     id="submitButton"
                                     disabled
-                                    class="bg-primary text-black px-8 py-3 rounded-lg font-heading text-xl hover:bg-opacity-90 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed min-w-[200px] justify-center">
+                                    class="bg-primary text-black px-8 py-3 rounded-lg font-heading text-xl hover:bg-opacity-90 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed min-w-[100px] justify-center">
                                 <span>Submit Quote</span>
                                 <svg id="submitSpinner" class="hidden animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -284,7 +339,55 @@
         </div>
 
         <!-- Add padding to the bottom of the body to prevent content from being hidden behind sticky total -->
-        <div class="h-20"></div> <!-- Keep the spacer -->
     </div>
+
+    <footer class="py-20 text-center">
+        <div class="flex flex-col items-center max-w-4xl mx-auto px-4">
+            <img src="EE-logo-mark.png" 
+                 alt="Electric Events Logo" 
+                 class="w-[200px] mb-8" 
+                 id="wobbleLogo">
+            <h1 class="text-4xl font-heading text-primary mb-6">
+                Atlanta's Full-Service Events & Catering Group
+            </h1>
+            <p class="text-white">
+                Talk to a human at 
+                <a href="mailto:hello@electriceventsatl.com" 
+                   class="text-primary hover:underline">hello@electriceventsatl.com</a> 
+                or call us at 
+                <a href="tel:4159932431" 
+                   class="text-primary hover:underline">415-993-2431</a>
+            </p>
+        </div>
+    </footer>
+</div>
+    <!-- Update the footer image div -->
+    <div class="w-full mt-10" style="position: fixed;height:600px;bottom:0;left:0;right:0">
+        <img src="Ladybird-footer.jpg" 
+             alt="Ladybird Footer" 
+             style="position:absolute;bottom:0;left:0;right:0;width:100%;height:100%;object-fit:cover">
+    </div>
+
+    <script>
+        const logo = document.getElementById('wobbleLogo');
+        let isAnimating = false;
+        
+        function wobbleLogo() {
+            if (!isAnimating) {
+                isAnimating = true;
+                logo.classList.add('wobble-animation');
+                setTimeout(() => {
+                    logo.classList.remove('wobble-animation');
+                    isAnimating = false;
+                }, 1000);
+            }
+        }
+
+        // Initial wobble
+        wobbleLogo();
+        
+        // Wobble every minute
+        setInterval(wobbleLogo, 60000);
+    </script>
 </body>
 </html>

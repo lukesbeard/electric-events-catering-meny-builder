@@ -411,23 +411,6 @@ Ladybird Catering Team
 `;
 }
 
-// Update the email subject in the fetch request
-const response = await fetch('https://api.web3forms.com/submit', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-    },
-    body: JSON.stringify({
-        access_key: 'f890e702-fef2-4b76-84bf-0e5bf3262032',
-        subject: `Catering Quote Request - ${formData.contact.name} - Party of ${formData.partySize}`,
-        name: formData.contact.name,
-        email: formData.contact.email,
-        cc: 'luke@beard.co',
-        message: formattedMessage
-    })
-});
-
 // Update the sendOrderEmail function to use the new formatting
 async function sendOrderEmail(event) {
     event.preventDefault();
