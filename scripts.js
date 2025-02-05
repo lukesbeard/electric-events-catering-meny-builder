@@ -573,13 +573,13 @@ async function sendOrderEmail(event) {
                 access_key: 'f890e702-fef2-4b76-84bf-0e5bf3262032',
                 subject: `Catering Quote Request - ${formData.contact.name} - Party of ${formData.partySize}`,
                 name: formData.contact.name,
-                email: formData.contact.email,
+                from: formData.contact.email,
                 from_name: "Ladybird Catering Quote Builder",
-                to_email: "michael@electric-hospitality.com",
-                ccemail: "brad@electric-hospitality.com; luke@exposure.co",
+                ccemail: "brad@electric-hospitality.com;",
                 replyto: "brad@electric-hospitality.com",
                 message: formattedMessage,
-                redirect: 'thank-you.html'  // Add redirect URL
+                redirect: 'thank-you.html',
+                botcheck: ''
             })
         });
 
