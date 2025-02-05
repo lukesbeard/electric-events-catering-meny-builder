@@ -71,10 +71,15 @@
           opacity: 1;
         }
 
+        nav {
+            position: relative;
+            z-index: 333333;
+        }
+
         .main-wrapper:before {
           position: absolute;
           content: "";
-          top: 0;
+          top: -64px;
           height: 600px;
           width: 100%;
           left: 0;
@@ -87,8 +92,9 @@
 
         @media (max-width: 768px) {
             .main-wrapper:before {
-                height: 340px;
+                height: 440px;
                 background-attachment: scroll;
+                top: -104px;
             }
         }
 
@@ -194,7 +200,7 @@
 <body class="bg-background text-white min-h-screen pb-20 muchacho-menu">
 
 <!-- Update the navigation -->
-<nav class="bg-surface border-b border-gray-800">
+<nav>
     <div class="max-w-6xl mx-auto px-4 sm:px-6">
         <div class="flex flex-col md:flex-row items-center justify-between py-4 md:h-16 gap-4 md:gap-0">
             <!-- Logo -->
