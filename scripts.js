@@ -416,8 +416,8 @@ ${formData.comments}` : ''}
 
 If you have any questions, please don't hesitate to reach out.
 
-Best regards,
-Ladybird Catering Team
+Speak soon,
+Electric Events Catering Team
 `;
 }
 
@@ -571,10 +571,10 @@ async function sendOrderEmail(event) {
             },
             body: JSON.stringify({
                 access_key: 'f890e702-fef2-4b76-84bf-0e5bf3262032',
-                subject: `Catering Quote Request - ${formData.contact.name} - Party of ${formData.partySize}`,
+                subject: `Electric Events Catering Quote - ${formData.contact.name} - Party of ${formData.partySize}`,
                 name: formData.contact.name,
                 from: formData.contact.email,
-                from_name: "Ladybird Catering Quote Builder",
+                from_name: "Electric Events Catering",
                 ccemail: "brad@electric-hospitality.com;",
                 replyto: "brad@electric-hospitality.com",
                 message: formattedMessage,
