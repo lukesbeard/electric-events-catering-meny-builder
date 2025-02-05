@@ -49,8 +49,8 @@
           position: absolute;
           content: "";
           top: 3%;
-          height: 120px;
-          width: 120px;
+          height: 100px;
+          width: 100px;
           transform: rotate(18deg);
           right: 3%;
           background:url(LB-badge.png) no-repeat center center;
@@ -70,6 +70,12 @@
           z-index: -1;
           opacity: 0.3;
           background-attachment: fixed;
+        }
+
+        @media (max-width: 768px) {
+            .main-wrapper:before {
+                height: 340px;
+            }
         }
 
         .quantity-input:focus {
