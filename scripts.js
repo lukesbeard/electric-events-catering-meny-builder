@@ -609,14 +609,13 @@ async function sendOrderEmail(event) {
                 access_key: 'f890e702-fef2-4b76-84bf-0e5bf3262032',
                 subject: `Electric Events Catering Quote - ${formData.contact.name} - Party of ${formData.partySize}`,
                 name: formData.contact.name,
-                from: formData.contact.email,
+                email: formData.contact.email,
                 from_name: "Electric Events Catering",
-                ccemail: "brad@electric-hospitality.com;",
                 replyto: "brad@electric-hospitality.com",
                 message: formattedMessage,
                 redirect: 'thank-you.html',
                 botcheck: '',
-                autoresponse: true  // Add this to enable auto-response
+                autoresponse: true
             })
         });
 
