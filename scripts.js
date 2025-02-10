@@ -8,7 +8,7 @@ const SHEET_CONFIGS = {
                 title: 'Mains'
             },
             sides: {
-                name: 'Sides!A2:D10',
+                name: 'Sides!A2:D25',  // Extended range to ensure we capture all side items
                 title: 'Sides'
             },
             deserts: {
@@ -197,6 +197,7 @@ function createMenuRow(item) {
                        pattern="[0-9]*"
                        class="quantity-input" 
                        min="0" 
+                       max="100"
                        value="0" 
                        data-price="${item.price}" 
                        data-item-name="${item.name}"
