@@ -25,8 +25,8 @@ const SHEET_CONFIGS = {
                 title: 'Package Options'
             },
             sides: {
-                name: 'Sides!A2:D8',  // Adjusted range for Muchacho sides
-                title: 'Sides'
+                name: 'Sides!A2:D25',  // Extended range to match Ladybird approach
+                title: 'A la Carte & Sides'
             }
         }
     }
