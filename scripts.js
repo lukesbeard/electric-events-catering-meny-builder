@@ -573,7 +573,7 @@ function clearSavedData() {
     localStorage.removeItem('cateringFormData');
 }
 
-// Update the sendOrderEmail function to include subtotal in formData
+// Update the sendOrderEmail function
 async function sendOrderEmail(event) {
     event.preventDefault();
     
@@ -613,39 +613,38 @@ async function sendOrderEmail(event) {
             },
             partySize: getPartySize(),
             order: getOrderDetails(),
-            subtotal: subtotal,  // Add subtotal
-            total: total,        // This is now the total with tax
+            subtotal: subtotal,
+            total: total,
             comments: document.getElementById('comments').value
         };
 
         // Format the message
         const formattedMessage = formatEmailMessage(formData);
 
+        // Create FormData object
+        const form = new FormData();
+        form.append('access_key', 'f890e702-fef2-4b76-84bf-0e5bf3262032');
+        form.append('subject', `Electric Events Catering Quote - ${formData.contact.name} - Party of ${formData.partySize}`);
+        form.append('name', formData.contact.name);
+        form.append('email', formData.contact.email);
+        form.append('from_name', "Electric Events Catering");
+        form.append('replyto', "brad@electric-hospitality.com");
+        form.append('message', formattedMessage);
+        form.append('ccemail', "michael@electric-hospitality.com; brad@electric-hospitality.com");
+        form.append('botcheck', '');
+        form.append('autoresponse', 'true');
+
         const response = await fetch('https://api.web3forms.com/submit', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                access_key: 'f890e702-fef2-4b76-84bf-0e5bf3262032',
-                subject: `Electric Events Catering Quote - ${formData.contact.name} - Party of ${formData.partySize}`,
-                name: formData.contact.name,
-                email: formData.contact.email,
-                from_name: "Electric Events Catering",
-                replyto: "brad@electric-hospitality.com",
-                message: formattedMessage,
-                redirect: 'thank-you.html',
-                botcheck: '',
-                autoresponse: true
-            })
+            body: form
         });
 
         const result = await response.json();
         
         if (result.success) {
-            clearSavedData(); // Clear saved data after successful submission
+            clearSavedData();
             showNotification('Quote request submitted successfully! We\'ll be in touch soon.', 'success');
+            window.location.href = 'thank-you.html';
         } else {
             throw new Error(result.message || 'Failed to submit quote request');
         }
