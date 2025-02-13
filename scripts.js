@@ -634,7 +634,6 @@ async function sendOrderEmail(event) {
                 email: formData.contact.email,
                 from_name: "Electric Events Catering",
                 replyto: "brad@electric-hospitality.com",
-                ccemail: "michael@electric-hospitality.com; brad@electric-hospitality.com",
                 message: formattedMessage,
                 redirect: 'thank-you.html',
                 botcheck: '',
