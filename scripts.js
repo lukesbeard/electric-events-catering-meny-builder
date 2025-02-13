@@ -414,15 +414,20 @@ function validateContactDetails() {
     return true;
 }
 
-// Add this new function to format the order details
+// Update the formatOrderDetails function to include tax info
 function formatOrderDetails(orders) {
     return orders.map(item => 
         `   • ${item.name} - ${item.quantity} units - ${item.subtotal}`
     ).join('\n');
 }
 
-// Update the formatEmailMessage function to include a better intro
+// Update the formatEmailMessage function to show subtotal and tax
 function formatEmailMessage(formData) {
+    // Calculate tax amounts for display
+    const subtotal = parseFloat(formData.subtotal.replace('$', ''));
+    const tax = subtotal * 0.085;
+    const total = subtotal + tax;
+
     return `
 Thank you for your catering quote request! We'll review your details and get back to you shortly.
 
@@ -446,11 +451,15 @@ Dropoff Time: ${formData.delivery.time}
 
 Party Size: ${formData.partySize}
 
-Quote Details
+Order Details
 ------------
 ${formatOrderDetails(formData.order)}
 
-Total: ${formData.total}
+Pricing
+-------
+Subtotal: ${formData.subtotal}
+Tax (8.5%): $${tax.toFixed(2)}
+Total: $${total.toFixed(2)}
 
 ${formData.comments ? `Additional Comments
 ------------------
@@ -564,7 +573,7 @@ function clearSavedData() {
     localStorage.removeItem('cateringFormData');
 }
 
-// Update the sendOrderEmail function
+// Update the sendOrderEmail function to include subtotal in formData
 async function sendOrderEmail(event) {
     event.preventDefault();
     
@@ -582,6 +591,12 @@ async function sendOrderEmail(event) {
         submitSpinner.classList.remove('hidden');
         buttonText.textContent = 'Sending...';
 
+        // Get subtotal and total with tax
+        const subtotalElement = document.getElementById('subtotalPrice');
+        const totalElement = document.getElementById('totalPriceWithTax');
+        const subtotal = subtotalElement.textContent.split(' + ')[0];
+        const total = totalElement.textContent;
+
         // Get all form data
         const formData = {
             contact: {
@@ -598,7 +613,8 @@ async function sendOrderEmail(event) {
             },
             partySize: getPartySize(),
             order: getOrderDetails(),
-            total: document.getElementById('totalPrice').textContent,
+            subtotal: subtotal,  // Add subtotal
+            total: total,        // This is now the total with tax
             comments: document.getElementById('comments').value
         };
 
