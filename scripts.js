@@ -222,13 +222,18 @@ function updateSubtotal(input) {
 function updateTotal() {
     const subtotals = Array.from(document.querySelectorAll('.subtotal'))
         .map(element => parseFloat(element.textContent.replace('$', '')) || 0);
-    const total = subtotals.reduce((sum, value) => sum + value, 0);
-    const totalPrice = document.getElementById('totalPrice');
+    const subtotal = subtotals.reduce((sum, value) => sum + value, 0);
+    const tax = subtotal * 0.085;
+    const total = subtotal + tax;
+    
+    const totalPriceWithTax = document.getElementById('totalPriceWithTax');
+    const subtotalPrice = document.getElementById('subtotalPrice');
     const submitButton = document.getElementById('submitButton');
     
-    totalPrice.textContent = `$${total.toFixed(2)}`;
+    totalPriceWithTax.textContent = `$${total.toFixed(2)}`;
+    subtotalPrice.textContent = `$${subtotal.toFixed(2)} + 8.5% Tax`;
     
-    if (total <= 0) {
+    if (subtotal <= 0) {
         submitButton.disabled = true;
         submitButton.title = 'Add items to your quote to continue';
     } else {
