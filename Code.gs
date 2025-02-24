@@ -2,7 +2,8 @@
 const SHEET_ID = '19_RFERZ2gDdwejHoar5-vRsyRHI3vj3tQUobc7qjNb4';
 
 function doPost(e) {
-  // Add logging to debug
+  // Add detailed logging
+  console.log('Starting doPost execution');
   console.log('Received POST request:', e.postData.contents);
   
   const headers = {
@@ -13,17 +14,17 @@ function doPost(e) {
   };
 
   try {
-    // Log the request details
+    // Log request details
     console.log('Request method:', e.method);
     console.log('Request headers:', e.headers);
+    console.log('Content type:', e.postData.type);
     
     let data;
     try {
       // Handle both JSON and form-encoded data
       if (e.postData.type === "application/x-www-form-urlencoded") {
-        // Parse form data
+        console.log('Processing form data');
         const formData = e.parameter;
-        // Parse any JSON strings in the form data
         data = Object.keys(formData).reduce((acc, key) => {
           try {
             acc[key] = JSON.parse(formData[key]);
@@ -33,26 +34,29 @@ function doPost(e) {
           return acc;
         }, {});
       } else {
-        // Parse JSON data
+        console.log('Processing JSON data');
         data = JSON.parse(e.postData.contents);
       }
-      console.log('Parsed data successfully:', data);
+      console.log('Parsed data:', data);
     } catch (parseError) {
       console.error('Error parsing request data:', parseError);
       throw new Error('Invalid data format');
     }
 
+    // Verify spreadsheet access
+    console.log('Opening spreadsheet with ID:', SHEET_ID);
     const sheet = SpreadsheetApp.openById(SHEET_ID);
     if (!sheet) {
       throw new Error('Could not open spreadsheet');
     }
     
+    console.log('Getting Sheet1');
     const activeSheet = sheet.getSheetByName('Sheet1');
     if (!activeSheet) {
       throw new Error('Could not find Sheet1');
     }
 
-    // Format the data for the spreadsheet
+    // Format and log the row data
     const rowData = [
       'New',                // Column A: Status
       data.source,         // Column B: Source (Ladybird or Muchacho)
@@ -70,10 +74,20 @@ function doPost(e) {
 
     console.log('Row data to insert:', rowData);
     
-    // Insert the new row after the header
-    activeSheet.insertRowAfter(1);
-    activeSheet.getRange(2, 1, 1, rowData.length).setValues([rowData]);
+    // Insert the row and verify
+    try {
+      console.log('Inserting row after header');
+      activeSheet.insertRowAfter(1);
+      const range = activeSheet.getRange(2, 1, 1, rowData.length);
+      console.log('Setting values in range:', range.getA1Notation());
+      range.setValues([rowData]);
+      console.log('Row inserted successfully');
+    } catch (writeError) {
+      console.error('Error writing to sheet:', writeError);
+      throw writeError;
+    }
 
+    console.log('Sending success response');
     return ContentService.createTextOutput(JSON.stringify({ 
       success: true,
       message: 'Data written successfully',

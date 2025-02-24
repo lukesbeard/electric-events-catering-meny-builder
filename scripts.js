@@ -689,7 +689,7 @@ async function sendOrderEmail(event) {
                     clearSavedData();
                     showNotification('Quote request submitted successfully! We\'ll be in touch soon.', 'success');
                     console.log('Form submitted successfully!');
-                    // window.location.href = 'thank-you.html';  // Commented out for testing
+                    window.location.href = 'thank-you.html';  // Re-enable the redirect
                 } else {
                     throw new Error(result.message || 'Failed to submit quote request');
                 }
