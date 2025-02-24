@@ -223,7 +223,7 @@ function updateTotal() {
     const subtotals = Array.from(document.querySelectorAll('.subtotal'))
         .map(element => parseFloat(element.textContent.replace('$', '')) || 0);
     const subtotal = subtotals.reduce((sum, value) => sum + value, 0);
-    const tax = subtotal * 0.085;
+    const tax = subtotal * 0.089;
     const total = subtotal + tax;
     
     const totalPriceWithTax = document.getElementById('totalPriceWithTax');
@@ -231,7 +231,7 @@ function updateTotal() {
     const submitButton = document.getElementById('submitButton');
     
     totalPriceWithTax.textContent = `$${total.toFixed(2)}`;
-    subtotalPrice.textContent = `$${subtotal.toFixed(2)} + 8.5% Tax`;
+    subtotalPrice.textContent = `$${subtotal.toFixed(2)} + 8.9% Tax`;
     
     if (subtotal <= 0) {
         submitButton.disabled = true;
@@ -425,7 +425,7 @@ function formatOrderDetails(orders) {
 function formatEmailMessage(formData) {
     // Calculate tax amounts for display
     const subtotal = parseFloat(formData.subtotal.replace('$', ''));
-    const tax = subtotal * 0.085;
+    const tax = subtotal * 0.089;
     const total = subtotal + tax;
 
     return `
@@ -458,7 +458,7 @@ ${formatOrderDetails(formData.order)}
 Pricing
 -------
 Subtotal: ${formData.subtotal}
-Tax (8.5%): $${tax.toFixed(2)}
+Tax (8.9%): $${tax.toFixed(2)}
 Total: $${total.toFixed(2)}
 
 ${formData.comments ? `Additional Comments
