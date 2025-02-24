@@ -19,13 +19,28 @@ export default async function handler(req, res) {
       redirect: 'follow'
     });
 
+    // First check if the response is JSON
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to save to spreadsheet');
+      }
+      return res.status(200).json(data);
+    } 
+
+    // If not JSON, handle as text
+    const textResponse = await response.text();
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Google response not ok: ${response.status}. Details: ${errorText}`);
+      throw new Error(`Request failed with status ${response.status}`);
     }
 
-    const data = await response.json();
-    res.status(200).json(data);
+    // If we got here with a 200 response but no JSON, assume success
+    return res.status(200).json({ 
+      success: true,
+      message: 'Data submitted successfully'
+    });
+
   } catch (error) {
     console.error('Proxy error:', error);
     res.status(500).json({ 
