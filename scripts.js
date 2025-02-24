@@ -674,7 +674,7 @@ async function sendOrderEmail(event) {
                 emailForm.append('from_name', "Electric Events Catering");
                 emailForm.append('replyto', "brad@electric-hospitality.com");
                 emailForm.append('message', formatEmailMessage(formData));
-                emailForm.append('ccemail', "michael@electric-hospitality.com; brad@electric-hospitality.com");
+                emailForm.append('ccemail', "michael@electric-hospitality.com; brad@electric-hospitality.com; Landon@electric-hospitality.com");
                 emailForm.append('botcheck', '');
                 emailForm.append('autoresponse', 'true');
 
