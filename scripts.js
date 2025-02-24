@@ -688,7 +688,8 @@ async function sendOrderEmail(event) {
             if (result.success) {
                 clearSavedData();
                 showNotification('Quote request submitted successfully! We\'ll be in touch soon.', 'success');
-                window.location.href = 'thank-you.html';  // Uncomment this line
+                // Temporarily comment out the redirect
+                // window.location.href = 'thank-you.html';
                 console.log('Form submitted successfully!');
                 console.log('Sheet result:', sheetResult);
                 console.log('Email result:', result);
