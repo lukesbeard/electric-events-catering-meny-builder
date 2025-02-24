@@ -4,14 +4,19 @@ export default async function handler(req, res) {
   }
 
   try {
-    const response = await fetch('https://script.google.com/macros/s/AKfycbybXEoi0uC7mhwpGUsyuy7jp4i0--3ZQytJ2fqBavnDeUaeaOGaEI38sWVao6eGlkEudA/exec', {
+    // Format the data as URL-encoded form data instead of JSON
+    const formData = new URLSearchParams();
+    for (const [key, value] of Object.entries(req.body)) {
+      formData.append(key, typeof value === 'object' ? JSON.stringify(value) : value);
+    }
+
+    const response = await fetch('https://script.google.com/macros/s/AKfycbxk4H4ldwyfsSRk_g6rAp5FDRmqct2oMihQxrt_kpqMFhJmL6aOJ74a3HfgBQCXLPTIug/exec', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: JSON.stringify(req.body),
-      redirect: 'follow',
-      mode: 'cors'
+      body: formData.toString(),
+      redirect: 'follow'
     });
 
     if (!response.ok) {

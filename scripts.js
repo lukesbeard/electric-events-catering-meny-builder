@@ -645,7 +645,7 @@ async function sendOrderEmail(event) {
                 
                 // Fallback to direct submission
                 try {
-                    const directResponse = await fetch('https://script.google.com/macros/s/AKfycbybXEoi0uC7mhwpGUsyuy7jp4i0--3ZQytJ2fqBavnDeUaeaOGaEI38sWVao6eGlkEudA/exec', {
+                    const directResponse = await fetch('https://script.google.com/macros/s/AKfycbxk4H4ldwyfsSRk_g6rAp5FDRmqct2oMihQxrt_kpqMFhJmL6aOJ74a3HfgBQCXLPTIug/exec', {
                         method: 'POST',
                         mode: 'no-cors',
                         headers: {

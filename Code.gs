@@ -19,11 +19,27 @@ function doPost(e) {
     
     let data;
     try {
-      data = JSON.parse(e.postData.contents);
+      // Handle both JSON and form-encoded data
+      if (e.postData.type === "application/x-www-form-urlencoded") {
+        // Parse form data
+        const formData = e.parameter;
+        // Parse any JSON strings in the form data
+        data = Object.keys(formData).reduce((acc, key) => {
+          try {
+            acc[key] = JSON.parse(formData[key]);
+          } catch (e) {
+            acc[key] = formData[key];
+          }
+          return acc;
+        }, {});
+      } else {
+        // Parse JSON data
+        data = JSON.parse(e.postData.contents);
+      }
       console.log('Parsed data successfully:', data);
     } catch (parseError) {
       console.error('Error parsing request data:', parseError);
-      throw new Error('Invalid JSON data');
+      throw new Error('Invalid data format');
     }
 
     const sheet = SpreadsheetApp.openById(SHEET_ID);
