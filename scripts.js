@@ -584,6 +584,7 @@ async function sendOrderEmail(event) {
     const submitButton = document.getElementById('submitButton');
     const submitSpinner = document.getElementById('submitSpinner');
     const buttonText = submitButton.querySelector('span');
+    let sheetSubmissionSuccessful = false;
 
     try {
         // Show spinner and disable button
@@ -617,22 +618,12 @@ async function sendOrderEmail(event) {
         const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
         if (isDevelopment) {
-            // Log the data that would be sent in development
-            console.log('Development Mode - Form Data:', formData);
-            console.log('This data would be sent to the Google Sheet in production');
-            
-            // Simulate successful response
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
-            
-            clearSavedData();
-            showNotification('Development Mode: Form data logged to console', 'success');
+            // Development code...
+            sheetSubmissionSuccessful = true;
         } else {
-            // Production mode - try CORS-friendly approach
-            const formDataStr = encodeURIComponent(JSON.stringify(formData));
-            const scriptUrl = `https://script.google.com/macros/s/AKfycbybXEoi0uC7mhwpGUsyuy7jp4i0--3ZQytJ2fqBavnDeUaeaOGaEI38sWVao6eGlkEudA/exec?data=${formDataStr}`;
-            
+            // Production mode - try both methods for sheet submission
             try {
-                // First try with regular fetch
+                // First try with proxy
                 const sheetResponse = await fetch('/api/sheet-proxy', {
                     method: 'POST',
                     headers: {
@@ -644,57 +635,63 @@ async function sendOrderEmail(event) {
                 const sheetResult = await sheetResponse.json();
                 console.log('Sheet response:', sheetResult);
 
-                if (!sheetResult.success) {
+                if (sheetResult.success) {
+                    sheetSubmissionSuccessful = true;
+                } else {
                     throw new Error(sheetResult.error || 'Failed to save to spreadsheet');
                 }
-            } catch (corsError) {
-                console.log('CORS error, trying no-cors mode:', corsError);
+            } catch (proxyError) {
+                console.log('Proxy error, trying direct submission:', proxyError);
                 
-                // Fallback to no-cors mode
-                const noCorsFetch = await fetch(scriptUrl, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: {
-                        'Content-Type': 'text/plain',
-                    },
-                    body: JSON.stringify(formData)
-                });
-
-                // Since no-cors mode doesn't give us response data,
-                // we'll assume success if it doesn't throw
-                console.log('No-cors request completed');
+                // Fallback to direct submission
+                try {
+                    const directResponse = await fetch('https://script.google.com/macros/s/AKfycbybXEoi0uC7mhwpGUsyuy7jp4i0--3ZQytJ2fqBavnDeUaeaOGaEI38sWVao6eGlkEudA/exec', {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(formData)
+                    });
+                    
+                    console.log('Direct submission completed');
+                    sheetSubmissionSuccessful = true;
+                } catch (directError) {
+                    console.error('Direct submission failed:', directError);
+                    throw new Error('Failed to save to spreadsheet after both attempts');
+                }
             }
 
-            // Continue with email sending
-            const emailForm = new FormData();
-            emailForm.append('access_key', 'f890e702-fef2-4b76-84bf-0e5bf3262032');
-            emailForm.append('subject', `Electric Events Catering Quote - ${formData.contact.name} - Party of ${formData.partySize}`);
-            emailForm.append('name', formData.contact.name);
-            emailForm.append('email', formData.contact.email);
-            emailForm.append('from_name', "Electric Events Catering");
-            emailForm.append('replyto', "brad@electric-hospitality.com");
-            emailForm.append('message', formatEmailMessage(formData));
-            emailForm.append('ccemail', "michael@electric-hospitality.com; brad@electric-hospitality.com");
-            emailForm.append('botcheck', '');
-            emailForm.append('autoresponse', 'true');
+            // Only proceed with email if sheet submission was successful
+            if (sheetSubmissionSuccessful) {
+                // Create FormData object for email
+                const emailForm = new FormData();
+                emailForm.append('access_key', 'f890e702-fef2-4b76-84bf-0e5bf3262032');
+                emailForm.append('subject', `Electric Events Catering Quote - ${formData.contact.name} - Party of ${formData.partySize}`);
+                emailForm.append('name', formData.contact.name);
+                emailForm.append('email', formData.contact.email);
+                emailForm.append('from_name', "Electric Events Catering");
+                emailForm.append('replyto', "brad@electric-hospitality.com");
+                emailForm.append('message', formatEmailMessage(formData));
+                emailForm.append('ccemail', "michael@electric-hospitality.com; brad@electric-hospitality.com");
+                emailForm.append('botcheck', '');
+                emailForm.append('autoresponse', 'true');
 
-            const emailResponse = await fetch('https://api.web3forms.com/submit', {
-                method: 'POST',
-                body: emailForm
-            });
+                const emailResponse = await fetch('https://api.web3forms.com/submit', {
+                    method: 'POST',
+                    body: emailForm
+                });
 
-            const result = await emailResponse.json();
-            
-            if (result.success) {
-                clearSavedData();
-                showNotification('Quote request submitted successfully! We\'ll be in touch soon.', 'success');
-                // Temporarily comment out the redirect
-                // window.location.href = 'thank-you.html';
-                console.log('Form submitted successfully!');
-                console.log('Sheet result:', sheetResult);
-                console.log('Email result:', result);
-            } else {
-                throw new Error(result.message || 'Failed to submit quote request');
+                const result = await emailResponse.json();
+                
+                if (result.success) {
+                    clearSavedData();
+                    showNotification('Quote request submitted successfully! We\'ll be in touch soon.', 'success');
+                    console.log('Form submitted successfully!');
+                    // window.location.href = 'thank-you.html';  // Commented out for testing
+                } else {
+                    throw new Error(result.message || 'Failed to submit quote request');
+                }
             }
         }
     } catch (error) {
