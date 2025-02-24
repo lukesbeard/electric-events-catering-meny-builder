@@ -591,12 +591,6 @@ async function sendOrderEmail(event) {
         submitSpinner.classList.remove('hidden');
         buttonText.textContent = 'Sending...';
 
-        // Get subtotal and total with tax
-        const subtotalElement = document.getElementById('subtotalPrice');
-        const totalElement = document.getElementById('totalPriceWithTax');
-        const subtotal = subtotalElement.textContent.split(' + ')[0];
-        const total = totalElement.textContent;
-
         // Get all form data
         const formData = {
             source: document.body.classList.contains('muchacho-menu') ? 'Muchacho' : 'Ladybird',
@@ -614,59 +608,77 @@ async function sendOrderEmail(event) {
             },
             partySize: getPartySize(),
             order: getOrderDetails(),
-            subtotal: subtotal,
-            total: total,
+            subtotal: document.getElementById('subtotalPrice').textContent.split(' + ')[0],
+            total: document.getElementById('totalPriceWithTax').textContent,
             comments: document.getElementById('comments').value
         };
 
-        // Format the message for email
-        const formattedMessage = formatEmailMessage(formData);
+        // Check if we're in development
+        const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
-        // Send to Google Sheet - Update with the provided web app URL
-        const sheetResponse = await fetch('https://script.google.com/a/macros/beard.co/s/AKfycbzP0OC0By0v5uypGMfBQnpcelYaPmIUkX7YwRzmTfX8sr3Xmkpap7BQaJ0fS4W1RXbO1Q/exec', {
-            method: 'POST',
-            body: JSON.stringify(formData),
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (!sheetResponse.ok) {
-            throw new Error('Failed to save to spreadsheet');
-        }
-
-        // Create FormData object for email
-        const emailForm = new FormData();
-        emailForm.append('access_key', 'f890e702-fef2-4b76-84bf-0e5bf3262032');
-        emailForm.append('subject', `Electric Events Catering Quote - ${formData.contact.name} - Party of ${formData.partySize}`);
-        emailForm.append('name', formData.contact.name);
-        emailForm.append('email', formData.contact.email);
-        emailForm.append('from_name', "Electric Events Catering");
-        emailForm.append('replyto', "brad@electric-hospitality.com");
-        emailForm.append('message', formattedMessage);
-        emailForm.append('ccemail', "michael@electric-hospitality.com; brad@electric-hospitality.com");
-        emailForm.append('botcheck', '');
-        emailForm.append('autoresponse', 'true');
-
-        const emailResponse = await fetch('https://api.web3forms.com/submit', {
-            method: 'POST',
-            body: emailForm
-        });
-
-        const result = await emailResponse.json();
-        
-        if (result.success) {
+        if (isDevelopment) {
+            // Log the data that would be sent in development
+            console.log('Development Mode - Form Data:', formData);
+            console.log('This data would be sent to the Google Sheet in production');
+            
+            // Simulate successful response
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
+            
             clearSavedData();
-            showNotification('Quote request submitted successfully! We\'ll be in touch soon.', 'success');
-            window.location.href = 'thank-you.html';
+            showNotification('Development Mode: Form data logged to console', 'success');
         } else {
-            throw new Error(result.message || 'Failed to submit quote request');
+            // Production mode - actually send the data
+            const sheetResponse = await fetch('https://script.google.com/macros/s/AKfycbzP0OC0By0v5uypGMfBQnpcelYaPmIUkX7YwRzmTfX8sr3Xmkpap7BQaJ0fS4W1RXbO1Q/exec', {
+                method: 'POST',
+                mode: 'cors',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            });
+
+            const sheetResult = await sheetResponse.json();
+            console.log('Sheet response:', sheetResult);
+
+            if (!sheetResult.success) {
+                throw new Error(sheetResult.error || 'Failed to save to spreadsheet');
+            }
+
+            // Create FormData object for email
+            const emailForm = new FormData();
+            emailForm.append('access_key', 'f890e702-fef2-4b76-84bf-0e5bf3262032');
+            emailForm.append('subject', `Electric Events Catering Quote - ${formData.contact.name} - Party of ${formData.partySize}`);
+            emailForm.append('name', formData.contact.name);
+            emailForm.append('email', formData.contact.email);
+            emailForm.append('from_name', "Electric Events Catering");
+            emailForm.append('replyto', "brad@electric-hospitality.com");
+            emailForm.append('message', formatEmailMessage(formData));
+            emailForm.append('ccemail', "michael@electric-hospitality.com; brad@electric-hospitality.com");
+            emailForm.append('botcheck', '');
+            emailForm.append('autoresponse', 'true');
+
+            const emailResponse = await fetch('https://api.web3forms.com/submit', {
+                method: 'POST',
+                body: emailForm
+            });
+
+            const result = await emailResponse.json();
+            
+            if (result.success) {
+                clearSavedData();
+                showNotification('Quote request submitted successfully! We\'ll be in touch soon.', 'success');
+                window.location.href = 'thank-you.html';  // Uncomment this line
+                console.log('Form submitted successfully!');
+                console.log('Sheet result:', sheetResult);
+                console.log('Email result:', result);
+            } else {
+                throw new Error(result.message || 'Failed to submit quote request');
+            }
         }
     } catch (error) {
         console.error('Failed to send form:', error);
         showNotification('Failed to submit quote request. Please try again.', 'error');
     } finally {
-        // Reset button state
         submitButton.disabled = false;
         submitSpinner.classList.add('hidden');
         buttonText.textContent = 'Get Quote';
