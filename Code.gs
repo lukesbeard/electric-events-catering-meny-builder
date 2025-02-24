@@ -5,11 +5,20 @@ function doPost(e) {
   // Add logging to debug
   console.log('Received POST request:', e.postData.contents);
   
+  // Update CORS headers to specifically allow the production domain
   const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST',
-    'Access-Control-Allow-Headers': 'Content-Type'
+    'Access-Control-Allow-Origin': 'https://catering.electriceventsatl.com',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Max-Age': '86400'
   };
+
+  // Handle preflight requests
+  if (e.method === 'OPTIONS') {
+    return ContentService.createTextOutput('')
+      .setMimeType(ContentService.MimeType.TEXT)
+      .setHeaders(headers);
+  }
 
   try {
     const sheet = SpreadsheetApp.openById(SHEET_ID);
@@ -71,12 +80,12 @@ function formatOrderDetails(orders) {
   ).join('\n');
 }
 
-// Add a doOptions function to handle CORS preflight requests
 function doOptions(e) {
   const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST',
-    'Access-Control-Allow-Headers': 'Content-Type'
+    'Access-Control-Allow-Origin': 'https://catering.electriceventsatl.com',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Max-Age': '86400'
   };
   
   return ContentService.createTextOutput('')

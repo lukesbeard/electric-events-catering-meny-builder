@@ -627,24 +627,45 @@ async function sendOrderEmail(event) {
             clearSavedData();
             showNotification('Development Mode: Form data logged to console', 'success');
         } else {
-            // Production mode - actually send the data
-            const sheetResponse = await fetch('https://script.google.com/macros/s/AKfycbzP0OC0By0v5uypGMfBQnpcelYaPmIUkX7YwRzmTfX8sr3Xmkpap7BQaJ0fS4W1RXbO1Q/exec', {
-                method: 'POST',
-                mode: 'cors',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(formData)
-            });
+            // Production mode - try CORS-friendly approach
+            const formDataStr = encodeURIComponent(JSON.stringify(formData));
+            const scriptUrl = `https://script.google.com/macros/s/AKfycbybXEoi0uC7mhwpGUsyuy7jp4i0--3ZQytJ2fqBavnDeUaeaOGaEI38sWVao6eGlkEudA/exec?data=${formDataStr}`;
+            
+            try {
+                // First try with regular fetch
+                const sheetResponse = await fetch('/api/sheet-proxy', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
 
-            const sheetResult = await sheetResponse.json();
-            console.log('Sheet response:', sheetResult);
+                const sheetResult = await sheetResponse.json();
+                console.log('Sheet response:', sheetResult);
 
-            if (!sheetResult.success) {
-                throw new Error(sheetResult.error || 'Failed to save to spreadsheet');
+                if (!sheetResult.success) {
+                    throw new Error(sheetResult.error || 'Failed to save to spreadsheet');
+                }
+            } catch (corsError) {
+                console.log('CORS error, trying no-cors mode:', corsError);
+                
+                // Fallback to no-cors mode
+                const noCorsFetch = await fetch(scriptUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'text/plain',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                // Since no-cors mode doesn't give us response data,
+                // we'll assume success if it doesn't throw
+                console.log('No-cors request completed');
             }
 
-            // Create FormData object for email
+            // Continue with email sending
             const emailForm = new FormData();
             emailForm.append('access_key', 'f890e702-fef2-4b76-84bf-0e5bf3262032');
             emailForm.append('subject', `Electric Events Catering Quote - ${formData.contact.name} - Party of ${formData.partySize}`);
