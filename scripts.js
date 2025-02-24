@@ -599,6 +599,7 @@ async function sendOrderEmail(event) {
 
         // Get all form data
         const formData = {
+            source: document.body.classList.contains('muchacho-menu') ? 'Muchacho' : 'Ladybird',
             contact: {
                 name: document.getElementById('contactName').value,
                 email: document.getElementById('contactEmail').value,
@@ -618,28 +619,41 @@ async function sendOrderEmail(event) {
             comments: document.getElementById('comments').value
         };
 
-        // Format the message
+        // Format the message for email
         const formattedMessage = formatEmailMessage(formData);
 
-        // Create FormData object
-        const form = new FormData();
-        form.append('access_key', 'f890e702-fef2-4b76-84bf-0e5bf3262032');
-        form.append('subject', `Electric Events Catering Quote - ${formData.contact.name} - Party of ${formData.partySize}`);
-        form.append('name', formData.contact.name);
-        form.append('email', formData.contact.email);
-        form.append('from_name', "Electric Events Catering");
-        form.append('replyto', "brad@electric-hospitality.com");
-        form.append('message', formattedMessage);
-        form.append('ccemail', "michael@electric-hospitality.com; brad@electric-hospitality.com");
-        form.append('botcheck', '');
-        form.append('autoresponse', 'true');
-
-        const response = await fetch('https://api.web3forms.com/submit', {
+        // Send to Google Sheet - Update with the provided web app URL
+        const sheetResponse = await fetch('https://script.google.com/a/macros/beard.co/s/AKfycbzP0OC0By0v5uypGMfBQnpcelYaPmIUkX7YwRzmTfX8sr3Xmkpap7BQaJ0fS4W1RXbO1Q/exec', {
             method: 'POST',
-            body: form
+            body: JSON.stringify(formData),
+            headers: {
+                'Content-Type': 'application/json'
+            }
         });
 
-        const result = await response.json();
+        if (!sheetResponse.ok) {
+            throw new Error('Failed to save to spreadsheet');
+        }
+
+        // Create FormData object for email
+        const emailForm = new FormData();
+        emailForm.append('access_key', 'f890e702-fef2-4b76-84bf-0e5bf3262032');
+        emailForm.append('subject', `Electric Events Catering Quote - ${formData.contact.name} - Party of ${formData.partySize}`);
+        emailForm.append('name', formData.contact.name);
+        emailForm.append('email', formData.contact.email);
+        emailForm.append('from_name', "Electric Events Catering");
+        emailForm.append('replyto', "brad@electric-hospitality.com");
+        emailForm.append('message', formattedMessage);
+        emailForm.append('ccemail', "michael@electric-hospitality.com; brad@electric-hospitality.com");
+        emailForm.append('botcheck', '');
+        emailForm.append('autoresponse', 'true');
+
+        const emailResponse = await fetch('https://api.web3forms.com/submit', {
+            method: 'POST',
+            body: emailForm
+        });
+
+        const result = await emailResponse.json();
         
         if (result.success) {
             clearSavedData();
@@ -649,7 +663,7 @@ async function sendOrderEmail(event) {
             throw new Error(result.message || 'Failed to submit quote request');
         }
     } catch (error) {
-        console.error('Failed to send email:', error);
+        console.error('Failed to send form:', error);
         showNotification('Failed to submit quote request. Please try again.', 'error');
     } finally {
         // Reset button state
