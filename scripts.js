@@ -651,7 +651,8 @@ async function sendOrderEmail(event) {
                         headers: {
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify(formData)
+                        body: JSON.stringify(formData),
+                        redirect: 'follow'
                     });
                     
                     console.log('Direct submission completed');

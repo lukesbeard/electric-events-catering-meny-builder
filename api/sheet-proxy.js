@@ -9,11 +9,14 @@ export default async function handler(req, res) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(req.body)
+      body: JSON.stringify(req.body),
+      redirect: 'follow',
+      mode: 'cors'
     });
 
     if (!response.ok) {
-      throw new Error(`Google response not ok: ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(`Google response not ok: ${response.status}. Details: ${errorText}`);
     }
 
     const data = await response.json();
@@ -22,7 +25,8 @@ export default async function handler(req, res) {
     console.error('Proxy error:', error);
     res.status(500).json({ 
       error: 'Failed to proxy request',
-      details: error.message 
+      details: error.message,
+      stack: error.stack
     });
   }
 } 

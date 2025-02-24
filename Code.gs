@@ -5,22 +5,27 @@ function doPost(e) {
   // Add logging to debug
   console.log('Received POST request:', e.postData.contents);
   
-  // Update CORS headers to specifically allow the production domain
   const headers = {
-    'Access-Control-Allow-Origin': 'https://catering.electriceventsatl.com',
+    'Access-Control-Allow-Origin': '*', // Change back to * for testing
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Max-Age': '86400'
   };
 
-  // Handle preflight requests
-  if (e.method === 'OPTIONS') {
-    return ContentService.createTextOutput('')
-      .setMimeType(ContentService.MimeType.TEXT)
-      .setHeaders(headers);
-  }
-
   try {
+    // Log the request details
+    console.log('Request method:', e.method);
+    console.log('Request headers:', e.headers);
+    
+    let data;
+    try {
+      data = JSON.parse(e.postData.contents);
+      console.log('Parsed data successfully:', data);
+    } catch (parseError) {
+      console.error('Error parsing request data:', parseError);
+      throw new Error('Invalid JSON data');
+    }
+
     const sheet = SpreadsheetApp.openById(SHEET_ID);
     if (!sheet) {
       throw new Error('Could not open spreadsheet');
@@ -30,9 +35,6 @@ function doPost(e) {
     if (!activeSheet) {
       throw new Error('Could not find Sheet1');
     }
-
-    const data = JSON.parse(e.postData.contents);
-    console.log('Parsed data:', data);
 
     // Format the data for the spreadsheet
     const rowData = [
@@ -58,7 +60,8 @@ function doPost(e) {
 
     return ContentService.createTextOutput(JSON.stringify({ 
       success: true,
-      message: 'Data written successfully' 
+      message: 'Data written successfully',
+      timestamp: new Date().toISOString()
     }))
     .setMimeType(ContentService.MimeType.JSON)
     .setHeaders(headers);
@@ -67,7 +70,8 @@ function doPost(e) {
     console.error('Error in doPost:', error);
     return ContentService.createTextOutput(JSON.stringify({ 
       success: false,
-      error: error.message 
+      error: error.message,
+      timestamp: new Date().toISOString()
     }))
     .setMimeType(ContentService.MimeType.JSON)
     .setHeaders(headers);
@@ -82,7 +86,7 @@ function formatOrderDetails(orders) {
 
 function doOptions(e) {
   const headers = {
-    'Access-Control-Allow-Origin': 'https://catering.electriceventsatl.com',
+    'Access-Control-Allow-Origin': '*', // Match the main handler's setting
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Max-Age': '86400'
