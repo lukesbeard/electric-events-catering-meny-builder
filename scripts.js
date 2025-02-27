@@ -29,6 +29,23 @@ const SHEET_CONFIGS = {
                 title: 'A la Carte & Sides'
             }
         }
+    },
+    dugout: {
+        id: '1f0r1MByzLidkOYt2tVqgYG1snOQbuIzUWpw86hbO7VA',
+        sheets: {
+            mains: {
+                name: 'Mains!A2:D14',
+                title: 'Packages'
+            },
+            sides: {
+                name: 'Sides!A2:D25',
+                title: 'A la Carte & Sides'
+            },
+            deserts: {
+                name: 'Deserts!A2:D6',
+                title: 'Desserts'
+            }
+        }
     }
 };
 
@@ -36,8 +53,13 @@ const API_KEY = 'AIzaSyAILUy99UCHJ6eV341T33UR4Hkj1JlCuNE';
 
 // Determine which configuration to use based on the page
 function getCurrentConfig() {
-    const isMuchacho = document.body.classList.contains('muchacho-menu');
-    return isMuchacho ? SHEET_CONFIGS.muchacho : SHEET_CONFIGS.ladybird;
+    if (document.body.classList.contains('muchacho-menu')) {
+        return SHEET_CONFIGS.muchacho;
+    } else if (document.body.classList.contains('dugout-menu') || window.location.pathname.includes('the-dug-out-catering')) {
+        return SHEET_CONFIGS.dugout;
+    } else {
+        return SHEET_CONFIGS.ladybird;
+    }
 }
 
 // Fetch data from Google Sheets
@@ -295,10 +317,30 @@ function initializeEventListeners() {
     dateInput.value = today;
 }
 
-// Enhance the existing DOMContentLoaded handler
+// Update the DOMContentLoaded event listener
 document.addEventListener('DOMContentLoaded', () => {
     initializeMenuTables();
     initializeEventListeners();
+    addRequiredFieldsIndicators();
+    initializeAutoSave();
+    restoreFormProgress();
+    
+    // Remove duplicate event listener and ensure only one exists
+    const form = document.getElementById('orderForm');
+    
+    // Remove any existing event listeners (not directly possible, but we can replace the element)
+    const newForm = form.cloneNode(true);
+    form.parentNode.replaceChild(newForm, form);
+    
+    // Add the event listener to the new form
+    newForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        console.log('Form submitted, processing...');
+        sendOrderEmail(event);
+    });
+    
+    console.log('Current config:', getCurrentConfig().id);
+    console.log('Form submission handler attached');
 });
 
 // Add a loading spinner function
@@ -573,13 +615,17 @@ function clearSavedData() {
     localStorage.removeItem('cateringFormData');
 }
 
-// Update the sendOrderEmail function
+// Update the sendOrderEmail function to add more logging
 async function sendOrderEmail(event) {
+    console.log('sendOrderEmail function called');
     event.preventDefault();
     
     if (!validateContactDetails()) {
+        console.log('Form validation failed');
         return;
     }
+    
+    console.log('Form validation passed, proceeding with submission');
 
     const submitButton = document.getElementById('submitButton');
     const submitSpinner = document.getElementById('submitSpinner');
@@ -591,10 +637,13 @@ async function sendOrderEmail(event) {
         submitButton.disabled = true;
         submitSpinner.classList.remove('hidden');
         buttonText.textContent = 'Sending...';
+        
+        console.log('Preparing form data for submission');
 
         // Get all form data
         const formData = {
-            source: document.body.classList.contains('muchacho-menu') ? 'Muchacho' : 'Ladybird',
+            source: document.body.classList.contains('muchacho-menu') ? 'Muchacho' : 
+                   (document.body.classList.contains('dugout-menu') ? 'The Dug-Out' : 'Ladybird'),
             contact: {
                 name: document.getElementById('contactName').value,
                 email: document.getElementById('contactEmail').value,
@@ -613,16 +662,22 @@ async function sendOrderEmail(event) {
             total: document.getElementById('totalPriceWithTax').textContent,
             comments: document.getElementById('comments').value
         };
+        
+        console.log('Form data prepared:', formData);
 
         // Check if we're in development
         const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        
+        console.log('Environment:', isDevelopment ? 'Development' : 'Production');
 
         if (isDevelopment) {
             // Development code...
+            console.log('Development mode - skipping actual submission');
             sheetSubmissionSuccessful = true;
         } else {
             // Production mode - try both methods for sheet submission
             try {
+                console.log('Attempting to submit to sheet via proxy');
                 // First try with proxy
                 const sheetResponse = await fetch('/api/sheet-proxy', {
                     method: 'POST',
@@ -645,6 +700,7 @@ async function sendOrderEmail(event) {
                 
                 // Fallback to direct submission
                 try {
+                    console.log('Attempting direct submission to Google Script');
                     const directResponse = await fetch('https://script.google.com/macros/s/AKfycbxk4H4ldwyfsSRk_g6rAp5FDRmqct2oMihQxrt_kpqMFhJmL6aOJ74a3HfgBQCXLPTIug/exec', {
                         method: 'POST',
                         mode: 'no-cors',
@@ -665,6 +721,7 @@ async function sendOrderEmail(event) {
 
             // Only proceed with email if sheet submission was successful
             if (sheetSubmissionSuccessful) {
+                console.log('Sheet submission successful, proceeding with email');
                 // Create FormData object for email
                 const emailForm = new FormData();
                 emailForm.append('access_key', 'f890e702-fef2-4b76-84bf-0e5bf3262032');
@@ -678,17 +735,19 @@ async function sendOrderEmail(event) {
                 emailForm.append('botcheck', '');
                 emailForm.append('autoresponse', 'true');
 
+                console.log('Sending email via Web3Forms');
                 const emailResponse = await fetch('https://api.web3forms.com/submit', {
                     method: 'POST',
                     body: emailForm
                 });
 
                 const result = await emailResponse.json();
+                console.log('Email submission result:', result);
                 
                 if (result.success) {
                     clearSavedData();
                     showNotification('Quote request submitted successfully! We\'ll be in touch soon.', 'success');
-                    console.log('Form submitted successfully!');
+                    console.log('Form submitted successfully! Redirecting to thank-you page');
                     window.location.href = 'thank-you.html';  // Re-enable the redirect
                 } else {
                     throw new Error(result.message || 'Failed to submit quote request');
@@ -704,14 +763,6 @@ async function sendOrderEmail(event) {
         buttonText.textContent = 'Get Quote';
     }
 }
-
-// Add event listener for form submission
-document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('orderForm');
-    form.addEventListener('submit', sendOrderEmail);
-    
-    // ... rest of your existing initialization code ...
-});
 
 // Update the showNotification function
 function showNotification(message, type) {
@@ -779,16 +830,4 @@ function initializeAutoSave() {
     document.addEventListener('change', (e) => {
         saveFormProgress();
     });
-}
-
-// Update the DOMContentLoaded event listener
-document.addEventListener('DOMContentLoaded', () => {
-    initializeMenuTables();
-    initializeEventListeners();
-    addRequiredFieldsIndicators();
-    initializeAutoSave();
-    restoreFormProgress();
-    
-    const form = document.getElementById('orderForm');
-    form.addEventListener('submit', sendOrderEmail);
-}); 
+} 
