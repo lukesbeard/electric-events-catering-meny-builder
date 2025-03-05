@@ -440,6 +440,29 @@ function validateContactDetails() {
         element.classList.remove('border-red-500');
     }
 
+    // Validate that the selected date/time is at least 72 hours in the future
+    const dropoffDate = document.getElementById('dropoffDate').value;
+    const dropoffTime = document.getElementById('dropoffTime').value;
+    
+    if (dropoffDate && dropoffTime) {
+        // Combine date and time to create a timestamp
+        const dropoffDateTime = new Date(`${dropoffDate}T${dropoffTime}`);
+        const currentDateTime = new Date();
+        
+        // Calculate difference in milliseconds
+        const differenceInMs = dropoffDateTime - currentDateTime;
+        const minimumDifferenceInMs = 72 * 60 * 60 * 1000; // 72 hours in milliseconds
+        
+        if (differenceInMs < minimumDifferenceInMs) {
+            invalidFields.push('Dropoff Date/Time (must be at least 72 hours from now)');
+            document.getElementById('dropoffDate').classList.add('border-red-500');
+            document.getElementById('dropoffTime').classList.add('border-red-500');
+        } else {
+            document.getElementById('dropoffDate').classList.remove('border-red-500');
+            document.getElementById('dropoffTime').classList.remove('border-red-500');
+        }
+    }
+
     if (missingFields.length > 0 || invalidFields.length > 0) {
         let errorMessage = '';
         
@@ -780,9 +803,10 @@ async function sendOrderEmail(event) {
 // Update the showNotification function
 function showNotification(message, type) {
     const notification = document.createElement('div');
-    notification.className = `fixed top-4 right-4 p-4 rounded-lg ${
+    notification.className = `validation fixed top-4 right-4 p-4 rounded-lg ${
         type === 'success' ? 'bg-green-900' : 'bg-red-900'
     } text-white max-w-md whitespace-pre-line z-[33333]`; // Added z-index
+    notification.style.color = 'white !important'; // Force white text with !important
     notification.textContent = message;
     document.body.appendChild(notification);
     setTimeout(() => notification.remove(), 7000);
