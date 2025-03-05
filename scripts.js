@@ -35,15 +35,11 @@ const SHEET_CONFIGS = {
         sheets: {
             mains: {
                 name: 'Mains!A2:D14',
-                title: 'Packages'
+                title: 'The Lineup'
             },
             sides: {
                 name: 'Sides!A2:D25',
-                title: 'A la Carte & Sides'
-            },
-            deserts: {
-                name: 'Deserts!A2:D6',
-                title: 'Desserts'
+                title: 'Extra Innings'
             }
         }
     }
@@ -82,7 +78,10 @@ async function fetchSheetData(sheetConfig) {
         return parsedData;
     } catch (error) {
         console.error(`Error fetching ${sheetConfig.title} data:`, error);
-        showError(`Failed to load ${sheetConfig.title.toLowerCase()} menu items`);
+        // Don't show errors for optional menus on pages that don't need them
+        if (!(currentConfig === SHEET_CONFIGS.dugout && sheetConfig.title.toLowerCase() === 'deserts')) {
+            showError(`Failed to load ${sheetConfig.title.toLowerCase()} menu items`);
+        }
         return [];
     }
 }
@@ -120,8 +119,14 @@ function parseSheetData(rows) {
     return items;
 }
 
-// Error handling UI
+// Error handling UI - Update with condition to prevent showing errors for dugout desserts
 function showError(message) {
+    // Skip showing errors for deserts on The Dug-Out page
+    if (getCurrentConfig() === SHEET_CONFIGS.dugout && message.toLowerCase().includes('desserts')) {
+        console.log('Suppressing error message for The Dug-Out desserts:', message);
+        return;
+    }
+    
     const errorDiv = document.createElement('div');
     errorDiv.className = 'bg-red-900 border border-red-600 text-white px-4 py-3 rounded relative mb-4';
     errorDiv.innerHTML = `
@@ -166,11 +171,17 @@ async function initializeMenuTables() {
 
         // Build array of promises based on available sheets
         Object.entries(currentConfig.sheets).forEach(([key, sheet]) => {
-            promises.push(
-                fetchSheetData(sheet).then(data => {
-                    menuData[key] = data;
-                })
-            );
+            const menuId = `${key}Menu`;
+            // Only fetch data if we have a corresponding element on the page
+            if (document.getElementById(menuId)) {
+                promises.push(
+                    fetchSheetData(sheet).then(data => {
+                        menuData[key] = data;
+                    })
+                );
+            } else {
+                console.log(`Skipping ${sheet.title} - no element with ID ${menuId} found on page`);
+            }
         });
 
         await Promise.all(promises);
@@ -178,7 +189,9 @@ async function initializeMenuTables() {
         // Initialize each menu section that exists in the current page
         Object.entries(currentConfig.sheets).forEach(([key, sheet]) => {
             const menuId = `${key}Menu`;
-            if (document.getElementById(menuId)) {
+            const menuElement = document.getElementById(menuId);
+            // Only initialize if the menu element exists in the page and we have data for it
+            if (menuElement && menuData[key]) {
                 initializeTable(key + 'Table', menuData[key]);
             }
         });
