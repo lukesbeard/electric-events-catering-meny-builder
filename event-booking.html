@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electric Events Atlanta - Event Booking</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Date picker dependency -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <style>
+        /* Custom styles to complement Tailwind */
+        .form-section {
+            transition: all 0.3s ease;
+        }
+        .required-field::after {
+            content: '*';
+            color: #EF4444;
+            margin-left: 3px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- Header Section -->
+    <header class="bg-black text-white py-6">
+        <div class="container mx-auto px-4 md:px-6 lg:px-8">
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl font-bold">Electric Events Atlanta</h1>
+                <a href="https://www.electriceventsatl.com" class="text-sm hover:underline">Return to Website</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Form Section -->
+    <main class="container mx-auto px-4 md:px-6 lg:px-8 py-10">
+        <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
+            <!-- Form Header -->
+            <div class="bg-gray-800 text-white p-6">
+                <h2 class="text-2xl font-bold mb-2">Event Booking Request</h2>
+                <p class="text-gray-300">Fill out the form below to request a booking for your event</p>
+            </div>
+
+            <!-- Progress Indicator -->
+            <div class="bg-gray-100 px-6 py-4 flex justify-between">
+                <div class="flex items-center">
+                    <div id="step-1-indicator" class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold">1</div>
+                    <span class="ml-2 font-medium">Contact Info</span>
+                </div>
+                <div class="flex items-center">
+                    <div id="step-2-indicator" class="w-8 h-8 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center font-semibold">2</div>
+                    <span class="ml-2 font-medium text-gray-600">Event Details</span>
+                </div>
+                <div class="flex items-center">
+                    <div id="step-3-indicator" class="w-8 h-8 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center font-semibold">3</div>
+                    <span class="ml-2 font-medium text-gray-600">Services & Preferences</span>
+                </div>
+            </div>
+
+            <!-- Form -->
+            <form id="booking-form" class="p-6">
+                <!-- Step 1: Contact Information -->
+                <div id="step-1" class="form-section">
+                    <h3 class="text-xl font-semibold mb-4 pb-2 border-b border-gray-200">Contact Information</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <!-- Name Fields -->
+                        <div>
+                            <label for="first-name" class="block text-sm font-medium text-gray-700 mb-1 required-field">First Name</label>
+                            <input type="text" id="first-name" name="first-name" required 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label for="last-name" class="block text-sm font-medium text-gray-700 mb-1 required-field">Last Name</label>
+                            <input type="text" id="last-name" name="last-name" required 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        
+                        <!-- Contact Fields -->
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-gray-700 mb-1 required-field">Email Address</label>
+                            <input type="email" id="email" name="email" required 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label for="phone" class="block text-sm font-medium text-gray-700 mb-1 required-field">Phone Number</label>
+                            <input type="tel" id="phone" name="phone" required 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="(123) 456-7890">
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="company" class="block text-sm font-medium text-gray-700 mb-1">Company/Organization (if applicable)</label>
+                        <input type="text" id="company" name="company" 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    
+                    <div class="mb-6">
+                        <label for="address" class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                        <input type="text" id="address" name="address" 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
+                            placeholder="Street Address">
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <input type="text" id="city" name="city" placeholder="City" 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <input type="text" id="state" name="state" placeholder="State" 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <input type="text" id="zip" name="zip" placeholder="ZIP Code" 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">How did you hear about us?</label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div class="flex items-start">
+                                <input type="checkbox" id="heard-search" name="heard-about[]" value="search" 
+                                    class="h-5 w-5 border-gray-300 rounded text-blue-600 focus:ring-blue-500 mt-0.5">
+                                <label for="heard-search" class="ml-3 text-sm text-gray-700">
+                                    Search Engine
+                                </label>
+                            </div>
+                            
+                            <div class="flex items-start">
+                                <input type="checkbox" id="heard-social" name="heard-about[]" value="social" 
+                                    class="h-5 w-5 border-gray-300 rounded text-blue-600 focus:ring-blue-500 mt-0.5">
+                                <label for="heard-social" class="ml-3 text-sm text-gray-700">
+                                    Social Media
+                                </label>
+                            </div>
+                            
+                            <div class="flex items-start">
+                                <input type="checkbox" id="heard-referral" name="heard-about[]" value="referral" 
+                                    class="h-5 w-5 border-gray-300 rounded text-blue-600 focus:ring-blue-500 mt-0.5">
+                                <label for="heard-referral" class="ml-3 text-sm text-gray-700">
+                                    Friend/Family Referral
+                                </label>
+                            </div>
+                            
+                            <div class="flex items-start">
+                                <input type="checkbox" id="heard-event" name="heard-about[]" value="event" 
+                                    class="h-5 w-5 border-gray-300 rounded text-blue-600 focus:ring-blue-500 mt-0.5">
+                                <label for="heard-event" class="ml-3 text-sm text-gray-700">
+                                    Past Event
+                                </label>
+                            </div>
+                            
+                            <div class="flex items-start">
+                                <input type="checkbox" id="heard-website" name="heard-about[]" value="website" 
+                                    class="h-5 w-5 border-gray-300 rounded text-blue-600 focus:ring-blue-500 mt-0.5">
+                                <label for="heard-website" class="ml-3 text-sm text-gray-700">
+                                    Our Website
+                                </label>
+                            </div>
+                            
+                            <div class="flex items-start">
+                                <input type="checkbox" id="heard-other" name="heard-about[]" value="other" 
+                                    class="h-5 w-5 border-gray-300 rounded text-blue-600 focus:ring-blue-500 mt-0.5">
+                                <label for="heard-other" class="ml-3 text-sm text-gray-700">
+                                    Other
+                                </label>
+                            </div>
+                        </div>
+                        <div id="heard-other-container" class="hidden mt-3">
+                            <label for="heard-other-text" class="block text-sm font-medium text-gray-700 mb-1">Please specify</label>
+                            <input type="text" id="heard-other-text" name="heard-other-text" 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end mt-8">
+                        <button type="button" id="step-1-next" 
+                            class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                            Next: Event Details →
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Event Details -->
+                <div id="step-2" class="form-section hidden">
+                    <h3 class="text-xl font-semibold mb-4 pb-2 border-b border-gray-200">Event Details</h3>
+                    
+                    <!-- Event Type Field - Full Width -->
+                    <div class="mb-6">
+                        <label for="event-type" class="block text-sm font-medium text-gray-700 mb-1 required-field">Event Type</label>
+                        <select id="event-type" name="event-type" required
+                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Select event type...</option>
+                            <option value="wedding">Wedding</option>
+                            <option value="corporate">Corporate Event</option>
+                            <option value="social">Social Gathering</option>
+                            <option value="birthday">Birthday Party</option>
+                            <option value="holiday">Holiday Party</option>
+                            <option value="fundraiser">Fundraiser</option>
+                            <option value="conference">Conference/Meeting</option>
+                            <option value="other">Other (please specify)</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Other Event Type Field - Shown conditionally -->
+                    <div id="other-event-type-container" class="hidden mb-6">
+                        <label for="other-event-type" class="block text-sm font-medium text-gray-700 mb-1">Please specify</label>
+                        <input type="text" id="other-event-type" name="other-event-type" 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <!-- Event Name Field - Full Width -->
+                    <div class="mb-6">
+                        <label for="event-name" class="block text-sm font-medium text-gray-700 mb-1">Event Name</label>
+                        <input type="text" id="event-name" name="event-name" 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="e.g. Smith-Johnson Wedding, Annual Company Dinner">
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        <div>
+                            <label for="event-date" class="block text-sm font-medium text-gray-700 mb-1 required-field">Event Date</label>
+                            <input type="text" id="event-date" name="event-date" placeholder="Select date" required
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 datepicker">
+                        </div>
+                        <div>
+                            <label for="start-time" class="block text-sm font-medium text-gray-700 mb-1 required-field">Start Time</label>
+                            <input type="text" id="start-time" name="start-time" placeholder="Select time" required
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 timepicker">
+                        </div>
+                        <div>
+                            <label for="end-time" class="block text-sm font-medium text-gray-700 mb-1">End Time (estimated)</label>
+                            <input type="text" id="end-time" name="end-time" placeholder="Select time"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 timepicker">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label for="guest-count-slider" class="block text-sm font-medium text-gray-700 mb-1 required-field">Estimated Guest Count</label>
+                            <div class="mt-1 mb-2">
+                                <div id="guest-count-display" class="text-lg font-semibold text-blue-600">200 Guests</div>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <span class="text-xs text-gray-500">50</span>
+                                <input 
+                                    type="range" 
+                                    id="guest-count-slider" 
+                                    name="guest-count" 
+                                    min="50" 
+                                    max="500" 
+                                    step="10" 
+                                    value="200"
+                                    required
+                                    class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                                >
+                                <span class="text-xs text-gray-500">500</span>
+                            </div>
+                            <div class="flex justify-between px-1 mt-1">
+                                <span class="text-xs text-gray-500">Smaller</span>
+                                <span class="text-xs text-gray-500">Larger</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="budget-slider" class="block text-sm font-medium text-gray-700 mb-1">Approximate Budget</label>
+                            <div class="mt-1 mb-2">
+                                <div id="budget-display" class="text-lg font-semibold text-blue-600">$2,500</div>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <span class="text-xs text-gray-500">$500</span>
+                                <input 
+                                    type="range" 
+                                    id="budget-slider" 
+                                    name="budget" 
+                                    min="500" 
+                                    max="10000" 
+                                    step="100" 
+                                    value="2500"
+                                    class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                                >
+                                <span class="text-xs text-gray-500">$10,000+</span>
+                            </div>
+                            <div class="flex justify-between px-1 mt-1">
+                                <span class="text-xs text-gray-500">Lower</span>
+                                <span class="text-xs text-gray-500">Higher</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                       
+                        
+                        <!-- Electric Events Venues -->
+                        <div id="electric-venues-container">
+                            <p class="block text-sm font-medium text-gray-700 mb-3">Select from our premier venues:</p>
+                            
+                            <div id="venue-cards-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <!-- Venue cards will be populated via JavaScript -->
+                            </div>
+                            
+                            <div id="selected-venue-section" class="hidden mt-4 border-t border-gray-200 pt-4">
+                                <p class="text-sm font-medium text-gray-700 mb-2">Selected Venue:</p>
+                                <div id="selected-venue-details" class="bg-blue-50 rounded-md p-4 border border-blue-200"></div>
+                            </div>
+                        </div>
+                        
+                       
+                    </div>
+
+                    <div class="flex justify-between mt-8">
+                        <button type="button" id="step-2-prev" 
+                            class="px-6 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
+                            ← Back to Contact Info
+                        </button>
+                        <button type="button" id="step-2-next" 
+                            class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                            Next: Services & Preferences →
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Services & Preferences -->
+                <div id="step-3" class="form-section hidden">
+                    <h3 class="text-xl font-semibold mb-4 pb-2 border-b border-gray-200">Services & Preferences</h3>
+                    
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">Which services are you interested in? (Select all that apply)</label>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div class="flex items-start">
+                                <input type="checkbox" id="service-catering" name="services[]" value="catering" 
+                                    class="h-5 w-5 border-gray-300 rounded text-blue-600 focus:ring-blue-500 mt-0.5">
+                                <div class="ml-3">
+                                    <label for="service-catering" class="font-medium text-gray-700">Catering</label>
+                                    <p class="text-gray-500 text-sm">Full-service food & beverage</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-start">
+                                <input type="checkbox" id="service-bar" name="services[]" value="bar" 
+                                    class="h-5 w-5 border-gray-300 rounded text-blue-600 focus:ring-blue-500 mt-0.5">
+                                <div class="ml-3">
+                                    <label for="service-bar" class="font-medium text-gray-700">Bar Service</label>
+                                    <p class="text-gray-500 text-sm">Bartenders & beverage packages</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-start">
+                                <input type="checkbox" id="service-staffing" name="services[]" value="staffing" 
+                                    class="h-5 w-5 border-gray-300 rounded text-blue-600 focus:ring-blue-500 mt-0.5">
+                                <div class="ml-3">
+                                    <label for="service-staffing" class="font-medium text-gray-700">Event Staffing</label>
+                                    <p class="text-gray-500 text-sm">Servers, bussers & coat check</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-start">
+                                <input type="checkbox" id="service-planning" name="services[]" value="planning" 
+                                    class="h-5 w-5 border-gray-300 rounded text-blue-600 focus:ring-blue-500 mt-0.5">
+                                <div class="ml-3">
+                                    <label for="service-planning" class="font-medium text-gray-700">Event Planning</label>
+                                    <p class="text-gray-500 text-sm">Full or partial planning services</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-start">
+                                <input type="checkbox" id="service-decor" name="services[]" value="decor" 
+                                    class="h-5 w-5 border-gray-300 rounded text-blue-600 focus:ring-blue-500 mt-0.5">
+                                <div class="ml-3">
+                                    <label for="service-decor" class="font-medium text-gray-700">Decor & Styling</label>
+                                    <p class="text-gray-500 text-sm">Event design & decoration</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-start">
+                                <input type="checkbox" id="service-rentals" name="services[]" value="rentals" 
+                                    class="h-5 w-5 border-gray-300 rounded text-blue-600 focus:ring-blue-500 mt-0.5">
+                                <div class="ml-3">
+                                    <label for="service-rentals" class="font-medium text-gray-700">Equipment Rentals</label>
+                                    <p class="text-gray-500 text-sm">Tables, chairs, linens, etc.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="dietary-restrictions" class="block text-sm font-medium text-gray-700 mb-1">Dietary Restrictions or Special Considerations</label>
+                        <textarea id="dietary-restrictions" name="dietary-restrictions" rows="3"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Please list any allergies, vegetarian/vegan requirements, or other dietary needs"></textarea>
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="additional-info" class="block text-sm font-medium text-gray-700 mb-1">Additional Information or Special Requests</label>
+                        <textarea id="additional-info" name="additional-info" rows="5"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Please share any other details about your event vision, special requests, or questions"></textarea>
+                    </div>
+
+                    <div class="mb-6">
+                        <div class="flex items-start">
+                            <input type="checkbox" id="terms-agreement" name="terms-agreement" required
+                                class="h-5 w-5 border-gray-300 rounded text-blue-600 focus:ring-blue-500 mt-0.5">
+                            <label for="terms-agreement" class="ml-3 text-sm text-gray-600">
+                                I understand this is an inquiry form and does not constitute a booking confirmation. A representative will contact me to discuss availability and details.
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between mt-8">
+                        <button type="button" id="step-3-prev" 
+                            class="px-6 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
+                            ← Back to Event Details
+                        </button>
+                        <button type="submit" id="submit-form" 
+                            class="px-8 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center">
+                            <span>Submit Booking Request</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <!-- Footer Section -->
+    <footer class="bg-gray-800 text-white py-8 mt-12">
+        <div class="container mx-auto px-4 md:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Electric Events Atlanta</h3>
+                    <p class="text-gray-300 text-sm">Creating unforgettable experiences for every occasion</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Contact Us</h3>
+                    <p class="text-gray-300 text-sm">Atlanta, GA</p>
+                    <p class="text-gray-300 text-sm">info@electriceventsatl.com</p>
+                    <p class="text-gray-300 text-sm">(404) 555-1234</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Follow Us</h3>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-300 hover:text-white">
+                            <span class="sr-only">Instagram</span>
+                            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                                <path fill-rule="evenodd" d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465.668.25 1.272.644 1.772 1.153.509.5.902 1.104 1.153 1.772.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772c-.5.509-1.104.902-1.772 1.153-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427.25-.668.644-1.272 1.153-1.772.5-.509 1.104-.902 1.772-1.153.636-.247 1.363-.416 2.427-.465C9.516 2.013 9.871 2 12.315 2z" clip-rule="evenodd"></path>
+                            </svg>
+                        </a>
+                        <a href="#" class="text-gray-300 hover:text-white">
+                            <span class="sr-only">Facebook</span>
+                            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                                <path fill-rule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clip-rule="evenodd"></path>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-6 text-center text-sm text-gray-400">
+                <p>&copy; 2023 Electric Events Atlanta. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript for form functionality -->
+    <script>
+        // Venue configuration data
+        const venueData = {
+            "electric-room": {
+                name: "The Electric Room",
+                location: "West Midtown",
+                address: "Star Metal Building, Atlanta, GA",
+                capacity: {
+                    max: 250,
+                    seated: 200,
+                    standing: 250
+                },
+                description: "A private floor in West Midtown's Star Metal's building, where elegant interiors lead to the rooftop terrace's stunning views of the Atlanta skyline.",
+                socialHandle: "@electricroomatl",
+                website: "https://www.electriceventsatl.com/the-electric-room",
+                imageUrl: "assets/venues/electric-room.jpg",
+                features: ["Rooftop Terrace", "Skyline Views", "Elegant Interiors", "Private Floor"],
+                amenities: ["Bar Service", "AV Equipment", "Climate Control", "Restrooms", "Coat Check"],
+                minGuestCount: 50
+            },
+            "ladybird": {
+                name: "Ladybird Grove & Mess Hall",
+                location: "Old Fourth Ward",
+                address: "Eastside Beltline, Atlanta, GA",
+                capacity: {
+                    max: 500,
+                    seated: 300,
+                    standing: 500
+                },
+                description: "Located in Atlanta's historic Old Fourth Ward, Ladybird Grove & Mess Hall is a National Park-inspired destination overlooking the Eastside Beltline featuring multiple bars, 300+ seats indoors and outdoors, and a beloved patio.",
+                socialHandle: "@ladybirdatlanta",
+                website: "https://www.electriceventsatl.com/ladybird",
+                imageUrl: "assets/venues/ladybird.jpg",
+                features: ["Beltline Views", "Outdoor Patio", "Multiple Bars", "Indoor/Outdoor Space"],
+                amenities: ["Full Catering", "Bar Service", "AV Equipment", "Restrooms", "Parking Nearby"],
+                minGuestCount: 25
+            },
+            "ranger-station": {
+                name: "Ranger Station",
+                location: "Old Fourth Ward",
+                address: "Above Ladybird Grove & Mess Hall, Atlanta, GA",
+                capacity: {
+                    max: 80,
+                    seated: 65,
+                    standing: 80
+                },
+                description: "Ranger Station is a new, rangers-only hidden cocktail bar tucked away in a den above Ladybird Grove & Mess Hall, where it's been perched for what feels like forever.",
+                socialHandle: "@rangerstationatl",
+                website: "https://www.electriceventsatl.com/ranger-station",
+                imageUrl: "assets/venues/ranger-station.jpg",
+                features: ["Hidden Cocktail Bar", "Intimate Setting", "Above Ladybird", "Exclusive Space"],
+                amenities: ["Craft Cocktails", "Catering Available", "Private Bar", "Relaxed Atmosphere"],
+                minGuestCount: 10
+            },
+            "strangers-in-paradise": {
+                name: "Strangers in Paradise",
+                location: "West End",
+                address: "1020 White Street, Suite B-1, Atlanta, GA 30310",
+                capacity: {
+                    max: 150,
+                    seated: 100,
+                    standing: 150
+                },
+                description: "\"No matter how much things change, the more they stay the same.\" - Bev (bar owner). Paradise is a State of Mind.",
+                socialHandle: "@StrangersInParadiseAtl",
+                website: "https://www.strangersinparadiseatl.com/",
+                imageUrl: "assets/venues/strangers-in-paradise.jpg",
+                features: ["Tropical Vibes", "Unique Atmosphere", "Lively Setting", "Beautiful Decor"],
+                amenities: ["Full Bar", "Catering Options", "Music Setup", "Outdoor Area"],
+                minGuestCount: 20
+            },
+            "tiger-sun": {
+                name: "Tiger Sun",
+                location: "Reynoldstown",
+                address: "904 Memorial Dr SE, Atlanta, GA 30316",
+                capacity: {
+                    max: 120,
+                    seated: 80,
+                    standing: 120
+                },
+                description: "The way of the tiger awaits. A unique venue with distinctive character and atmosphere.",
+                socialHandle: "@tigersunatl",
+                website: "https://www.tigersunatl.com/",
+                imageUrl: "assets/venues/tiger-sun.jpg",
+                features: ["Distinctive Design", "Intimate Setting", "Unique Atmosphere", "Central Location"],
+                amenities: ["Full Bar", "Special Menu Options", "Music Setup", "Themed Experience"],
+                minGuestCount: 15
+            }
+        };
+
+        // Initialize date and time pickers
+        document.addEventListener('DOMContentLoaded', function() {
+            // Date picker
+            flatpickr('.datepicker', {
+                minDate: "today",
+                dateFormat: "Y-m-d",
+            });
+            
+            // Time picker
+            flatpickr('.timepicker', {
+                enableTime: true,
+                noCalendar: true,
+                dateFormat: "h:i K",
+            });
+
+            // Form navigation
+            const step1 = document.getElementById('step-1');
+            const step2 = document.getElementById('step-2');
+            const step3 = document.getElementById('step-3');
+            
+            const step1Indicator = document.getElementById('step-1-indicator');
+            const step2Indicator = document.getElementById('step-2-indicator');
+            const step3Indicator = document.getElementById('step-3-indicator');
+            
+            // Step 1 to Step 2
+            document.getElementById('step-1-next').addEventListener('click', function() {
+                // Remove validation requirement to allow free navigation
+                step1.classList.add('hidden');
+                step2.classList.remove('hidden');
+                
+                step1Indicator.classList.remove('bg-blue-600', 'text-white');
+                step1Indicator.classList.add('bg-green-500', 'text-white');
+                step2Indicator.classList.remove('bg-gray-300', 'text-gray-600');
+                step2Indicator.classList.add('bg-blue-600', 'text-white');
+            });
+            
+            // Step 2 to Step 1
+            document.getElementById('step-2-prev').addEventListener('click', function() {
+                step2.classList.add('hidden');
+                step1.classList.remove('hidden');
+                
+                step2Indicator.classList.remove('bg-blue-600', 'text-white');
+                step2Indicator.classList.add('bg-gray-300', 'text-gray-600');
+                step1Indicator.classList.remove('bg-green-500');
+                step1Indicator.classList.add('bg-blue-600');
+            });
+            
+            // Step 2 to Step 3
+            document.getElementById('step-2-next').addEventListener('click', function() {
+                // Remove validation requirement to allow free navigation
+                step2.classList.add('hidden');
+                step3.classList.remove('hidden');
+                
+                step2Indicator.classList.remove('bg-blue-600');
+                step2Indicator.classList.add('bg-green-500');
+                step3Indicator.classList.remove('bg-gray-300', 'text-gray-600');
+                step3Indicator.classList.add('bg-blue-600', 'text-white');
+            });
+            
+            // Step 3 to Step 2
+            document.getElementById('step-3-prev').addEventListener('click', function() {
+                step3.classList.add('hidden');
+                step2.classList.remove('hidden');
+                
+                step3Indicator.classList.remove('bg-blue-600', 'text-white');
+                step3Indicator.classList.add('bg-gray-300', 'text-gray-600');
+                step2Indicator.classList.remove('bg-green-500');
+                step2Indicator.classList.add('bg-blue-600');
+            });
+            
+            // Show/hide "Other event type" field
+            document.getElementById('event-type').addEventListener('change', function() {
+                const otherContainer = document.getElementById('other-event-type-container');
+                if (this.value === 'other') {
+                    otherContainer.classList.remove('hidden');
+                } else {
+                    otherContainer.classList.add('hidden');
+                }
+            });
+            
+            // Show/hide "Other heard about" field
+            const heardOtherCheckbox = document.getElementById('heard-other');
+            const heardOtherContainer = document.getElementById('heard-other-container');
+            
+            if (heardOtherCheckbox && heardOtherContainer) {
+                heardOtherCheckbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        heardOtherContainer.classList.remove('hidden');
+                    } else {
+                        heardOtherContainer.classList.add('hidden');
+                    }
+                });
+            }
+            
+            // Venue card display and selection functionality
+            const venueCardsContainer = document.getElementById('venue-cards-container');
+            const selectedVenueSection = document.getElementById('selected-venue-section');
+            const selectedVenueDetails = document.getElementById('selected-venue-details');
+            
+            // Track the selected venue
+            let selectedVenueKey = null;
+            
+            // Create venue cards
+            if (venueCardsContainer) {
+                // Create and append venue cards
+                Object.keys(venueData).forEach(venueKey => {
+                    const venue = venueData[venueKey];
+                    
+                    // Create venue card element
+                    const venueCard = document.createElement('div');
+                    venueCard.className = 'border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow';
+                    venueCard.dataset.venueKey = venueKey;
+                    
+                    // Create card content
+                    venueCard.innerHTML = `
+                        <div class="venue-card${venueKey === selectedVenueKey ? ' border-2 border-blue-500' : ''}">
+                            <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                                <h4 class="font-semibold text-lg">${venue.name}</h4>
+                                <p class="text-xs text-gray-500">${venue.location}</p>
+                            </div>
+                            <div class="p-4">
+                                <p class="text-sm text-gray-600 mb-3 line-clamp-3" style="overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">${venue.description}</p>
+                                <div class="text-sm">
+                                    <p><span class="font-medium">Capacity:</span> <span class="venue-capacity-info">${venue.capacity.max} (${venue.capacity.seated} seated)</span></p>
+                                    <p class="mt-1"><span class="font-medium">Recommended for:</span> ${venue.minGuestCount}+ guests</p>
+                                </div>
+                                <div class="mt-3">
+                                    <p class="text-sm font-medium">Top Features:</p>
+                                    <div class="flex flex-wrap gap-1 mt-1">
+                                        ${venue.features.slice(0, 3).map(feature => 
+                                            `<span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">${feature}</span>`
+                                        ).join('')}
+                                    </div>
+                                </div>
+                                <div class="mt-4 flex justify-between items-center">
+                                    <a href="${venue.website}" target="_blank" class="text-blue-600 text-sm hover:underline">More details</a>
+                                    <button type="button" class="select-venue-btn px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1">
+                                        Select Venue
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Add to container
+                    venueCardsContainer.appendChild(venueCard);
+                    
+                    // Add click handler to the select button
+                    const selectButton = venueCard.querySelector('.select-venue-btn');
+                    selectButton.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        selectVenue(venueKey);
+                    });
+                });
+                
+                // Function to handle venue selection
+                function selectVenue(venueKey) {
+                    const venue = venueData[venueKey];
+                    if (!venue) return;
+                    
+                    // Update selected venue variable
+                    selectedVenueKey = venueKey;
+                    
+                    // Update UI to show selection
+                    document.querySelectorAll('.venue-card').forEach(card => {
+                        card.classList.remove('border-2', 'border-blue-500');
+                    });
+                    
+                    const selectedCard = document.querySelector(`[data-venue-key="${venueKey}"] .venue-card`);
+                    if (selectedCard) {
+                        selectedCard.classList.add('border-2', 'border-blue-500');
+                    }
+                    
+                    // Show selected venue section
+                    selectedVenueSection.classList.remove('hidden');
+                    
+                    // Update the hidden form field for the selected venue
+                    const venueInput = document.createElement('input');
+                    venueInput.type = 'hidden';
+                    venueInput.name = 'selected-venue';
+                    venueInput.value = venueKey;
+                    
+                    // Remove any existing venue inputs
+                    const existingInput = document.querySelector('input[name="selected-venue"]');
+                    if (existingInput) {
+                        existingInput.remove();
+                    }
+                    
+                    // Add the new input
+                    document.getElementById('booking-form').appendChild(venueInput);
+                    
+                    // Populate selected venue details
+                    let detailsHtml = `
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h4 class="font-semibold text-lg">${venue.name}</h4>
+                                <p class="text-sm text-gray-600">${venue.location}</p>
+                            </div>
+                            <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium">Selected</span>
+                        </div>
+                        <div class="mt-3 text-sm">
+                            <p><span class="font-medium">Address:</span> ${venue.address}</p>
+                            <p><span class="font-medium">Capacity:</span> ${venue.capacity.max} people (${venue.capacity.seated} seated)</p>
+                            <p class="mt-2 text-blue-700">This venue has been selected for your event.</p>
+                        </div>
+                    `;
+                    
+                    selectedVenueDetails.innerHTML = detailsHtml;
+                    
+                    // Scroll to the selected venue section
+                    selectedVenueSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            }
+            
+            // External venue checkbox handler
+            const externalVenueCheckbox = document.getElementById('using-external-venue');
+            const externalVenueContainer = document.getElementById('external-venue-container');
+            
+            if (externalVenueCheckbox && externalVenueContainer) {
+                externalVenueCheckbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        externalVenueContainer.classList.remove('hidden');
+                        
+                        // If using external venue, clear venue selection
+                        document.querySelectorAll('.venue-card').forEach(card => {
+                            card.classList.remove('border-2', 'border-blue-500');
+                        });
+                        
+                        // Hide selected venue confirmation
+                        const selectedVenueSection = document.getElementById('selected-venue-section');
+                        if (selectedVenueSection) {
+                            selectedVenueSection.classList.add('hidden');
+                        }
+                        
+                        // Remove selected venue input
+                        const venueInput = document.querySelector('input[name="selected-venue"]');
+                        if (venueInput) {
+                            venueInput.remove();
+                        }
+                        
+                        // Update tracked selection
+                        selectedVenueKey = null;
+                    } else {
+                        externalVenueContainer.classList.add('hidden');
+                    }
+                });
+            }
+            
+            // Update venue selection to clear external venue when selecting Electric venue
+            if (venueCardsContainer) {
+                // Add to the selectVenue function to handle external venue checkbox
+                const originalSelectVenue = selectVenue;
+                selectVenue = function(venueKey) {
+                    // Call the original function
+                    originalSelectVenue(venueKey);
+                    
+                    // Uncheck external venue checkbox
+                    if (externalVenueCheckbox && externalVenueCheckbox.checked) {
+                        externalVenueCheckbox.checked = false;
+                        externalVenueContainer.classList.add('hidden');
+                    }
+                };
+            }
+            
+            // Budget slider functionality
+            const budgetSlider = document.getElementById('budget-slider');
+            const budgetDisplay = document.getElementById('budget-display');
+            
+            if (budgetSlider && budgetDisplay) {
+                // Initialize with the default value
+                updateBudgetDisplay(budgetSlider.value);
+                
+                // Update when the slider is moved
+                budgetSlider.addEventListener('input', function() {
+                    updateBudgetDisplay(this.value);
+                });
+                
+                // Function to format and display the budget
+                function updateBudgetDisplay(value) {
+                    // Convert to number and format with commas
+                    const numValue = parseInt(value);
+                    
+                    // Format with commas and handle the maximum case
+                    if (numValue >= 10000) {
+                        budgetDisplay.textContent = '$10,000+';
+                    } else {
+                        budgetDisplay.textContent = '$' + numValue.toLocaleString();
+                    }
+                    
+                    // Change color based on the value range
+                    if (numValue < 2000) {
+                        budgetDisplay.className = 'text-lg font-semibold text-green-600';
+                    } else if (numValue < 5000) {
+                        budgetDisplay.className = 'text-lg font-semibold text-blue-600';
+                    } else {
+                        budgetDisplay.className = 'text-lg font-semibold text-purple-600';
+                    }
+                }
+            }
+
+            // Guest count slider functionality
+            const guestCountSlider = document.getElementById('guest-count-slider');
+            const guestCountDisplay = document.getElementById('guest-count-display');
+            
+            if (guestCountSlider && guestCountDisplay) {
+                // Initialize with the default value
+                updateGuestCountDisplay(guestCountSlider.value);
+                checkVenueCapacities(guestCountSlider.value);
+                
+                // Update when the slider is moved
+                guestCountSlider.addEventListener('input', function() {
+                    updateGuestCountDisplay(this.value);
+                    checkVenueCapacities(this.value);
+                });
+                
+                // Function to format and display the guest count
+                function updateGuestCountDisplay(value) {
+                    const numValue = parseInt(value);
+                    guestCountDisplay.textContent = numValue.toLocaleString() + ' Guests';
+                    
+                    // Change color based on the value range
+                    if (numValue < 100) {
+                        guestCountDisplay.className = 'text-lg font-semibold text-green-600';
+                    } else if (numValue < 250) {
+                        guestCountDisplay.className = 'text-lg font-semibold text-blue-600';
+                    } else {
+                        guestCountDisplay.className = 'text-lg font-semibold text-purple-600';
+                    }
+                }
+                
+                // Function to check venue capacities against current guest count
+                function checkVenueCapacities(guestCount) {
+                    const guestValue = parseInt(guestCount);
+                    
+                    // Check each venue card
+                    document.querySelectorAll('[data-venue-key]').forEach(venueCard => {
+                        const venueKey = venueCard.dataset.venueKey;
+                        const venue = venueData[venueKey];
+                        
+                        if (!venue) return;
+                        
+                        const selectButton = venueCard.querySelector('.select-venue-btn');
+                        const capacityInfo = venueCard.querySelector('.venue-capacity-info');
+                        
+                        // Check if guest count exceeds venue capacity
+                        if (guestValue > venue.capacity.max) {
+                            // Disable this venue
+                            venueCard.classList.add('opacity-50');
+                            if (selectButton) {
+                                selectButton.disabled = true;
+                                selectButton.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                                selectButton.classList.add('bg-gray-400', 'cursor-not-allowed');
+                                selectButton.innerHTML = 'Capacity Exceeded';
+                            }
+                            
+                            // Add a notification if not already present
+                            if (!venueCard.querySelector('.capacity-warning')) {
+                                const warningEl = document.createElement('div');
+                                warningEl.className = 'capacity-warning text-xs bg-red-100 text-red-800 px-2 py-1 mt-2 rounded';
+                                warningEl.innerHTML = 'Cannot accommodate ' + guestValue + ' guests';
+                                
+                                // Find a good place to insert the warning
+                                const insertPoint = venueCard.querySelector('.mt-4') || venueCard.querySelector('.mt-3');
+                                if (insertPoint) {
+                                    insertPoint.before(warningEl);
+                                }
+                            }
+                        } else {
+                            // Enable this venue
+                            venueCard.classList.remove('opacity-50');
+                            if (selectButton) {
+                                selectButton.disabled = false;
+                                selectButton.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                                selectButton.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                                selectButton.innerHTML = 'Select Venue';
+                            }
+                            
+                            // Remove any existing warning
+                            const warningEl = venueCard.querySelector('.capacity-warning');
+                            if (warningEl) {
+                                warningEl.remove();
+                            }
+                        }
+                        
+                        // Update capacity display to highlight if close to limit
+                        if (capacityInfo) {
+                            if (guestValue > venue.capacity.max * 0.9 && guestValue <= venue.capacity.max) {
+                                capacityInfo.classList.add('text-amber-600', 'font-semibold');
+                            } else {
+                                capacityInfo.classList.remove('text-amber-600', 'font-semibold');
+                            }
+                        }
+                    });
+                    
+                    // If the selected venue can't support the guest count, unselect it
+                    if (selectedVenueKey && venueData[selectedVenueKey]) {
+                        if (guestValue > venueData[selectedVenueKey].capacity.max) {
+                            // Clear selection if capacity exceeded
+                            document.querySelectorAll('.venue-card').forEach(card => {
+                                card.classList.remove('border-2', 'border-blue-500');
+                            });
+                            
+                            // Hide selected venue confirmation
+                            const selectedVenueSection = document.getElementById('selected-venue-section');
+                            if (selectedVenueSection) {
+                                selectedVenueSection.classList.add('hidden');
+                            }
+                            
+                            // Clear selected venue key
+                            selectedVenueKey = null;
+                        }
+                    }
+                }
+            }
+
+            // Form submission
+            document.getElementById('booking-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Validate terms agreement
+                const termsAgreement = document.getElementById('terms-agreement').checked;
+                if (!termsAgreement) {
+                    alert('Please agree to the terms before submitting.');
+                    return;
+                }
+                
+                // In a real implementation, you would send the form data to your server/API here
+                // For now, just show a success message
+                alert('Thank you for your booking request! A representative will contact you shortly.');
+                
+                // Reset form for demonstration purposes
+                this.reset();
+                step3.classList.add('hidden');
+                step1.classList.remove('hidden');
+                
+                step1Indicator.classList.remove('bg-green-500');
+                step1Indicator.classList.add('bg-blue-600');
+                step2Indicator.classList.remove('bg-green-500');
+                step2Indicator.classList.add('bg-gray-300', 'text-gray-600');
+                step3Indicator.classList.remove('bg-blue-600', 'text-white');
+                step3Indicator.classList.add('bg-gray-300', 'text-gray-600');
+                
+                // Reset any conditionally shown fields
+                document.getElementById('other-event-type-container').classList.add('hidden');
+                document.getElementById('selected-venue-section').classList.add('hidden');
+                
+                // Reset sliders to default values
+                if (budgetSlider) {
+                    budgetSlider.value = 2500;
+                    updateBudgetDisplay(2500);
+                }
+                
+                if (guestCountSlider) {
+                    guestCountSlider.value = 200;
+                    updateGuestCountDisplay(200);
+                    checkVenueCapacities(200);
+                }
+                
+                // Clear venue selection
+                document.querySelectorAll('.venue-card').forEach(card => {
+                    card.classList.remove('border-2', 'border-blue-500');
+                });
+                selectedVenueKey = null;
+                
+                // Remove any selected venue input
+                const venueInput = document.querySelector('input[name="selected-venue"]');
+                if (venueInput) {
+                    venueInput.remove();
+                }
+                
+                // Reset external venue checkbox
+                if (externalVenueCheckbox) {
+                    externalVenueCheckbox.checked = false;
+                    externalVenueContainer.classList.add('hidden');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
