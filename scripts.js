@@ -318,16 +318,84 @@ function initializeGuestCount() {
     }
 }
 
-// Initialize all event listeners
+// Update initializeEventListeners to include the clock emoji
 function initializeEventListeners() {
     initializePartySizeToggle();
     initializeGuestCount();
     
-    // Set default date to today
-    const today = new Date().toISOString().split('T')[0];
+    // Calculate the date 3 days from now
+    const currentDate = new Date();
+    const threeDaysFromNow = new Date(currentDate);
+    threeDaysFromNow.setDate(currentDate.getDate() + 3); // Add 3 days
+    
+    // Format the date to YYYY-MM-DD format
+    const formattedMinDate = threeDaysFromNow.toISOString().split('T')[0];
+    
+    // Set up the date input
     const dateInput = document.getElementById('dropoffDate');
-    dateInput.min = today;  // Prevent past dates
-    dateInput.value = today;
+    if (dateInput) {
+        // Set minimum date to 3 days from now
+        dateInput.min = formattedMinDate;
+        
+        // Set default value to 3 days from now
+        dateInput.value = formattedMinDate;
+
+        // Update the existing helper text element with clock emoji
+        const helperTextElement = document.querySelector('.helper-date-text');
+        if (helperTextElement) {
+            helperTextElement.textContent = `⏰ Earliest possible dropoff: ${threeDaysFromNow.toLocaleDateString()}`;
+        }
+    }
+}
+
+// Update validate72HourRequirement to include the clock emoji
+function validate72HourRequirement(showAlert = true) {
+    const dropoffDate = document.getElementById('dropoffDate').value;
+    const dropoffTime = document.getElementById('dropoffTime').value;
+    
+    if (dropoffDate && dropoffTime) {
+        // Combine date and time to create a timestamp
+        const dropoffDateTime = new Date(`${dropoffDate}T${dropoffTime}`);
+        const currentDateTime = new Date();
+        const minimumDifferenceInMs = 72 * 60 * 60 * 1000; // 72 hours in milliseconds
+        const earliestDateTime = new Date(currentDateTime.getTime() + minimumDifferenceInMs);
+        
+        // Calculate difference in milliseconds
+        const differenceInMs = dropoffDateTime - currentDateTime;
+        
+        if (differenceInMs < minimumDifferenceInMs) {
+            const dateTimeFields = [
+                document.getElementById('dropoffDate'),
+                document.getElementById('dropoffTime')
+            ];
+            
+            dateTimeFields.forEach(field => field.classList.add('border-red-500'));
+            
+            if (showAlert) {
+                const formattedDate = earliestDateTime.toLocaleDateString();
+                const formattedTime = earliestDateTime.toLocaleTimeString();
+                
+                showNotification(
+                    `⏰ Earliest possible dropoff: ${formattedDate} after ${formattedTime}`,
+                    'error'
+                );
+                
+                // Reset the date to the minimum allowed date
+                document.getElementById('dropoffDate').value = earliestDateTime.toISOString().split('T')[0];
+            }
+            
+            return false;
+        } else {
+            // Remove error styling if date is valid
+            const dateTimeFields = [
+                document.getElementById('dropoffDate'),
+                document.getElementById('dropoffTime')
+            ];
+            dateTimeFields.forEach(field => field.classList.remove('border-red-500'));
+            return true;
+        }
+    }
+    return true;
 }
 
 // Update the DOMContentLoaded event listener
@@ -366,130 +434,6 @@ function addLoadingSpinner(table) {
     table.parentNode.style.position = 'relative';
     table.parentNode.appendChild(spinner);
     return spinner;
-}
-
-// Add this new validation function
-function validateContactDetails() {
-    const requiredFields = [
-        { id: 'contactName', label: 'Contact Name' },
-        { id: 'contactEmail', label: 'Email Address' },
-        { id: 'contactPhone', label: 'Phone Number' },
-        { id: 'locationStreet', label: 'Street Address' },
-        { id: 'locationCity', label: 'City' },
-        { id: 'locationZip', label: 'ZIP Code' },
-        { id: 'dropoffTime', label: 'Dropoff Time' }
-    ];
-
-    const missingFields = [];
-    const invalidFields = [];
-
-    // Check party size
-    const isExact = document.getElementById('exactSize').checked;
-    const exactSize = document.getElementById('exactPartySize').value;
-    const minSize = document.getElementById('partySizeMin').value;
-    const maxSize = document.getElementById('partySizeMax').value;
-
-    if (isExact && !exactSize) {
-        missingFields.push('Party Size');
-    }
-    if (!isExact && (!minSize || !maxSize)) {
-        missingFields.push('Party Size Range');
-    }
-
-    // Validate each required field
-    for (const field of requiredFields) {
-        const element = document.getElementById(field.id);
-        const value = element.value.trim();
-
-        if (!value) {
-            missingFields.push(field.label);
-            element.classList.add('border-red-500');
-            continue;
-        }
-
-        // Email validation
-        if (field.id === 'contactEmail') {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(value)) {
-                invalidFields.push('Email Address (invalid format)');
-                element.classList.add('border-red-500');
-                continue;
-            }
-        }
-
-        // Phone validation
-        if (field.id === 'contactPhone') {
-            const phoneRegex = /^[\d\s-()]+$/;
-            if (!phoneRegex.test(value)) {
-                invalidFields.push('Phone Number (invalid format)');
-                element.classList.add('border-red-500');
-                continue;
-            }
-        }
-
-        // ZIP code validation
-        if (field.id === 'locationZip') {
-            const zipRegex = /^\d{5}(-\d{4})?$/;
-            if (!zipRegex.test(value)) {
-                invalidFields.push('ZIP Code (must be 5 digits)');
-                element.classList.add('border-red-500');
-                continue;
-            }
-        }
-
-        element.classList.remove('border-red-500');
-    }
-
-    // Validate that the selected date/time is at least 72 hours in the future
-    const dropoffDate = document.getElementById('dropoffDate').value;
-    const dropoffTime = document.getElementById('dropoffTime').value;
-    
-    if (dropoffDate && dropoffTime) {
-        // Combine date and time to create a timestamp
-        const dropoffDateTime = new Date(`${dropoffDate}T${dropoffTime}`);
-        const currentDateTime = new Date();
-        
-        // Calculate difference in milliseconds
-        const differenceInMs = dropoffDateTime - currentDateTime;
-        const minimumDifferenceInMs = 72 * 60 * 60 * 1000; // 72 hours in milliseconds
-        
-        if (differenceInMs < minimumDifferenceInMs) {
-            invalidFields.push('Dropoff Date/Time (must be at least 72 hours from now)');
-            document.getElementById('dropoffDate').classList.add('border-red-500');
-            document.getElementById('dropoffTime').classList.add('border-red-500');
-        } else {
-            document.getElementById('dropoffDate').classList.remove('border-red-500');
-            document.getElementById('dropoffTime').classList.remove('border-red-500');
-        }
-    }
-
-    if (missingFields.length > 0 || invalidFields.length > 0) {
-        let errorMessage = '';
-        
-        if (missingFields.length > 0) {
-            errorMessage += 'Required fields missing:\n• ' + missingFields.join('\n• ');
-        }
-        
-        if (invalidFields.length > 0) {
-            if (errorMessage) errorMessage += '\n\n';
-            errorMessage += 'Invalid fields:\n• ' + invalidFields.join('\n• ');
-        }
-
-        showNotification(errorMessage, 'error');
-        
-        // Focus the first missing or invalid field
-        const firstFieldId = missingFields.length > 0 ? 
-            requiredFields.find(f => missingFields.includes(f.label))?.id :
-            requiredFields.find(f => invalidFields.includes(f.label))?.id;
-            
-        if (firstFieldId) {
-            document.getElementById(firstFieldId).focus();
-        }
-
-        return false;
-    }
-
-    return true;
 }
 
 // Update the formatOrderDetails function to include tax info
@@ -867,4 +811,117 @@ function initializeAutoSave() {
     document.addEventListener('change', (e) => {
         saveFormProgress();
     });
+}
+
+// Update the validateContactDetails function with the dynamic message
+function validateContactDetails() {
+    const requiredFields = [
+        { id: 'contactName', label: 'Contact Name' },
+        { id: 'contactEmail', label: 'Email Address' },
+        { id: 'contactPhone', label: 'Phone Number' },
+        { id: 'locationStreet', label: 'Street Address' },
+        { id: 'locationCity', label: 'City' },
+        { id: 'locationZip', label: 'ZIP Code' },
+        { id: 'dropoffTime', label: 'Dropoff Time' }
+    ];
+
+    const missingFields = [];
+    const invalidFields = [];
+
+    // Calculate earliest possible date for the error message
+    const currentDateTime = new Date();
+    const earliestDateTime = new Date(currentDateTime.getTime() + (72 * 60 * 60 * 1000));
+    const formattedDate = earliestDateTime.toLocaleDateString();
+    const formattedTime = earliestDateTime.toLocaleTimeString();
+    const earliestDateMessage = `⏰ Earliest possible dropoff: ${formattedDate} after ${formattedTime}`;
+
+    // Check party size
+    const isExact = document.getElementById('exactSize').checked;
+    const exactSize = document.getElementById('exactPartySize').value;
+    const minSize = document.getElementById('partySizeMin').value;
+    const maxSize = document.getElementById('partySizeMax').value;
+
+    if (isExact && !exactSize) {
+        missingFields.push('Party Size');
+    }
+    if (!isExact && (!minSize || !maxSize)) {
+        missingFields.push('Party Size Range');
+    }
+
+    // Validate each required field
+    for (const field of requiredFields) {
+        const element = document.getElementById(field.id);
+        const value = element.value.trim();
+
+        if (!value) {
+            missingFields.push(field.label);
+            element.classList.add('border-red-500');
+            continue;
+        }
+
+        // Email validation
+        if (field.id === 'contactEmail') {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(value)) {
+                invalidFields.push('Email Address (invalid format)');
+                element.classList.add('border-red-500');
+                continue;
+            }
+        }
+
+        // Phone validation
+        if (field.id === 'contactPhone') {
+            const phoneRegex = /^[\d\s-()]+$/;
+            if (!phoneRegex.test(value)) {
+                invalidFields.push('Phone Number (invalid format)');
+                element.classList.add('border-red-500');
+                continue;
+            }
+        }
+
+        // ZIP code validation
+        if (field.id === 'locationZip') {
+            const zipRegex = /^\d{5}(-\d{4})?$/;
+            if (!zipRegex.test(value)) {
+                invalidFields.push('ZIP Code (must be 5 digits)');
+                element.classList.add('border-red-500');
+                continue;
+            }
+        }
+
+        element.classList.remove('border-red-500');
+    }
+
+    // Update the 72-hour requirement check with new message
+    if (!validate72HourRequirement(false) && !invalidFields.includes(earliestDateMessage)) {
+        invalidFields.push(earliestDateMessage);
+    }
+
+    if (missingFields.length > 0 || invalidFields.length > 0) {
+        let errorMessage = '';
+        
+        if (missingFields.length > 0) {
+            errorMessage += 'Required fields missing:\n• ' + missingFields.join('\n• ');
+        }
+        
+        if (invalidFields.length > 0) {
+            if (errorMessage) errorMessage += '\n\n';
+            errorMessage += 'Invalid fields:\n• ' + invalidFields.join('\n• ');
+        }
+
+        showNotification(errorMessage, 'error');
+        
+        // Focus the first missing or invalid field
+        const firstFieldId = missingFields.length > 0 ? 
+            requiredFields.find(f => missingFields.includes(f.label))?.id :
+            requiredFields.find(f => invalidFields.includes(f.label))?.id;
+            
+        if (firstFieldId) {
+            document.getElementById(firstFieldId).focus();
+        }
+
+        return false;
+    }
+
+    return true;
 } 
