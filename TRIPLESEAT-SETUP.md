@@ -204,9 +204,81 @@ Because of these restrictions:
 
 ### Solutions for Production
 For a production environment, consider these options:
-1. **Server-side Proxy**: Implement a server-side proxy that makes the API calls to Tripleseat on behalf of the browser
-2. **Webhook Integration**: Use Tripleseat's webhook features to send data back to your server
-3. **Manual Verification**: Log in to Tripleseat to verify lead creation
+
+1. **Server-side Proxy (Recommended)**: 
+   - Implement a server-side proxy that makes the API calls to Tripleseat on behalf of the browser
+   - This avoids CORS restrictions entirely since the request comes from your server, not the browser
+   - Example implementation using Node.js/Express:
+   
+   ```javascript
+   // server.js
+   const express = require('express');
+   const axios = require('axios');
+   const app = express();
+   
+   app.use(express.json());
+   
+   app.post('/api/tripleseat-proxy', async (req, res) => {
+     try {
+       const response = await axios.post(
+         'https://api.tripleseat.com/v1/leads/create.js',
+         req.body,
+         {
+           headers: {
+             'Content-Type': 'application/json',
+             'X-Public-Key': req.body.public_key,
+             'X-Consumer-Key': req.body.consumer_key,
+             'X-Consumer-Secret': req.body.consumer_secret
+           }
+         }
+       );
+       
+       res.json(response.data);
+     } catch (error) {
+       res.status(error.response?.status || 500).json({
+         error: error.message,
+         details: error.response?.data
+       });
+     }
+   });
+   
+   app.listen(3000, () => {
+     console.log('Proxy server running on port 3000');
+   });
+   ```
+
+   - Then update your client-side code to use your proxy instead of calling Tripleseat directly:
+   
+   ```javascript
+   // Client-side code
+   fetch('/api/tripleseat-proxy', {
+     method: 'POST',
+     headers: {
+       'Content-Type': 'application/json'
+     },
+     body: JSON.stringify({
+       public_key: 'your_public_key',
+       consumer_key: 'your_consumer_key',
+       consumer_secret: 'your_consumer_secret',
+       lead: {
+         // lead data
+       }
+     })
+   })
+   .then(response => response.json())
+   .then(data => console.log('Lead created:', data));
+   ```
+
+2. **Webhook Integration**: 
+   - Use Tripleseat's webhook features to send data back to your server
+   - This requires setting up a webhook endpoint in your Tripleseat account
+   - Your server would need to handle incoming webhook requests
+
+3. **Manual Verification**: 
+   - Continue using no-cors mode in production
+   - Implement a system to log submission attempts
+   - Regularly check Tripleseat to verify lead creation
+   - This is the simplest approach but provides the least feedback to users
 
 ## Troubleshooting
 

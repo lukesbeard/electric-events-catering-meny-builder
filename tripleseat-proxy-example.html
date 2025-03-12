@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tripleseat API Test</title>
+    <title>Tripleseat Proxy Example</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
@@ -69,34 +69,30 @@
             background-color: #fee2e2;
             border-left: 4px solid #ef4444;
         }
+        code {
+            background-color: #f3f4f6;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
     </style>
 </head>
 <body>
-    <h1>Tripleseat API Test</h1>
+    <h1>Tripleseat Proxy Example</h1>
     
     <div class="card">
-        <h2>CORS Limitations</h2>
-        <p>Due to Cross-Origin Resource Sharing (CORS) restrictions, direct API calls from a browser to Tripleseat will have limitations:</p>
-        <ul>
-            <li>We must use <code>no-cors</code> mode to send requests</li>
-            <li>With <code>no-cors</code> mode, we cannot read the response status or body</li>
-            <li>We cannot directly confirm if the request was successful</li>
-            <li>You must check your Tripleseat account to verify if leads were created</li>
-        </ul>
-        <p><strong>To verify if requests were successful:</strong></p>
-        <ol>
-            <li>Log in to your Tripleseat account</li>
-            <li>Check if new leads appear in your leads list</li>
-            <li>If leads are not appearing, check your API credentials and try again</li>
-        </ol>
-        <p><strong>For production use:</strong> Consider implementing a server-side proxy that makes API calls to Tripleseat on behalf of the browser.</p>
+        <h2>How to Use the Proxy</h2>
+        <p>This example demonstrates how to use the Tripleseat proxy server to avoid CORS restrictions.</p>
+        <p>Instead of calling the Tripleseat API directly, we call our proxy server, which forwards the request to Tripleseat and returns the response.</p>
+        <p>The proxy server URL in this example is: <code id="proxyUrl">http://localhost:3000/api/tripleseat/leads</code></p>
+        <p>Update this URL to match your deployed proxy server.</p>
     </div>
     
     <div class="card">
-        <h2>API Credentials</h2>
-        <form id="authForm">
-            <label for="webhookUrl">Webhook URL:</label>
-            <input type="text" id="webhookUrl" value="https://api.tripleseat.com/v1/leads/create.js">
+        <h2>Create Lead via Proxy</h2>
+        <form id="leadForm">
+            <label for="proxyUrlInput">Proxy Server URL:</label>
+            <input type="text" id="proxyUrlInput" value="http://localhost:3000/api/tripleseat/leads">
             
             <label for="publicKey">Public Key:</label>
             <input type="text" id="publicKey" value="c8b7ab91b0c9d00de35a853334586b71561a7431">
@@ -107,14 +103,6 @@
             <label for="consumerSecret">Consumer Secret:</label>
             <input type="text" id="consumerSecret" value="ePYEyf4nnzE2pVkBJWk7wu7AInM2QwICpIilK8MR">
             
-            <button type="button" id="testAuthButton">Test Authentication</button>
-        </form>
-        <div id="authResult" class="result"></div>
-    </div>
-    
-    <div class="card">
-        <h2>Create Test Lead</h2>
-        <form id="leadForm">
             <label for="firstName">First Name:</label>
             <input type="text" id="firstName" value="Test">
             
@@ -131,7 +119,7 @@
             <input type="text" id="eventName" value="Test Event">
             
             <label for="description">Description:</label>
-            <textarea id="description">This is a test lead created from the API test page.</textarea>
+            <textarea id="description">This is a test lead created via the proxy server.</textarea>
             
             <label for="venueId">Venue ID:</label>
             <input type="text" id="venueId" value="20521">
@@ -145,89 +133,64 @@
             <label for="leadSourceId">Lead Source ID:</label>
             <input type="text" id="leadSourceId" value="112995">
             
-            <button type="button" id="createLeadButton">Create Test Lead</button>
+            <button type="button" id="createLeadButton">Create Lead via Proxy</button>
         </form>
         <div id="leadResult" class="result"></div>
     </div>
     
+    <div class="card">
+        <h2>Code Example</h2>
+        <pre><code>// Client-side code to call the proxy server
+fetch('http://your-proxy-server.com/api/tripleseat/leads', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    public_key: 'your_public_key',
+    consumer_key: 'your_consumer_key',
+    consumer_secret: 'your_consumer_secret',
+    lead: {
+      first_name: 'Test',
+      last_name: 'User',
+      email: 'test@example.com',
+      phone_number: '555-123-4567',
+      event_name: 'Test Event',
+      description: 'Test Description',
+      start_time: '2099-12-31 12:00:00',
+      end_time: '2099-12-31 15:00:00',
+      guest_count: 10,
+      location_id: 'venue_id',
+      room_id: 'room_id',
+      status: 'new_lead',
+      event_type_id: 'event_type_id',
+      lead_source_id: 'lead_source_id'
+    }
+  })
+})
+.then(response => response.json())
+.then(data => console.log('Lead created:', data))
+.catch(error => console.error('Error:', error));</code></pre>
+    </div>
+    
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Test Authentication
-            document.getElementById('testAuthButton').addEventListener('click', async function() {
-                const resultDiv = document.getElementById('authResult');
-                resultDiv.textContent = 'Testing authentication...';
-                resultDiv.className = 'result';
-                
-                try {
-                    const webhookUrl = document.getElementById('webhookUrl').value;
-                    const publicKey = document.getElementById('publicKey').value;
-                    const consumerKey = document.getElementById('consumerKey').value;
-                    const consumerSecret = document.getElementById('consumerSecret').value;
-                    
-                    // Create a minimal test lead
-                    const testData = {
-                        public_key: publicKey,
-                        consumer_key: consumerKey,
-                        consumer_secret: consumerSecret,
-                        lead: {
-                            first_name: 'Test',
-                            last_name: 'Auth',
-                            email: 'test@example.com',
-                            phone_number: '555-123-4567',
-                            event_name: 'Auth Test',
-                            description: 'Testing authentication',
-                            start_time: '2099-12-31 12:00:00',
-                            end_time: '2099-12-31 15:00:00',
-                            guest_count: 1,
-                            status: 'new_lead'
-                        }
-                    };
-                    
-                    // Log the request details
-                    console.log('Testing authentication with:', {
-                        url: webhookUrl,
-                        publicKey: publicKey,
-                        consumerKey: consumerKey,
-                        consumerSecretLength: consumerSecret ? consumerSecret.length : 0
-                    });
-                    
-                    // Make the request
-                    const response = await fetch(webhookUrl, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Public-Key': publicKey,
-                            'X-Consumer-Key': consumerKey,
-                            'X-Consumer-Secret': consumerSecret
-                        },
-                        body: JSON.stringify(testData)
-                    });
-                    
-                    // With no-cors mode, we can't read the response status or body
-                    // So we'll assume success if we get here without an error
-                    resultDiv.className = 'result success';
-                    resultDiv.textContent = 'Request sent in no-cors mode. Due to CORS restrictions, we cannot read the response.\n\n' +
-                        'Please check your Tripleseat account to verify if authentication was successful.\n\n' +
-                        'Response type: ' + response.type;
-                    
-                    // Log the response type (will be "opaque" in no-cors mode)
-                    console.log('Response type:', response.type);
-                } catch (error) {
-                    resultDiv.className = 'result error';
-                    resultDiv.textContent = 'Error: ' + error.message;
-                    console.error('Authentication test error:', error);
-                }
+            // Update proxy URL display when input changes
+            const proxyUrlInput = document.getElementById('proxyUrlInput');
+            const proxyUrlDisplay = document.getElementById('proxyUrl');
+            
+            proxyUrlInput.addEventListener('input', function() {
+                proxyUrlDisplay.textContent = this.value;
             });
             
-            // Create Test Lead
+            // Create Lead via Proxy
             document.getElementById('createLeadButton').addEventListener('click', async function() {
                 const resultDiv = document.getElementById('leadResult');
-                resultDiv.textContent = 'Creating test lead...';
+                resultDiv.textContent = 'Creating lead via proxy...';
                 resultDiv.className = 'result';
                 
                 try {
-                    const webhookUrl = document.getElementById('webhookUrl').value;
+                    const proxyUrl = document.getElementById('proxyUrlInput').value;
                     const publicKey = document.getElementById('publicKey').value;
                     const consumerKey = document.getElementById('consumerKey').value;
                     const consumerSecret = document.getElementById('consumerSecret').value;
@@ -280,33 +243,31 @@
                     };
                     
                     // Log the request details
-                    console.log('Creating lead with:', {
-                        url: webhookUrl,
+                    console.log('Creating lead via proxy:', {
+                        url: proxyUrl,
                         lead: leadData.lead
                     });
                     
-                    // Make the request
-                    const response = await fetch(webhookUrl, {
+                    // Make the request to the proxy server
+                    const response = await fetch(proxyUrl, {
                         method: 'POST',
-                        mode: 'no-cors',
                         headers: {
-                            'Content-Type': 'application/json',
-                            'X-Public-Key': publicKey,
-                            'X-Consumer-Key': consumerKey,
-                            'X-Consumer-Secret': consumerSecret
+                            'Content-Type': 'application/json'
                         },
                         body: JSON.stringify(leadData)
                     });
                     
-                    // With no-cors mode, we can't read the response status or body
-                    // So we'll assume success if we get here without an error
-                    resultDiv.className = 'result success';
-                    resultDiv.textContent = 'Lead creation request sent in no-cors mode. Due to CORS restrictions, we cannot read the response.\n\n' +
-                        'Please check your Tripleseat account to verify if the lead was created.\n\n' +
-                        'Response type: ' + response.type;
+                    // Get the response
+                    const responseData = await response.json();
                     
-                    // Log the response type (will be "opaque" in no-cors mode)
-                    console.log('Response type:', response.type);
+                    // Display the result
+                    if (response.ok) {
+                        resultDiv.className = 'result success';
+                        resultDiv.textContent = 'Lead created successfully via proxy!\n\nResponse:\n' + JSON.stringify(responseData, null, 2);
+                    } else {
+                        resultDiv.className = 'result error';
+                        resultDiv.textContent = `Lead creation failed: ${response.status} ${response.statusText}\n\nResponse:\n${JSON.stringify(responseData, null, 2)}`;
+                    }
                 } catch (error) {
                     resultDiv.className = 'result error';
                     resultDiv.textContent = 'Error: ' + error.message;
