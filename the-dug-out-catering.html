@@ -282,29 +282,21 @@
                 
                 <!-- Delivery Info Row -->
                 <div class="space-y-3">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-3">
-                        <div class="md:col-span-3">
-                            <label for="locationStreet" class="block text-lg font-heading text-textColor mb-2">Delivery Address</label>
-                            <input type="text" 
-                                   id="locationStreet" 
+                    <div class="grid grid-cols-1 gap-6 mb-3">
+                        <div>
+                            <label for="locationField" class="block text-lg font-heading text-textColor mb-2">Drop Off Location</label>
+                            <select id="locationField" 
                                    required 
-                                   placeholder="Street Address"
                                    class="w-full rounded-md border-gray-700 bg-background text-textColor shadow-sm focus:border-primary focus:ring-primary p-3">
+                                <option value="" disabled selected>Select a field</option>
+                                <option value="Major Field">Major Field</option>
+                                <option value="Triple-A Field">Triple-A Field</option>
+                                <option value="Double-A Field">Double-A Field</option>
+                                <option value="Single-A Field">Single-A Field</option>
+                                <option value="Rookie Field">Rookie Field</option>
+                                <option value="T-Ball Field">T-Ball Field</option>
+                            </select>
                         </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-6">
-                        <input type="text" 
-                               id="locationCity" 
-                               required 
-                               placeholder="City"
-                               class="w-full rounded-md border-gray-700 bg-background text-textColor shadow-sm focus:border-primary focus:ring-primary p-3">
-                        <input type="text" 
-                               id="locationZip" 
-                               required 
-                               pattern="\d{5}(-\d{4})?" 
-                               title="Please enter a valid ZIP code (e.g., 12345 or 12345-6789)"
-                               placeholder="ZIP Code"
-                               class="w-full rounded-md border-gray-700 bg-background text-textColor shadow-sm focus:border-primary focus:ring-primary p-3">
                     </div>
                 </div>
 

@@ -350,8 +350,16 @@ function initializeEventListeners() {
 
 // Update validate72HourRequirement to include the clock emoji
 function validate72HourRequirement(showAlert = true) {
-    const dropoffDate = document.getElementById('dropoffDate').value;
-    const dropoffTime = document.getElementById('dropoffTime').value;
+    const dropoffDateElement = document.getElementById('dropoffDate');
+    const dropoffTimeElement = document.getElementById('dropoffTime');
+    
+    if (!dropoffDateElement || !dropoffTimeElement) {
+        console.warn('Dropoff date or time elements not found');
+        return true; // Skip validation if elements don't exist
+    }
+    
+    const dropoffDate = dropoffDateElement.value;
+    const dropoffTime = dropoffTimeElement.value;
     
     if (dropoffDate && dropoffTime) {
         // Combine date and time to create a timestamp
@@ -365,8 +373,8 @@ function validate72HourRequirement(showAlert = true) {
         
         if (differenceInMs < minimumDifferenceInMs) {
             const dateTimeFields = [
-                document.getElementById('dropoffDate'),
-                document.getElementById('dropoffTime')
+                dropoffDateElement,
+                dropoffTimeElement
             ];
             
             dateTimeFields.forEach(field => field.classList.add('border-red-500'));
@@ -381,15 +389,15 @@ function validate72HourRequirement(showAlert = true) {
                 );
                 
                 // Reset the date to the minimum allowed date
-                document.getElementById('dropoffDate').value = earliestDateTime.toISOString().split('T')[0];
+                dropoffDateElement.value = earliestDateTime.toISOString().split('T')[0];
             }
             
             return false;
         } else {
             // Remove error styling if date is valid
             const dateTimeFields = [
-                document.getElementById('dropoffDate'),
-                document.getElementById('dropoffTime')
+                dropoffDateElement,
+                dropoffTimeElement
             ];
             dateTimeFields.forEach(field => field.classList.remove('border-red-500'));
             return true;
@@ -466,8 +474,7 @@ Phone: ${formData.contact.phone}
 
 Delivery Details
 ---------------
-Address: ${formData.delivery.address}
-City: ${formData.delivery.city}, ${formData.delivery.zip}
+Location: ${formData.delivery.location}
 Dropoff Date: ${new Date(formData.delivery.date).toLocaleDateString()}
 Dropoff Time: ${formData.delivery.time}
 
@@ -630,9 +637,7 @@ async function sendOrderEmail(event) {
                 phone: document.getElementById('contactPhone').value
             },
             delivery: {
-                address: document.getElementById('locationStreet').value,
-                city: document.getElementById('locationCity').value,
-                zip: document.getElementById('locationZip').value,
+                location: document.getElementById('locationField').value,
                 date: document.getElementById('dropoffDate').value,
                 time: document.getElementById('dropoffTime').value
             },
@@ -711,7 +716,7 @@ async function sendOrderEmail(event) {
                 emailForm.append('from_name', "Electric Events Catering");
                 emailForm.append('replyto', "brad@electric-hospitality.com");
                 emailForm.append('message', formatEmailMessage(formData));
-                emailForm.append('ccemail', "michael@electric-hospitality.com; brad@electric-hospitality.com; Landon@electric-hospitality.com");
+                emailForm.append('ccemail', "michael@electric-hospitality.com;joe@electric-hospitality.com; brad@electric-hospitality.com; Landon@electric-hospitality.com");
                 emailForm.append('botcheck', '');
                 emailForm.append('autoresponse', 'true');
 
@@ -758,11 +763,32 @@ function showNotification(message, type) {
 
 // Helper functions
 function getPartySize() {
-    const isExact = document.getElementById('exactSize').checked;
-    if (isExact) {
-        return document.getElementById('exactPartySize').value;
+    const exactSizeElement = document.getElementById('exactSize');
+    const exactPartySizeElement = document.getElementById('exactPartySize');
+    const partySizeMinElement = document.getElementById('partySizeMin');
+    const partySizeMaxElement = document.getElementById('partySizeMax');
+    
+    if (!exactSizeElement) {
+        console.warn('Party size radio button not found');
+        return 'Unknown';
     }
-    return `${document.getElementById('partySizeMin').value} - ${document.getElementById('partySizeMax').value}`;
+    
+    const isExact = exactSizeElement.checked;
+    
+    if (isExact) {
+        if (!exactPartySizeElement) {
+            console.warn('Exact party size input not found');
+            return 'Unknown';
+        }
+        return exactPartySizeElement.value || 'Not specified';
+    }
+    
+    if (!partySizeMinElement || !partySizeMaxElement) {
+        console.warn('Party size range inputs not found');
+        return 'Unknown';
+    }
+    
+    return `${partySizeMinElement.value || 'Min'} - ${partySizeMaxElement.value || 'Max'}`;
 }
 
 function getOrderDetails() {
@@ -815,13 +841,14 @@ function initializeAutoSave() {
 
 // Update the validateContactDetails function with the dynamic message
 function validateContactDetails() {
+    // Determine if we're on the Dug Out page
+    const isDugOutPage = document.body.classList.contains('dugout-menu') || window.location.pathname.includes('the-dug-out-catering');
+    
     const requiredFields = [
         { id: 'contactName', label: 'Contact Name' },
         { id: 'contactEmail', label: 'Email Address' },
         { id: 'contactPhone', label: 'Phone Number' },
-        { id: 'locationStreet', label: 'Street Address' },
-        { id: 'locationCity', label: 'City' },
-        { id: 'locationZip', label: 'ZIP Code' },
+        { id: 'locationField', label: isDugOutPage ? 'Drop Off Location' : 'Event Location' },
         { id: 'dropoffTime', label: 'Dropoff Time' }
     ];
 
@@ -836,21 +863,38 @@ function validateContactDetails() {
     const earliestDateMessage = `⏰ Earliest possible dropoff: ${formattedDate} after ${formattedTime}`;
 
     // Check party size
-    const isExact = document.getElementById('exactSize').checked;
-    const exactSize = document.getElementById('exactPartySize').value;
-    const minSize = document.getElementById('partySizeMin').value;
-    const maxSize = document.getElementById('partySizeMax').value;
-
-    if (isExact && !exactSize) {
-        missingFields.push('Party Size');
+    const exactSizeElement = document.getElementById('exactSize');
+    const exactPartySizeElement = document.getElementById('exactPartySize');
+    const partySizeMinElement = document.getElementById('partySizeMin');
+    const partySizeMaxElement = document.getElementById('partySizeMax');
+    
+    if (exactSizeElement && exactPartySizeElement) {
+        const isExact = exactSizeElement.checked;
+        const exactSize = exactPartySizeElement.value;
+        
+        if (isExact && !exactSize) {
+            missingFields.push('Party Size');
+        }
     }
-    if (!isExact && (!minSize || !maxSize)) {
-        missingFields.push('Party Size Range');
+    
+    if (exactSizeElement && partySizeMinElement && partySizeMaxElement) {
+        const isExact = exactSizeElement.checked;
+        const minSize = partySizeMinElement.value;
+        const maxSize = partySizeMaxElement.value;
+        
+        if (!isExact && (!minSize || !maxSize)) {
+            missingFields.push('Party Size Range');
+        }
     }
 
     // Validate each required field
     for (const field of requiredFields) {
         const element = document.getElementById(field.id);
+        if (!element) {
+            console.warn(`Field ${field.id} not found in the form`);
+            continue;
+        }
+        
         const value = element.value.trim();
 
         if (!value) {
@@ -874,16 +918,6 @@ function validateContactDetails() {
             const phoneRegex = /^[\d\s-()]+$/;
             if (!phoneRegex.test(value)) {
                 invalidFields.push('Phone Number (invalid format)');
-                element.classList.add('border-red-500');
-                continue;
-            }
-        }
-
-        // ZIP code validation
-        if (field.id === 'locationZip') {
-            const zipRegex = /^\d{5}(-\d{4})?$/;
-            if (!zipRegex.test(value)) {
-                invalidFields.push('ZIP Code (must be 5 digits)');
                 element.classList.add('border-red-500');
                 continue;
             }
