@@ -403,7 +403,7 @@
                                 <span id="subtotalPrice" class="text-sm text-textColor">$0.00 + 8.9% Tax</span>
                             </div>
                             <!-- Test Buttons (only visible on localhost) -->
-                            <div class="flex gap-2" id="testButtonsContainer" style="display: none;">
+                            <div class="flex gap-2" id="testButtonsContainer">
                                 <button type="button" 
                                         id="testOrderButton"
                                         style="color:#fff"
@@ -415,14 +415,20 @@
                                         id="testSubmitButton"
                                         style="color:#fff"
                                         onclick="console.log('Test Submit button clicked via onclick'); testSubmitToGoogleSheet();"
-                                        class="bg-purple-600 px-4 py-3 rounded-lg font-heading text-xl hover:bg-opacity-90 flex items-center gap-2">
+                                        class="bg-blue-600 px-4 py-3 rounded-lg font-heading text-xl hover:bg-opacity-90 flex items-center gap-2">
                                     <span>Test Submit</span>
+                                </button>
+                                <button type="button" 
+                                        id="testTripleseatButton"
+                                        style="color:#fff"
+                                        onclick="console.log('Test Tripleseat button clicked via onclick'); testTripleseatAuth();"
+                                        class="bg-blue-600 px-4 py-3 rounded-lg font-heading text-xl hover:bg-opacity-90 flex items-center gap-2">
+                                    <span>Test Tripleseat</span>
                                 </button>
                             </div>
                             <button type="submit" 
                                     id="submitButton"
                                     disabled
-                                    style="color:#fff",
                                     class="bg-primary px-8 py-3 rounded-lg font-heading text-xl hover:bg-opacity-90 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed min-w-[100px] justify-center">
                                 <span>Submit Quote</span>
                                 <svg id="submitSpinner" class="hidden animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -480,5 +486,11 @@
         // Wobble every minute
         setInterval(wobbleLogo, 60000);
     </script>
+    
+    <!-- Test script for form submission -->
+    <script src="test-actual-forms.js"></script>
+    
+    <!-- Verification script for proxy integration -->
+    <script src="verify-proxy-integration.js"></script>
 </body>
 </html>
