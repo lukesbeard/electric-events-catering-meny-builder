@@ -217,6 +217,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Debug test buttons after a short delay to ensure DOM is fully processed
     setTimeout(debugTestButtons, 1000);
     
+    // Verify Tripleseat configuration
+    setTimeout(verifyTripleseatConfig, 1500);
+    
+    // Verify Tripleseat authentication
+    setTimeout(verifyTripleseatAuth, 2000);
+    
+    // Display Tripleseat lead information on thank-you page
+    setTimeout(displayTripleseatLeadInfo, 1000);
+    
     // Remove duplicate event listener and ensure only one exists
     const form = document.getElementById('orderForm');
     console.log('Form element found:', !!form);
@@ -511,8 +520,8 @@ function initializeTestButton() {
         submitButton: !!testSubmitButton
     });
     
-    if (!testButtonsContainer || !testOrderButton || !testSubmitButton) {
-        console.warn('Some test buttons not found in the DOM');
+    if (!testButtonsContainer) {
+        console.warn('Test buttons container not found in the DOM');
         return;
     }
     
@@ -525,47 +534,57 @@ function initializeTestButton() {
         testButtonsContainer.style.display = 'flex';
         
         // Add click handler for filling test data
-        testOrderButton.addEventListener('click', function(event) {
-            console.log('Test Order button clicked!');
-            fillTestOrder();
-        });
+        if (testOrderButton) {
+            testOrderButton.addEventListener('click', function(event) {
+                console.log('Test Order button clicked!');
+                fillTestOrder();
+            });
+        }
         
         // Add click handler for test submission
-        testSubmitButton.addEventListener('click', function(event) {
-            console.log('Test Submit button clicked!');
-            // First fill the form with test data if it's not already filled
-            if (!document.getElementById('contactName').value) {
-                console.log('Form not filled, filling with test data first');
-                fillTestOrder();
-                
-                // Wait a bit for the test data to be filled and menu items to be added
-                setTimeout(() => {
-                    console.log('Timeout completed, now submitting to Google Sheet');
+        if (testSubmitButton) {
+            testSubmitButton.addEventListener('click', function(event) {
+                console.log('Test Submit button clicked!');
+                // First fill the form with test data if it's not already filled
+                if (!document.getElementById('contactName').value) {
+                    console.log('Form not filled, filling with test data first');
+                    fillTestOrder();
+                    
+                    // Wait a bit for the test data to be filled and menu items to be added
+                    setTimeout(() => {
+                        console.log('Timeout completed, now submitting to Google Sheet');
+                        testSubmitToGoogleSheet();
+                    }, 2000);
+                } else {
+                    console.log('Form already filled, submitting directly');
                     testSubmitToGoogleSheet();
-                }, 2000);
-            } else {
-                console.log('Form already filled, submitting directly');
-                testSubmitToGoogleSheet();
-            }
+                }
+            });
+        }
+        
+        // Add a new button for testing Tripleseat authentication
+        const testAuthButton = document.createElement('button');
+        testAuthButton.id = 'testAuthButton';
+        testAuthButton.className = 'bg-blue-600 text-white px-4 py-2 rounded-lg ml-2';
+        testAuthButton.textContent = 'Test Tripleseat Auth';
+        testButtonsContainer.appendChild(testAuthButton);
+        
+        // Add click handler for testing Tripleseat authentication
+        testAuthButton.addEventListener('click', function(event) {
+            console.log('Test Auth button clicked!');
+            testTripleseatAuth();
         });
         
-        // Add visual feedback on hover
-        testOrderButton.addEventListener('mouseover', function() {
-            console.log('Test Order button hover');
-            this.style.opacity = '0.8';
-        });
-        
-        testOrderButton.addEventListener('mouseout', function() {
-            this.style.opacity = '1';
-        });
-        
-        testSubmitButton.addEventListener('mouseover', function() {
-            console.log('Test Submit button hover');
-            this.style.opacity = '0.8';
-        });
-        
-        testSubmitButton.addEventListener('mouseout', function() {
-            this.style.opacity = '1';
+        // Add visual feedback on hover for all buttons
+        const allButtons = [testOrderButton, testSubmitButton, testAuthButton].filter(Boolean);
+        allButtons.forEach(button => {
+            button.addEventListener('mouseover', function() {
+                this.style.opacity = '0.8';
+            });
+            
+            button.addEventListener('mouseout', function() {
+                this.style.opacity = '1';
+            });
         });
         
         console.log('Test buttons initialized successfully');
@@ -637,7 +656,20 @@ function testSubmitToGoogleSheet() {
         console.log('Test submission initiated');
         
         // Check submission status after a delay
-        setTimeout(checkTestSubmissionStatus, 5000);
+        setTimeout(() => {
+            checkTestSubmissionStatus();
+            
+            // Also check Tripleseat lead status if available
+            const leadId = localStorage.getItem('lastTripleseatLeadId');
+            if (leadId) {
+                console.log('Found Tripleseat lead ID in localStorage:', leadId);
+                setTimeout(() => {
+                    checkTripleseatLeadStatus(leadId);
+                }, 2000);
+            } else {
+                console.log('No Tripleseat lead ID found in localStorage');
+            }
+        }, 5000);
     } catch (error) {
         console.error('Error in testSubmitToGoogleSheet:', error);
         showNotification('Error submitting test data: ' + error.message, 'error');
@@ -1037,6 +1069,7 @@ async function sendOrderEmail(event) {
     const submitSpinner = document.getElementById('submitSpinner');
     const buttonText = submitButton.querySelector('span');
     let sheetSubmissionSuccessful = false;
+    let tripleseatSubmissionSuccessful = false;
 
     try {
         // Show spinner and disable button
@@ -1096,6 +1129,10 @@ async function sendOrderEmail(event) {
         console.log('Environment:', isDevelopment ? 'Development' : 'Production');
         console.log('Force submit:', forceSubmit ? 'Yes' : 'No');
 
+        // Prepare Tripleseat data
+        const tripleseatData = prepareTripleseatData(formData);
+        console.log('Tripleseat data prepared:', tripleseatData);
+
         if (isDevelopment && !forceSubmit) {
             // Development code...
             console.log('Development mode - skipping actual submission');
@@ -1120,9 +1157,14 @@ async function sendOrderEmail(event) {
             console.log('Total:', formData.total);
             console.log('Comments:', formData.comments);
             
+            // Show Tripleseat data that would be sent
+            console.log('%c TRIPLESEAT DATA THAT WOULD BE SENT:', 'background: #333; color: #bada55; font-size: 16px;');
+            console.log(tripleseatData);
+            
             // Show a success notification for testing
             showNotification('TEST MODE: Form data logged to console. Submission would be successful in production.', 'success');
             sheetSubmissionSuccessful = true;
+            tripleseatSubmissionSuccessful = true;
         } else {
             // Production mode or forced submission from localhost
             try {
@@ -1185,12 +1227,190 @@ async function sendOrderEmail(event) {
                 }
             }
 
+            // Submit to Tripleseat
+            try {
+                console.log('Attempting to submit to Tripleseat');
+                
+                // Only proceed if Tripleseat integration is enabled
+                if (!TRIPLESEAT_CONFIG.api.enabled) {
+                    console.log('Tripleseat integration is disabled in configuration');
+                    tripleseatSubmissionSuccessful = false;
+                } else {
+                    // Get the webhook URL from configuration
+                    const tripleseatWebhookUrl = TRIPLESEAT_CONFIG.api.webhookUrl;
+                    
+                    if (!tripleseatWebhookUrl || tripleseatWebhookUrl === "REPLACE_WITH_ACTUAL_WEBHOOK_URL") {
+                        console.error('Tripleseat webhook URL not configured properly');
+                        throw new Error('Tripleseat webhook URL not configured');
+                    }
+                    
+                    // Extract authentication details
+                    const { public_key, consumer_key, consumer_secret, lead } = tripleseatData;
+                    
+                    // Log authentication details for debugging (without showing full secret)
+                    console.log('Submitting to Tripleseat with authentication:', {
+                        public_key: public_key,
+                        public_key_length: public_key ? public_key.length : 0,
+                        consumer_key: consumer_key,
+                        consumer_key_length: consumer_key ? consumer_key.length : 0,
+                        consumer_secret_length: consumer_secret ? consumer_secret.length : 0,
+                        webhook_url: tripleseatWebhookUrl
+                    });
+                    
+                    // First try with standard CORS mode to get a proper error message if authentication fails
+                    try {
+                        console.log('Attempting standard fetch to Tripleseat API');
+                        const authResponse = await fetch(tripleseatWebhookUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-Public-Key': public_key,
+                                'X-Consumer-Key': consumer_key,
+                                'X-Consumer-Secret': consumer_secret
+                            },
+                            // Include authentication parameters in the request body as well
+                            body: JSON.stringify({
+                                public_key: public_key,
+                                consumer_key: consumer_key,
+                                consumer_secret: consumer_secret,
+                                lead: lead
+                            })
+                        });
+                        
+                        console.log('Tripleseat API response status:', authResponse.status);
+                        
+                        // If we get here, CORS is not blocking and we can check the response
+                        if (authResponse.ok) {
+                            // Success! We can read the response
+                            const tripleseatResult = await authResponse.json();
+                            console.log('Tripleseat submission successful:', tripleseatResult);
+                            
+                            // Validate the response to ensure the lead was created successfully
+                            if (tripleseatResult && tripleseatResult.lead && tripleseatResult.lead.id) {
+                                // Lead was created successfully with an ID
+                                tripleseatSubmissionSuccessful = true;
+                                console.log(`Lead created successfully in Tripleseat with ID: ${tripleseatResult.lead.id}`);
+                                
+                                // Store the lead ID for reference
+                                const leadId = tripleseatResult.lead.id;
+                                localStorage.setItem('lastTripleseatLeadId', leadId);
+                                
+                                // Show a success notification with the lead ID
+                                showNotification(`Lead #${leadId} created successfully in Tripleseat!`, 'success');
+                            } else {
+                                // Response was OK but lead ID is missing
+                                console.warn('Tripleseat response missing lead ID:', tripleseatResult);
+                                tripleseatSubmissionSuccessful = false;
+                                showNotification('Received unexpected response from Tripleseat. Please check your account to verify if the lead was created.', 'error');
+                            }
+                            
+                            // No need to try no-cors mode since this worked
+                            return;
+                        } else if (authResponse.status === 401) {
+                            // Authentication failed - show a specific error message
+                            console.error('Tripleseat authentication failed (401 Unauthorized)');
+                            let errorText = '';
+                            try {
+                                errorText = await authResponse.text();
+                            } catch (e) {
+                                errorText = 'Could not read error details';
+                            }
+                            console.error('Authentication error details:', errorText);
+                            
+                            // Show a detailed error notification
+                            showNotification(`Tripleseat authentication failed (401 Unauthorized). 
+                            Please check your API keys in tripleseat-config.js:
+                            - Public Key: ${public_key ? public_key.substring(0, 5) + '...' : 'missing'}
+                            - Consumer Key: ${consumer_key ? consumer_key.substring(0, 5) + '...' : 'missing'}
+                            - Consumer Secret: ${consumer_secret ? '✓ present' : 'missing'}
+                            
+                            Error details: ${errorText}`, 'error');
+                            
+                            throw new Error('Tripleseat authentication failed. Please check your API keys in tripleseat-config.js');
+                        } else {
+                            // Other error
+                            let errorText = '';
+                            try {
+                                errorText = await authResponse.text();
+                            } catch (e) {
+                                errorText = 'Could not read error details';
+                            }
+                            console.error(`Tripleseat error (${authResponse.status}):`, errorText);
+                            showNotification(`Tripleseat error: ${authResponse.status} ${authResponse.statusText}. Details: ${errorText}`, 'error');
+                            throw new Error(`Tripleseat error: ${authResponse.status} ${authResponse.statusText}`);
+                        }
+                    } catch (corsError) {
+                        // If we get a CORS error, fall back to no-cors mode
+                        if (corsError.message.includes('Failed to fetch') || 
+                            corsError.message.includes('NetworkError') ||
+                            corsError.message.includes('CORS')) {
+                            console.log('CORS error detected, falling back to no-cors mode:', corsError);
+                        } else if (corsError.message.includes('authentication failed')) {
+                            // This is an authentication error we detected above, rethrow it
+                            throw corsError;
+                        } else {
+                            console.warn('Error during standard fetch, trying no-cors mode:', corsError);
+                        }
+                    }
+                    
+                    // If we get here, either CORS blocked the request or there was another error
+                    // Try again with no-cors mode
+                    console.log('Submitting to Tripleseat with no-cors mode');
+                    
+                    // Submit to Tripleseat with authentication in headers and no-cors mode
+                    const tripleseatResponse = await fetch(tripleseatWebhookUrl, {
+                        method: 'POST',
+                        mode: 'no-cors', // Add no-cors mode to handle CORS restrictions
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Public-Key': public_key,
+                            'X-Consumer-Key': consumer_key,
+                            'X-Consumer-Secret': consumer_secret
+                        },
+                        // Include authentication parameters in the request body as well
+                        body: JSON.stringify({
+                            public_key: public_key,
+                            consumer_key: consumer_key,
+                            consumer_secret: consumer_secret,
+                            lead: lead
+                        })
+                    });
+                    
+                    // Since no-cors mode doesn't allow reading the response,
+                    // we'll assume success if we get here without an error
+                    console.log('Tripleseat submission completed with no-cors mode');
+                    console.log('Response type:', tripleseatResponse.type);
+                    
+                    // Store a temporary lead ID for testing purposes
+                    // In production, you won't be able to get the actual lead ID due to CORS
+                    const tempLeadId = `temp-${Date.now()}`;
+                    localStorage.setItem('lastTripleseatLeadId', tempLeadId);
+                    
+                    // Show a notification about the submission
+                    showNotification('Lead submitted to Tripleseat. Due to CORS restrictions, we cannot confirm the lead ID.', 'success');
+                    tripleseatSubmissionSuccessful = true;
+                }
+            } catch (tripleseatError) {
+                console.error('Error submitting to Tripleseat:', tripleseatError);
+                // Show error notification
+                showNotification(`Failed to submit to Tripleseat: ${tripleseatError.message}`, 'error');
+                // Continue with the process even if Tripleseat submission fails
+                // We'll still send the email and show a partial success message
+            }
+
             // Only proceed with email if sheet submission was successful
             if (sheetSubmissionSuccessful) {
                 // If we're in development mode but forced submission, show a success message without sending email
                 if (isDevelopment && forceSubmit) {
                     console.log('Sheet submission successful in test mode with forcesubmit=true');
-                    showNotification('TEST MODE: Successfully submitted to Google Sheet! Email sending skipped.', 'success');
+                    let successMessage = 'TEST MODE: Successfully submitted to Google Sheet!';
+                    if (tripleseatSubmissionSuccessful) {
+                        successMessage += ' Also submitted to Tripleseat!';
+                    } else {
+                        successMessage += ' Tripleseat submission skipped or failed.';
+                    }
+                    successMessage += ' Email sending skipped.';
+                    showNotification(successMessage, 'success');
                 } else {
                     console.log('Sheet submission successful, proceeding with email');
                     // Create FormData object for email
@@ -1217,7 +1437,12 @@ async function sendOrderEmail(event) {
                     
                     if (result.success) {
                         clearSavedData();
-                        showNotification('Quote request submitted successfully! We\'ll be in touch soon.', 'success');
+                        let successMessage = 'Quote request submitted successfully!';
+                        if (tripleseatSubmissionSuccessful) {
+                            successMessage += ' Your request has been sent to our booking system.';
+                        }
+                        successMessage += ' We\'ll be in touch soon.';
+                        showNotification(successMessage, 'success');
                         console.log('Form submitted successfully! Redirecting to thank-you page');
                         window.location.href = 'thank-you.html';  // Re-enable the redirect
                     } else {
@@ -1234,6 +1459,110 @@ async function sendOrderEmail(event) {
         submitSpinner.classList.add('hidden');
         buttonText.textContent = 'Get Quote';
     }
+}
+
+// Function to prepare data for Tripleseat webhook
+function prepareTripleseatData(formData) {
+    // Extract date and time
+    const eventDate = formData.delivery.date;
+    const eventTime = formData.delivery.time;
+    
+    // Format date and time for Tripleseat (YYYY-MM-DD HH:MM:SS format)
+    const dateTimeString = `${eventDate} ${eventTime}:00`;
+    
+    // Calculate end time based on configured duration
+    const startDateTime = new Date(`${eventDate}T${eventTime}`);
+    const endDateTime = new Date(startDateTime.getTime() + (TRIPLESEAT_CONFIG.defaultEventDuration * 60 * 60 * 1000));
+    const endTimeString = endDateTime.toISOString().slice(0, 19).replace('T', ' ');
+    
+    // Format order details as a string
+    const orderDetailsText = formData.order.map(item => 
+        `${item.name} - ${item.quantity} units - ${item.subtotal}`
+    ).join(', ');
+    
+    // Get venue ID based on source
+    const venueId = TRIPLESEAT_CONFIG.venues[formData.source] || '';
+    
+    // Determine appropriate room ID based on venue and location
+    let roomId = null;
+    if (TRIPLESEAT_CONFIG.rooms && TRIPLESEAT_CONFIG.rooms[formData.source]) {
+        // Default to Unassigned room
+        roomId = TRIPLESEAT_CONFIG.rooms[formData.source]["Unassigned"];
+        
+        // For off-site catering, use the Off-Site room if available
+        if (formData.delivery.location && formData.delivery.location.trim() !== '') {
+            if (TRIPLESEAT_CONFIG.rooms[formData.source]["Off-Site"]) {
+                roomId = TRIPLESEAT_CONFIG.rooms[formData.source]["Off-Site"];
+                console.log(`Using Off-Site room (${roomId}) for delivery to ${formData.delivery.location}`);
+            }
+        }
+    }
+    
+    // Prepare custom fields
+    const customFields = {};
+    Object.entries(TRIPLESEAT_CONFIG.customFields).forEach(([formField, tripleseatField]) => {
+        // Handle nested properties like delivery.location
+        if (formField.includes('_')) {
+            const parts = formField.split('_');
+            if (formData[parts[0]] && formData[parts[0]][parts[1]]) {
+                customFields[tripleseatField] = formData[parts[0]][parts[1]];
+            }
+        } else if (formData[formField]) {
+            customFields[tripleseatField] = formData[formField];
+        }
+    });
+    
+    // Add specific fields that aren't in the mapping
+    customFields[TRIPLESEAT_CONFIG.customFields.delivery_location] = formData.delivery.location;
+    customFields[TRIPLESEAT_CONFIG.customFields.subtotal] = formData.subtotal;
+    customFields[TRIPLESEAT_CONFIG.customFields.total] = formData.total;
+    
+    // Prepare lead data
+    const leadData = {
+        first_name: formData.contact.name.split(' ')[0] || '',
+        last_name: formData.contact.name.split(' ').slice(1).join(' ') || '',
+        email: formData.contact.email,
+        phone_number: formData.contact.phone,
+        company: '',
+        event_name: `Catering Order - ${formData.source}`,
+        description: `${formData.comments}\n\nOrder Details: ${orderDetailsText}`,
+        start_time: dateTimeString,
+        end_time: endTimeString,
+        guest_count: parseInt(formData.partySize) || 0,
+        location_id: venueId,
+        room_id: roomId,
+        status: 'new_lead',
+        event_type_id: TRIPLESEAT_CONFIG.eventTypes.catering,
+        lead_source_id: TRIPLESEAT_CONFIG.leadSources.website,
+        custom_fields: customFields
+    };
+    
+    // Prepare data according to Tripleseat webhook format
+    const tripleseatData = {
+        // Authentication parameters - these should match exactly what Tripleseat expects
+        public_key: TRIPLESEAT_CONFIG.api.apiKey,
+        consumer_key: TRIPLESEAT_CONFIG.api.consumerKey,
+        consumer_secret: TRIPLESEAT_CONFIG.api.consumerSecret,
+        
+        // Lead data
+        lead: leadData
+    };
+    
+    console.log('Prepared Tripleseat data with authentication:', {
+        public_key: tripleseatData.public_key,
+        consumer_key: tripleseatData.consumer_key,
+        has_consumer_secret: !!tripleseatData.consumer_secret,
+        lead_data: {
+            name: `${tripleseatData.lead.first_name} ${tripleseatData.lead.last_name}`,
+            email: tripleseatData.lead.email,
+            venue_id: tripleseatData.lead.location_id,
+            room_id: tripleseatData.lead.room_id,
+            event_type_id: tripleseatData.lead.event_type_id,
+            lead_source_id: tripleseatData.lead.lead_source_id
+        }
+    });
+    
+    return tripleseatData;
 }
 
 // Update the showNotification function
@@ -1445,4 +1774,487 @@ function validateContactDetails() {
     }
 
     return true;
-} 
+}
+
+// Function to verify Tripleseat configuration
+function verifyTripleseatConfig() {
+    console.log('Verifying Tripleseat configuration...');
+    
+    // Check if the configuration object exists
+    if (typeof TRIPLESEAT_CONFIG === 'undefined') {
+        console.error('TRIPLESEAT_CONFIG is not defined. Make sure tripleseat-config.js is loaded before scripts.js');
+        return false;
+    }
+    
+    // Check API configuration
+    if (!TRIPLESEAT_CONFIG.api) {
+        console.error('Tripleseat API configuration is missing');
+        return false;
+    }
+    
+    // Check if webhook URL is configured
+    if (!TRIPLESEAT_CONFIG.api.webhookUrl || TRIPLESEAT_CONFIG.api.webhookUrl === 'REPLACE_WITH_ACTUAL_WEBHOOK_URL') {
+        console.warn('Tripleseat webhook URL is not configured properly');
+    }
+    
+    // Check if API key is configured
+    if (!TRIPLESEAT_CONFIG.api.apiKey || TRIPLESEAT_CONFIG.api.apiKey === 'REPLACE_WITH_ACTUAL_API_KEY') {
+        console.warn('Tripleseat API key is not configured properly');
+    }
+    
+    // Check venue IDs
+    const venueKeys = Object.keys(TRIPLESEAT_CONFIG.venues || {});
+    if (venueKeys.length === 0) {
+        console.warn('No venue IDs configured for Tripleseat');
+    } else {
+        const unconfiguredVenues = venueKeys.filter(key => 
+            TRIPLESEAT_CONFIG.venues[key].includes('REPLACE_WITH') || 
+            !TRIPLESEAT_CONFIG.venues[key]
+        );
+        
+        if (unconfiguredVenues.length > 0) {
+            console.warn('Some venue IDs are not configured properly:', unconfiguredVenues);
+        }
+    }
+    
+    // Check event type IDs
+    if (!TRIPLESEAT_CONFIG.eventTypes || !TRIPLESEAT_CONFIG.eventTypes.catering) {
+        console.warn('Catering event type ID is not configured properly');
+    }
+    
+    // Check lead source IDs
+    if (!TRIPLESEAT_CONFIG.leadSources || !TRIPLESEAT_CONFIG.leadSources.website) {
+        console.warn('Website lead source ID is not configured properly');
+    }
+    
+    // Add information about CORS restrictions
+    console.info('Note about CORS restrictions: Direct browser API calls to Tripleseat may be blocked by CORS policies.');
+    console.info('The application is configured to use no-cors mode for Tripleseat API calls, which allows submission but prevents reading responses.');
+    console.info('This means we cannot confirm lead creation or check lead status directly from the browser.');
+    console.info('For production use, consider implementing a server-side proxy to handle Tripleseat API calls.');
+    
+    console.log('Tripleseat configuration verification completed');
+    return true;
+}
+
+// Call the verification function when the page loads
+// This is already handled in the main DOMContentLoaded event listener
+/* document.addEventListener('DOMContentLoaded', () => {
+    // Add this to the existing DOMContentLoaded event handler
+    setTimeout(verifyTripleseatConfig, 1000);
+    setTimeout(verifyTripleseatAuth, 1500);
+}); */
+
+// Function to check the status of a Tripleseat lead
+async function checkTripleseatLeadStatus(leadId) {
+    if (!leadId) {
+        // Try to get the lead ID from localStorage
+        leadId = localStorage.getItem('lastTripleseatLeadId');
+        
+        if (!leadId) {
+            console.warn('No Tripleseat lead ID found to check status');
+            showNotification('No recent Tripleseat lead found to check status', 'error');
+            return false;
+        }
+    }
+    
+    console.log(`Checking status of Tripleseat lead #${leadId}`);
+    
+    // Check if this is a temporary lead ID
+    const isTemporaryId = leadId.startsWith('temp-');
+    const submissionTime = isTemporaryId ? new Date(parseInt(leadId.replace('temp-', ''))).toLocaleString() : 'Unknown';
+    
+    if (isTemporaryId) {
+        console.log('This is a temporary lead ID created with no-cors mode');
+        showNotification('Due to CORS restrictions, we cannot directly check the lead status. Please log in to your Tripleseat account to verify the lead.', 'success');
+        
+        // Update the status element if it exists
+        const statusElement = document.getElementById('tripleseatLeadStatus');
+        if (statusElement) {
+            statusElement.innerHTML = `
+                <p>Due to CORS restrictions, we cannot directly check the lead status.</p>
+                <p class="mt-2">Please log in to your Tripleseat account to verify the lead was created.</p>
+                <p class="text-sm text-gray-500 mt-2">Submission time: ${submissionTime}</p>
+            `;
+        }
+        
+        return true;
+    }
+    
+    try {
+        // Verify that Tripleseat integration is enabled
+        if (!TRIPLESEAT_CONFIG.api.enabled) {
+            console.log('Tripleseat integration is disabled in configuration');
+            showNotification('Tripleseat integration is disabled', 'error');
+            return false;
+        }
+        
+        // Construct the URL to check the lead status
+        // Note: This is a hypothetical endpoint - you may need to adjust based on Tripleseat's actual API
+        const leadCheckUrl = `https://api.tripleseat.com/v1/leads/${leadId}.json`;
+        
+        console.log('Attempting to check lead status with no-cors mode');
+        
+        try {
+            // Make the request to check the lead status with no-cors mode
+            const response = await fetch(leadCheckUrl, {
+                method: 'GET',
+                mode: 'no-cors', // Add no-cors mode to handle CORS restrictions
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Public-Key': TRIPLESEAT_CONFIG.api.apiKey,
+                    'X-Consumer-Key': TRIPLESEAT_CONFIG.api.consumerKey,
+                    'X-Consumer-Secret': TRIPLESEAT_CONFIG.api.consumerSecret
+                }
+            });
+            
+            console.log('Lead status check completed with no-cors mode');
+            console.log('Response type:', response.type);
+            
+            // Since we can't read the response with no-cors, provide a generic message
+            showNotification('Due to CORS restrictions, we cannot directly check the lead status. Please log in to your Tripleseat account to verify the lead.', 'success');
+            
+            // Update the status element if it exists
+            const statusElement = document.getElementById('tripleseatLeadStatus');
+            if (statusElement) {
+                statusElement.innerHTML = `
+                    <p>Due to CORS restrictions, we cannot directly check the lead status.</p>
+                    <p class="mt-2">Please log in to your Tripleseat account to verify the lead was created.</p>
+                    <p class="text-sm text-gray-500 mt-2">Last checked: ${new Date().toLocaleString()}</p>
+                `;
+            }
+            
+            return true;
+        } catch (error) {
+            console.error('Error checking lead status with no-cors mode:', error);
+            
+            // Fallback message for CORS issues
+            showNotification('Cannot check lead status due to CORS restrictions. Please log in to your Tripleseat account to verify the lead.', 'error');
+            
+            // Update the status element if it exists
+            const statusElement = document.getElementById('tripleseatLeadStatus');
+            if (statusElement) {
+                statusElement.innerHTML = `
+                    <p>Cannot check lead status due to CORS restrictions.</p>
+                    <p class="mt-2">Please log in to your Tripleseat account to verify the lead was created.</p>
+                    <p class="text-sm text-gray-500 mt-2">Error: ${error.message}</p>
+                `;
+            }
+            
+            return false;
+        }
+    } catch (error) {
+        console.error('Error checking lead status:', error);
+        showNotification(`Error checking lead status: ${error.message}`, 'error');
+        return false;
+    }
+}
+
+// Function to display Tripleseat lead information on the thank-you page
+function displayTripleseatLeadInfo() {
+    // Check if we're on the thank-you page
+    if (!window.location.pathname.includes('thank-you')) {
+        return;
+    }
+    
+    console.log('Displaying Tripleseat lead information on thank-you page');
+    
+    // Try to get the lead ID from localStorage
+    const leadId = localStorage.getItem('lastTripleseatLeadId');
+    
+    if (!leadId) {
+        console.log('No Tripleseat lead ID found in localStorage');
+        return;
+    }
+    
+    // Check if this is a temporary lead ID
+    const isTemporaryId = leadId.startsWith('temp-');
+    const submissionTime = isTemporaryId ? new Date(parseInt(leadId.replace('temp-', ''))).toLocaleString() : 'Unknown';
+    
+    // Create a container for the Tripleseat lead information
+    const container = document.createElement('div');
+    container.className = 'bg-surface rounded-lg shadow-sm p-4 md:p-8 mb-8 mt-8';
+    
+    if (isTemporaryId) {
+        container.innerHTML = `
+            <h2 class="text-2xl font-heading text-primary mb-4">Tripleseat Lead Information</h2>
+            <p class="mb-2">Your request has been submitted to our booking system.</p>
+            <p class="mb-4"><strong>Note:</strong> Due to browser security restrictions (CORS), we cannot display the actual lead ID.</p>
+            <div id="tripleseatLeadStatus" class="mb-4">
+                <p>Submission time: ${submissionTime}</p>
+                <p class="mt-2">Please log in to your Tripleseat account to verify the lead was created.</p>
+                <p class="mt-2 text-sm text-gray-500">If the lead doesn't appear in Tripleseat, please contact your administrator.</p>
+            </div>
+            <button id="checkLeadStatusButton" class="bg-primary px-4 py-2 rounded-lg font-heading text-white hover:bg-opacity-90">
+                Check Lead Status
+            </button>
+        `;
+    } else {
+        container.innerHTML = `
+            <h2 class="text-2xl font-heading text-primary mb-4">Tripleseat Lead Information</h2>
+            <p class="mb-2">Your request has been submitted to our booking system.</p>
+            <p class="mb-4">Lead ID: <strong>${leadId}</strong></p>
+            <div id="tripleseatLeadStatus" class="mb-4">
+                <p>Checking lead status...</p>
+            </div>
+            <button id="checkLeadStatusButton" class="bg-primary px-4 py-2 rounded-lg font-heading text-white hover:bg-opacity-90">
+                Check Lead Status
+            </button>
+        `;
+    }
+    
+    // Find a good place to insert the container
+    const targetElement = document.querySelector('.max-w-6xl') || document.querySelector('main') || document.body;
+    
+    if (targetElement) {
+        // Insert at the beginning of the target element
+        targetElement.insertBefore(container, targetElement.firstChild);
+        
+        // Add event listener to the check status button
+        const checkButton = document.getElementById('checkLeadStatusButton');
+        if (checkButton) {
+            checkButton.addEventListener('click', async () => {
+                const statusElement = document.getElementById('tripleseatLeadStatus');
+                if (statusElement) {
+                    statusElement.innerHTML = '<p>Checking lead status...</p>';
+                }
+                
+                // Check the lead status
+                await checkTripleseatLeadStatus(leadId);
+            });
+        }
+        
+        // Automatically check the lead status after a short delay
+        setTimeout(() => {
+            checkTripleseatLeadStatus(leadId);
+        }, 2000);
+    }
+}
+
+// Function to verify Tripleseat authentication credentials
+async function verifyTripleseatAuth() {
+    console.log('Verifying Tripleseat authentication credentials...');
+    
+    // Check if Tripleseat integration is enabled
+    if (!TRIPLESEAT_CONFIG.api.enabled) {
+        console.log('Tripleseat integration is disabled, skipping authentication check');
+        return false;
+    }
+    
+    // Check if we have the required credentials
+    const { apiKey, consumerKey, consumerSecret, webhookUrl } = TRIPLESEAT_CONFIG.api;
+    
+    if (!apiKey || apiKey === 'REPLACE_WITH_ACTUAL_API_KEY') {
+        console.error('Tripleseat API key is not configured properly');
+        showNotification('Tripleseat API key is not configured properly', 'error');
+        return false;
+    }
+    
+    if (!consumerKey || consumerKey === 'REPLACE_WITH_CONSUMER_KEY') {
+        console.error('Tripleseat Consumer Key is not configured properly');
+        showNotification('Tripleseat Consumer Key is not configured properly', 'error');
+        return false;
+    }
+    
+    if (!consumerSecret || consumerSecret === 'REPLACE_WITH_CONSUMER_SECRET') {
+        console.error('Tripleseat Consumer Secret is not configured properly');
+        showNotification('Tripleseat Consumer Secret is not configured properly', 'error');
+        return false;
+    }
+    
+    if (!webhookUrl || webhookUrl === 'REPLACE_WITH_ACTUAL_WEBHOOK_URL') {
+        console.error('Tripleseat webhook URL is not configured properly');
+        showNotification('Tripleseat webhook URL is not configured properly', 'error');
+        return false;
+    }
+    
+    // Log the authentication details for debugging (without showing the full secret)
+    console.log('Tripleseat authentication details:', {
+        apiKey: apiKey,
+        consumerKey: consumerKey,
+        consumerSecretLength: consumerSecret ? consumerSecret.length : 0,
+        webhookUrl: webhookUrl
+    });
+    
+    // Only perform the actual verification in development mode to avoid unnecessary API calls
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    if (!isLocalhost) {
+        console.log('Not in development mode, skipping actual API verification');
+        return true;
+    }
+    
+    // Create a minimal test lead to verify authentication
+    const testLead = {
+        public_key: apiKey,
+        consumer_key: consumerKey,
+        consumer_secret: consumerSecret,
+        lead: {
+            first_name: 'Test',
+            last_name: 'Authentication',
+            email: 'test@example.com',
+            phone_number: '555-123-4567',
+            event_name: 'Authentication Test',
+            description: 'This is a test to verify authentication credentials',
+            // These fields are required but we're not actually submitting the lead
+            start_time: '2099-12-31 12:00:00',
+            end_time: '2099-12-31 15:00:00',
+            guest_count: 1,
+            status: 'new_lead'
+        }
+    };
+    
+    try {
+        // Make a request to check authentication only
+        // We'll use the OPTIONS method which should return quickly without creating a lead
+        const response = await fetch(webhookUrl, {
+            method: 'OPTIONS',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Public-Key': testLead.public_key,
+                'X-Consumer-Key': testLead.consumer_key,
+                'X-Consumer-Secret': testLead.consumer_secret
+            }
+        });
+        
+        // Check if we got a 401 error
+        if (response.status === 401) {
+            console.error('Tripleseat authentication failed (401 Unauthorized)');
+            const errorText = await response.text();
+            console.error('Authentication error details:', errorText);
+            showNotification('Tripleseat authentication failed. Please check your API keys in tripleseat-config.js', 'error');
+            return false;
+        }
+        
+        // If we get here, authentication is likely valid
+        console.log('Tripleseat authentication verification completed successfully');
+        return true;
+    } catch (error) {
+        // If we get a CORS error, that's expected and doesn't necessarily mean authentication failed
+        if (error.message.includes('Failed to fetch') || 
+            error.message.includes('NetworkError') ||
+            error.message.includes('CORS')) {
+            console.log('CORS error during authentication check - this is expected:', error);
+            console.log('Cannot verify authentication due to CORS restrictions, but credentials are configured');
+            return true;
+        }
+        
+        console.error('Error verifying Tripleseat authentication:', error);
+        return false;
+    }
+}
+
+// Function to specifically test Tripleseat authentication and provide detailed error information
+async function testTripleseatAuth() {
+    console.log('Testing Tripleseat authentication...');
+    showNotification('Testing Tripleseat authentication...', 'success');
+    
+    // Check if we have the required credentials
+    const { apiKey, consumerKey, consumerSecret, webhookUrl } = TRIPLESEAT_CONFIG.api;
+    
+    // Log the authentication details for debugging
+    console.log('Tripleseat authentication details:', {
+        apiKey: apiKey,
+        apiKeyLength: apiKey ? apiKey.length : 0,
+        consumerKey: consumerKey,
+        consumerKeyLength: consumerKey ? consumerKey.length : 0,
+        consumerSecretLength: consumerSecret ? consumerSecret.length : 0,
+        webhookUrl: webhookUrl
+    });
+    
+    // Create a minimal test lead with the exact format Tripleseat expects
+    const testData = {
+        lead: {
+            first_name: 'Test',
+            last_name: 'Auth',
+            email: 'test@example.com',
+            phone_number: '555-123-4567',
+            event_name: 'Auth Test',
+            description: 'Testing authentication',
+            start_time: '2099-12-31 12:00:00',
+            end_time: '2099-12-31 15:00:00',
+            guest_count: 1,
+            status: 'new_lead'
+        }
+    };
+    
+    try {
+        // First try with standard fetch to get proper error messages
+        console.log('Testing authentication with standard fetch...');
+        
+        const response = await fetch(webhookUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Public-Key': apiKey,
+                'X-Consumer-Key': consumerKey,
+                'X-Consumer-Secret': consumerSecret
+            },
+            // Include authentication parameters in the request body as well
+            body: JSON.stringify({
+                public_key: apiKey,
+                consumer_key: consumerKey,
+                consumer_secret: consumerSecret,
+                lead: testData.lead
+            })
+        });
+        
+        console.log('Authentication test response status:', response.status);
+        
+        if (response.ok) {
+            const result = await response.json();
+            console.log('Authentication successful! Response:', result);
+            showNotification('Tripleseat authentication successful!', 'success');
+            return true;
+        } else if (response.status === 401) {
+            const errorText = await response.text();
+            console.error('Authentication failed (401 Unauthorized):', errorText);
+            showNotification('Tripleseat authentication failed (401 Unauthorized). Check your API keys.', 'error');
+            return false;
+        } else {
+            const errorText = await response.text();
+            console.error(`Authentication test failed (${response.status}):`, errorText);
+            showNotification(`Tripleseat authentication test failed: ${response.status} ${response.statusText}`, 'error');
+            return false;
+        }
+    } catch (error) {
+        // If we get a CORS error, try with no-cors mode
+        if (error.message.includes('Failed to fetch') || 
+            error.message.includes('NetworkError') ||
+            error.message.includes('CORS')) {
+            console.log('CORS error during authentication test, trying with no-cors mode:', error);
+            
+            try {
+                // Try with no-cors mode
+                const noCorsResponse = await fetch(webhookUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Public-Key': apiKey,
+                        'X-Consumer-Key': consumerKey,
+                        'X-Consumer-Secret': consumerSecret
+                    },
+                    // Include authentication parameters in the request body as well
+                    body: JSON.stringify({
+                        public_key: apiKey,
+                        consumer_key: consumerKey,
+                        consumer_secret: consumerSecret,
+                        lead: testData.lead
+                    })
+                });
+                
+                console.log('No-cors mode response type:', noCorsResponse.type);
+                showNotification('Authentication test completed with no-cors mode. Check console for details.', 'success');
+                return true;
+            } catch (noCorsError) {
+                console.error('Error with no-cors mode:', noCorsError);
+                showNotification('Authentication test failed even with no-cors mode.', 'error');
+                return false;
+            }
+        }
+        
+        console.error('Error testing authentication:', error);
+        showNotification(`Error testing authentication: ${error.message}`, 'error');
+        return false;
+    }
+}

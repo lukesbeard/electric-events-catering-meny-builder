@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tripleseat API Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #2563eb;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 10px;
+        }
+        .card {
+            background-color: #f9fafb;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #1d4ed8;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            background-color: #f3f4f6;
+            max-height: 300px;
+            overflow: auto;
+        }
+        .success {
+            background-color: #d1fae5;
+            border-left: 4px solid #10b981;
+        }
+        .error {
+            background-color: #fee2e2;
+            border-left: 4px solid #ef4444;
+        }
+    </style>
+</head>
+<body>
+    <h1>Tripleseat API Test</h1>
+    
+    <div class="card">
+        <h2>API Credentials</h2>
+        <form id="authForm">
+            <label for="webhookUrl">Webhook URL:</label>
+            <input type="text" id="webhookUrl" value="https://api.tripleseat.com/v1/leads/create.js">
+            
+            <label for="publicKey">Public Key:</label>
+            <input type="text" id="publicKey" value="c8b7ab91b0c9d00de35a853334586b71561a7431">
+            
+            <label for="consumerKey">Consumer Key:</label>
+            <input type="text" id="consumerKey" value="Uef2cN123bPUupBzgGYjZKbxeUeAwwxaAnf02PSA">
+            
+            <label for="consumerSecret">Consumer Secret:</label>
+            <input type="text" id="consumerSecret" value="ePYEyf4nnzE2pVkBJWk7wu7AInM2QwICpIilK8MR">
+            
+            <button type="button" id="testAuthButton">Test Authentication</button>
+        </form>
+        <div id="authResult" class="result"></div>
+    </div>
+    
+    <div class="card">
+        <h2>Create Test Lead</h2>
+        <form id="leadForm">
+            <label for="firstName">First Name:</label>
+            <input type="text" id="firstName" value="Test">
+            
+            <label for="lastName">Last Name:</label>
+            <input type="text" id="lastName" value="User">
+            
+            <label for="email">Email:</label>
+            <input type="email" id="email" value="test@example.com">
+            
+            <label for="phone">Phone:</label>
+            <input type="text" id="phone" value="555-123-4567">
+            
+            <label for="eventName">Event Name:</label>
+            <input type="text" id="eventName" value="Test Event">
+            
+            <label for="description">Description:</label>
+            <textarea id="description">This is a test lead created from the API test page.</textarea>
+            
+            <label for="venueId">Venue ID:</label>
+            <input type="text" id="venueId" value="20521">
+            
+            <label for="roomId">Room ID:</label>
+            <input type="text" id="roomId" value="241847">
+            
+            <label for="eventTypeId">Event Type ID:</label>
+            <input type="text" id="eventTypeId" value="1">
+            
+            <label for="leadSourceId">Lead Source ID:</label>
+            <input type="text" id="leadSourceId" value="112995">
+            
+            <button type="button" id="createLeadButton">Create Test Lead</button>
+        </form>
+        <div id="leadResult" class="result"></div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Test Authentication
+            document.getElementById('testAuthButton').addEventListener('click', async function() {
+                const resultDiv = document.getElementById('authResult');
+                resultDiv.textContent = 'Testing authentication...';
+                resultDiv.className = 'result';
+                
+                try {
+                    const webhookUrl = document.getElementById('webhookUrl').value;
+                    const publicKey = document.getElementById('publicKey').value;
+                    const consumerKey = document.getElementById('consumerKey').value;
+                    const consumerSecret = document.getElementById('consumerSecret').value;
+                    
+                    // Create a minimal test lead
+                    const testData = {
+                        public_key: publicKey,
+                        consumer_key: consumerKey,
+                        consumer_secret: consumerSecret,
+                        lead: {
+                            first_name: 'Test',
+                            last_name: 'Auth',
+                            email: 'test@example.com',
+                            phone_number: '555-123-4567',
+                            event_name: 'Auth Test',
+                            description: 'Testing authentication',
+                            start_time: '2099-12-31 12:00:00',
+                            end_time: '2099-12-31 15:00:00',
+                            guest_count: 1,
+                            status: 'new_lead'
+                        }
+                    };
+                    
+                    // Log the request details
+                    console.log('Testing authentication with:', {
+                        url: webhookUrl,
+                        publicKey: publicKey,
+                        consumerKey: consumerKey,
+                        consumerSecretLength: consumerSecret ? consumerSecret.length : 0
+                    });
+                    
+                    // Make the request
+                    const response = await fetch(webhookUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Public-Key': publicKey,
+                            'X-Consumer-Key': consumerKey,
+                            'X-Consumer-Secret': consumerSecret
+                        },
+                        body: JSON.stringify(testData)
+                    });
+                    
+                    // Get the response text
+                    const responseText = await response.text();
+                    let responseData;
+                    try {
+                        responseData = JSON.parse(responseText);
+                    } catch (e) {
+                        responseData = { text: responseText };
+                    }
+                    
+                    // Display the result
+                    if (response.ok) {
+                        resultDiv.className = 'result success';
+                        resultDiv.textContent = 'Authentication successful!\n\nResponse:\n' + JSON.stringify(responseData, null, 2);
+                    } else {
+                        resultDiv.className = 'result error';
+                        resultDiv.textContent = `Authentication failed: ${response.status} ${response.statusText}\n\nResponse:\n${JSON.stringify(responseData, null, 2)}`;
+                    }
+                } catch (error) {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = 'Error: ' + error.message;
+                    console.error('Authentication test error:', error);
+                }
+            });
+            
+            // Create Test Lead
+            document.getElementById('createLeadButton').addEventListener('click', async function() {
+                const resultDiv = document.getElementById('leadResult');
+                resultDiv.textContent = 'Creating test lead...';
+                resultDiv.className = 'result';
+                
+                try {
+                    const webhookUrl = document.getElementById('webhookUrl').value;
+                    const publicKey = document.getElementById('publicKey').value;
+                    const consumerKey = document.getElementById('consumerKey').value;
+                    const consumerSecret = document.getElementById('consumerSecret').value;
+                    
+                    // Get lead data from form
+                    const firstName = document.getElementById('firstName').value;
+                    const lastName = document.getElementById('lastName').value;
+                    const email = document.getElementById('email').value;
+                    const phone = document.getElementById('phone').value;
+                    const eventName = document.getElementById('eventName').value;
+                    const description = document.getElementById('description').value;
+                    const venueId = document.getElementById('venueId').value;
+                    const roomId = document.getElementById('roomId').value;
+                    const eventTypeId = document.getElementById('eventTypeId').value;
+                    const leadSourceId = document.getElementById('leadSourceId').value;
+                    
+                    // Calculate dates
+                    const now = new Date();
+                    const startDate = new Date(now);
+                    startDate.setDate(now.getDate() + 30); // 30 days from now
+                    const endDate = new Date(startDate);
+                    endDate.setHours(endDate.getHours() + 3); // 3 hours later
+                    
+                    // Format dates for Tripleseat (YYYY-MM-DD HH:MM:SS)
+                    const formatDate = (date) => {
+                        return date.toISOString().slice(0, 19).replace('T', ' ');
+                    };
+                    
+                    // Create lead data
+                    const leadData = {
+                        public_key: publicKey,
+                        consumer_key: consumerKey,
+                        consumer_secret: consumerSecret,
+                        lead: {
+                            first_name: firstName,
+                            last_name: lastName,
+                            email: email,
+                            phone_number: phone,
+                            event_name: eventName,
+                            description: description,
+                            start_time: formatDate(startDate),
+                            end_time: formatDate(endDate),
+                            guest_count: 10,
+                            location_id: venueId,
+                            room_id: roomId,
+                            status: 'new_lead',
+                            event_type_id: eventTypeId,
+                            lead_source_id: leadSourceId
+                        }
+                    };
+                    
+                    // Log the request details
+                    console.log('Creating lead with:', {
+                        url: webhookUrl,
+                        lead: leadData.lead
+                    });
+                    
+                    // Make the request
+                    const response = await fetch(webhookUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Public-Key': publicKey,
+                            'X-Consumer-Key': consumerKey,
+                            'X-Consumer-Secret': consumerSecret
+                        },
+                        body: JSON.stringify(leadData)
+                    });
+                    
+                    // Get the response text
+                    const responseText = await response.text();
+                    let responseData;
+                    try {
+                        responseData = JSON.parse(responseText);
+                    } catch (e) {
+                        responseData = { text: responseText };
+                    }
+                    
+                    // Display the result
+                    if (response.ok) {
+                        resultDiv.className = 'result success';
+                        resultDiv.textContent = 'Lead created successfully!\n\nResponse:\n' + JSON.stringify(responseData, null, 2);
+                    } else {
+                        resultDiv.className = 'result error';
+                        resultDiv.textContent = `Lead creation failed: ${response.status} ${response.statusText}\n\nResponse:\n${JSON.stringify(responseData, null, 2)}`;
+                    }
+                } catch (error) {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = 'Error: ' + error.message;
+                    console.error('Lead creation error:', error);
+                }
+            });
+        });
+    </script>
+</body>
+</html> 
