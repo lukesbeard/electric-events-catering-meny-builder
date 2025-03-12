@@ -458,6 +458,17 @@ function formatEmailMessage(formData) {
     const tax = subtotal * 0.089;
     const total = subtotal + tax;
 
+    // Determine if this is a Dug Out order
+    const isDugOutOrder = formData.source === 'The Dug-Out';
+
+    // Format the location display based on the source
+    let locationDisplay = '';
+    if (isDugOutOrder) {
+        locationDisplay = `Drop Off Location: ${formData.delivery.location}`;
+    } else {
+        locationDisplay = `Location: ${formData.delivery.location}`;
+    }
+
     return `
 Thank you for your catering quote request! We'll review your details and get back to you shortly.
 
@@ -474,7 +485,7 @@ Phone: ${formData.contact.phone}
 
 Delivery Details
 ---------------
-Location: ${formData.delivery.location}
+${locationDisplay}
 Dropoff Date: ${new Date(formData.delivery.date).toLocaleDateString()}
 Dropoff Time: ${formData.delivery.time}
 
@@ -627,6 +638,9 @@ async function sendOrderEmail(event) {
         
         console.log('Preparing form data for submission');
 
+        // Determine if we're on the Dug Out page
+        const isDugOutPage = document.body.classList.contains('dugout-menu') || window.location.pathname.includes('the-dug-out-catering');
+        
         // Get all form data
         const formData = {
             source: document.body.classList.contains('muchacho-menu') ? 'Muchacho' : 
@@ -636,11 +650,23 @@ async function sendOrderEmail(event) {
                 email: document.getElementById('contactEmail').value,
                 phone: document.getElementById('contactPhone').value
             },
-            delivery: {
-                location: document.getElementById('locationField').value,
-                date: document.getElementById('dropoffDate').value,
-                time: document.getElementById('dropoffTime').value
-            },
+            delivery: isDugOutPage ? 
+                {
+                    // For Dug Out, use location field directly
+                    location: document.getElementById('locationField').value,
+                    // Add these for backward compatibility with the Google Sheet
+                    address: document.getElementById('locationField').value,
+                    city: "Atlanta",
+                    zip: "30309",
+                    date: document.getElementById('dropoffDate').value,
+                    time: document.getElementById('dropoffTime').value
+                } : 
+                {
+                    // For other pages, use the original structure
+                    location: document.getElementById('locationField').value,
+                    date: document.getElementById('dropoffDate').value,
+                    time: document.getElementById('dropoffTime').value
+                },
             partySize: getPartySize(),
             order: getOrderDetails(),
             subtotal: document.getElementById('subtotalPrice').textContent.split(' + ')[0],
