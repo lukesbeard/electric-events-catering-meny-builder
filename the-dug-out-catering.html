@@ -401,6 +401,23 @@
                                 <span id="totalPriceWithTax" class="text-3xl font-heading text-primary">$0.00</span>
                                 <span id="subtotalPrice" class="text-sm text-textColor">$0.00 + 8.9% Tax</span>
                             </div>
+                            <!-- Test Buttons (only visible on localhost) -->
+                            <div class="flex gap-2" id="testButtonsContainer" style="display: none;">
+                                <button type="button" 
+                                        id="testOrderButton"
+                                        style="color:#fff"
+                                        onclick="console.log('Test Order button clicked via onclick'); fillTestOrder();"
+                                        class="bg-blue-600 px-4 py-3 rounded-lg font-heading text-xl hover:bg-opacity-90 flex items-center gap-2">
+                                    <span>Fill Test Order</span>
+                                </button>
+                                <button type="button" 
+                                        id="testSubmitButton"
+                                        style="color:#fff"
+                                        onclick="console.log('Test Submit button clicked via onclick'); testSubmitToGoogleSheet();"
+                                        class="bg-purple-600 px-4 py-3 rounded-lg font-heading text-xl hover:bg-opacity-90 flex items-center gap-2">
+                                    <span>Test Submit</span>
+                                </button>
+                            </div>
                             <button type="submit" 
                                     id="submitButton"
                                     disabled

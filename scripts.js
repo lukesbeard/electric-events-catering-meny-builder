@@ -205,7 +205,98 @@ async function initializeMenuTables() {
 }
 
 // Call initialization when DOM is loaded
-document.addEventListener('DOMContentLoaded', initializeMenuTables);
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM content loaded, initializing application...');
+    initializeMenuTables();
+    initializeEventListeners();
+    addRequiredFieldsIndicators();
+    initializeAutoSave();
+    restoreFormProgress();
+    initializeTestButton();
+    
+    // Debug test buttons after a short delay to ensure DOM is fully processed
+    setTimeout(debugTestButtons, 1000);
+    
+    // Remove duplicate event listener and ensure only one exists
+    const form = document.getElementById('orderForm');
+    console.log('Form element found:', !!form);
+    
+    if (!form) {
+        console.error('Order form not found in the DOM!');
+        return;
+    }
+    
+    // Remove any existing event listeners (not directly possible, but we can replace the element)
+    const newForm = form.cloneNode(true);
+    form.parentNode.replaceChild(newForm, form);
+    console.log('Form element cloned to remove existing listeners');
+    
+    // Add the event listener to the new form
+    newForm.addEventListener('submit', function(event) {
+        console.log('Form submit event triggered!', event);
+        event.preventDefault();
+        console.log('Form submitted, processing...');
+        sendOrderEmail(event);
+    });
+    
+    console.log('Current config:', getCurrentConfig().id);
+    console.log('Form submission handler attached to form:', newForm.id);
+    
+    // Add a global click handler to debug all clicks
+    document.addEventListener('click', function(event) {
+        console.log('Click detected on:', event.target.tagName, 
+                   'ID:', event.target.id, 
+                   'Class:', event.target.className);
+    });
+});
+
+// Debug function to check test button visibility
+function debugTestButtons() {
+    console.log('Debugging test buttons...');
+    
+    const testButtonsContainer = document.getElementById('testButtonsContainer');
+    const testOrderButton = document.getElementById('testOrderButton');
+    const testSubmitButton = document.getElementById('testSubmitButton');
+    
+    if (!testButtonsContainer) {
+        console.error('Test buttons container not found!');
+        return;
+    }
+    
+    // Check if we're on localhost
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    console.log('Is localhost:', isLocalhost);
+    
+    // Get computed styles
+    const containerStyle = window.getComputedStyle(testButtonsContainer);
+    console.log('Test buttons container display:', containerStyle.display);
+    console.log('Test buttons container visibility:', containerStyle.visibility);
+    
+    if (testOrderButton) {
+        console.log('Test order button exists');
+        console.log('Test order button display:', window.getComputedStyle(testOrderButton).display);
+        
+        // Force visibility if on localhost
+        if (isLocalhost && containerStyle.display === 'none') {
+            console.log('Forcing test buttons container to be visible');
+            testButtonsContainer.style.display = 'flex';
+            
+            // Check again after forcing display
+            setTimeout(() => {
+                console.log('After forcing display:', window.getComputedStyle(testButtonsContainer).display);
+            }, 100);
+        }
+    } else {
+        console.error('Test order button not found!');
+    }
+    
+    if (testSubmitButton) {
+        console.log('Test submit button exists');
+        console.log('Test submit button display:', window.getComputedStyle(testSubmitButton).display);
+    } else {
+        console.error('Test submit button not found!');
+    }
+}
 
 // UI Helper Functions
 function createMenuRow(item) {
@@ -406,31 +497,252 @@ function validate72HourRequirement(showAlert = true) {
     return true;
 }
 
-// Update the DOMContentLoaded event listener
-document.addEventListener('DOMContentLoaded', () => {
-    initializeMenuTables();
-    initializeEventListeners();
-    addRequiredFieldsIndicators();
-    initializeAutoSave();
-    restoreFormProgress();
+// Initialize test button for localhost testing
+function initializeTestButton() {
+    console.log('Initializing test buttons...');
     
-    // Remove duplicate event listener and ensure only one exists
-    const form = document.getElementById('orderForm');
+    const testButtonsContainer = document.getElementById('testButtonsContainer');
+    const testOrderButton = document.getElementById('testOrderButton');
+    const testSubmitButton = document.getElementById('testSubmitButton');
     
-    // Remove any existing event listeners (not directly possible, but we can replace the element)
-    const newForm = form.cloneNode(true);
-    form.parentNode.replaceChild(newForm, form);
-    
-    // Add the event listener to the new form
-    newForm.addEventListener('submit', function(event) {
-        event.preventDefault();
-        console.log('Form submitted, processing...');
-        sendOrderEmail(event);
+    console.log('Test buttons found:', {
+        container: !!testButtonsContainer,
+        orderButton: !!testOrderButton,
+        submitButton: !!testSubmitButton
     });
     
-    console.log('Current config:', getCurrentConfig().id);
-    console.log('Form submission handler attached');
-});
+    if (!testButtonsContainer || !testOrderButton || !testSubmitButton) {
+        console.warn('Some test buttons not found in the DOM');
+        return;
+    }
+    
+    // Only show the test buttons on localhost
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    console.log('Is localhost:', isLocalhost, 'Hostname:', window.location.hostname);
+    
+    if (isLocalhost) {
+        console.log('Showing test buttons and attaching event handlers');
+        testButtonsContainer.style.display = 'flex';
+        
+        // Add click handler for filling test data
+        testOrderButton.addEventListener('click', function(event) {
+            console.log('Test Order button clicked!');
+            fillTestOrder();
+        });
+        
+        // Add click handler for test submission
+        testSubmitButton.addEventListener('click', function(event) {
+            console.log('Test Submit button clicked!');
+            // First fill the form with test data if it's not already filled
+            if (!document.getElementById('contactName').value) {
+                console.log('Form not filled, filling with test data first');
+                fillTestOrder();
+                
+                // Wait a bit for the test data to be filled and menu items to be added
+                setTimeout(() => {
+                    console.log('Timeout completed, now submitting to Google Sheet');
+                    testSubmitToGoogleSheet();
+                }, 2000);
+            } else {
+                console.log('Form already filled, submitting directly');
+                testSubmitToGoogleSheet();
+            }
+        });
+        
+        // Add visual feedback on hover
+        testOrderButton.addEventListener('mouseover', function() {
+            console.log('Test Order button hover');
+            this.style.opacity = '0.8';
+        });
+        
+        testOrderButton.addEventListener('mouseout', function() {
+            this.style.opacity = '1';
+        });
+        
+        testSubmitButton.addEventListener('mouseover', function() {
+            console.log('Test Submit button hover');
+            this.style.opacity = '0.8';
+        });
+        
+        testSubmitButton.addEventListener('mouseout', function() {
+            this.style.opacity = '1';
+        });
+        
+        console.log('Test buttons initialized successfully');
+    } else {
+        console.log('Not localhost, hiding test buttons');
+        testButtonsContainer.style.display = 'none';
+    }
+}
+
+// Function to test submission to Google Sheet
+function testSubmitToGoogleSheet() {
+    console.log('testSubmitToGoogleSheet function called');
+    
+    try {
+        // Add forcesubmit=true to the URL
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set('forcesubmit', 'true');
+        
+        console.log('Test submitting to Google Sheet with URL:', currentUrl.toString());
+        showNotification('Submitting test data to Google Sheet...', 'success');
+        
+        // Submit the form
+        const form = document.getElementById('orderForm');
+        if (form) {
+            console.log('Form found, dispatching submit event');
+            const submitEvent = new Event('submit', {
+                bubbles: true,
+                cancelable: true
+            });
+            form.dispatchEvent(submitEvent);
+            console.log('Submit event dispatched');
+        } else {
+            console.error('Form not found');
+            showNotification('Error: Form not found', 'error');
+        }
+    } catch (error) {
+        console.error('Error in testSubmitToGoogleSheet:', error);
+        showNotification('Error submitting test data: ' + error.message, 'error');
+    }
+}
+
+// Fill the form with test data
+function fillTestOrder() {
+    console.log('fillTestOrder function called');
+    
+    try {
+        // Fill contact information
+        const contactName = document.getElementById('contactName');
+        if (contactName) {
+            contactName.value = 'Test Customer';
+            console.log('Set contact name to:', contactName.value);
+        } else {
+            console.warn('contactName element not found');
+        }
+        
+        const contactEmail = document.getElementById('contactEmail');
+        if (contactEmail) {
+            contactEmail.value = 'test@example.com';
+            console.log('Set contact email to:', contactEmail.value);
+        } else {
+            console.warn('contactEmail element not found');
+        }
+        
+        const contactPhone = document.getElementById('contactPhone');
+        if (contactPhone) {
+            contactPhone.value = '555-123-4567';
+            console.log('Set contact phone to:', contactPhone.value);
+        } else {
+            console.warn('contactPhone element not found');
+        }
+        
+        // Fill location field
+        const locationField = document.getElementById('locationField');
+        if (locationField) {
+            locationField.value = 'Major Field';
+            console.log('Set location field to:', locationField.value);
+        } else {
+            console.warn('locationField element not found');
+        }
+        
+        // Set party size
+        const exactSizeRadio = document.getElementById('exactSize');
+        const exactPartySize = document.getElementById('exactPartySize');
+        if (exactSizeRadio && exactPartySize) {
+            exactSizeRadio.checked = true;
+            exactPartySize.value = '50';
+            console.log('Set party size to exact:', exactPartySize.value);
+            
+            // Disable range inputs
+            const partySizeMin = document.getElementById('partySizeMin');
+            const partySizeMax = document.getElementById('partySizeMax');
+            if (partySizeMin) partySizeMin.disabled = true;
+            if (partySizeMax) partySizeMax.disabled = true;
+        } else {
+            console.warn('Party size elements not found:', {
+                exactSizeRadio: !!exactSizeRadio,
+                exactPartySize: !!exactPartySize
+            });
+        }
+        
+        // Set date and time (3 days from now at 2:00 PM)
+        const currentDate = new Date();
+        const testDate = new Date(currentDate);
+        testDate.setDate(currentDate.getDate() + 3);
+        
+        const dateField = document.getElementById('dropoffDate');
+        if (dateField) {
+            const formattedDate = testDate.toISOString().split('T')[0];
+            dateField.value = formattedDate;
+            console.log('Set date field to:', dateField.value);
+        } else {
+            console.warn('dropoffDate element not found');
+        }
+        
+        const timeField = document.getElementById('dropoffTime');
+        if (timeField) {
+            timeField.value = '14:00';
+            console.log('Set time field to:', timeField.value);
+        } else {
+            console.warn('dropoffTime element not found');
+        }
+        
+        // Add comments
+        const commentsField = document.getElementById('comments');
+        if (commentsField) {
+            commentsField.value = 'This is a test order generated automatically for development purposes.';
+            console.log('Set comments field');
+        } else {
+            console.warn('comments element not found');
+        }
+        
+        console.log('Basic form fields filled, now adding menu items...');
+        
+        // Add some menu items (wait for menu to load)
+        setTimeout(() => {
+            try {
+                // Get all quantity inputs
+                const quantityInputs = document.querySelectorAll('.quantity-input');
+                console.log('Found quantity inputs:', quantityInputs.length);
+                
+                if (quantityInputs.length > 0) {
+                    // Add random quantities to some items
+                    const itemCount = Math.min(quantityInputs.length, 5); // Add up to 5 items
+                    console.log('Adding quantities to', itemCount, 'items');
+                    
+                    for (let i = 0; i < itemCount; i++) {
+                        const randomIndex = Math.floor(Math.random() * quantityInputs.length);
+                        const input = quantityInputs[randomIndex];
+                        
+                        // Set a random quantity between 1 and 5
+                        const quantity = Math.floor(Math.random() * 5) + 1;
+                        input.value = quantity;
+                        console.log('Set item quantity:', input.dataset.itemName, 'to', quantity);
+                        
+                        // Update subtotal
+                        updateSubtotal(input);
+                    }
+                    
+                    // Update total
+                    updateTotal();
+                    
+                    console.log('Test order filled successfully!');
+                    showNotification('Test order data filled successfully!', 'success');
+                } else {
+                    console.warn('No menu items found to add to test order');
+                    showNotification('Could not find menu items to add to test order', 'error');
+                }
+            } catch (error) {
+                console.error('Error filling menu items:', error);
+                showNotification('Error filling menu items: ' + error.message, 'error');
+            }
+        }, 1500); // Wait for menu to load
+    } catch (error) {
+        console.error('Error in fillTestOrder:', error);
+        showNotification('Error filling test order: ' + error.message, 'error');
+    }
+}
 
 // Add a loading spinner function
 function addLoadingSpinner(table) {
@@ -541,12 +853,21 @@ function saveFormProgress() {
         }))
         .filter(item => item.itemName);
 
+    // Get location field value
+    const locationField = document.getElementById('locationField');
+    
     const data = {
         quantities: quantities,
         timestamp: new Date().getTime(),
+        contact: {
+            name: document.getElementById('contactName')?.value || '',
+            email: document.getElementById('contactEmail')?.value || '',
+            phone: document.getElementById('contactPhone')?.value || ''
+        },
         delivery: {
+            location: locationField?.value || '',
             date: document.getElementById('dropoffDate')?.value || '',
-            time: document.getElementById('dropoffTime').value || ''
+            time: document.getElementById('dropoffTime')?.value || ''
         }
     };
 
@@ -558,13 +879,43 @@ function restoreFormProgress() {
     const savedData = getFromLocalStorage();
     if (!savedData) return;
 
-    // Restore date and time if they exist
+    // Restore contact info if it exists
+    if (savedData.contact) {
+        const contactFields = [
+            { id: 'contactName', value: savedData.contact.name },
+            { id: 'contactEmail', value: savedData.contact.email },
+            { id: 'contactPhone', value: savedData.contact.phone }
+        ];
+        
+        contactFields.forEach(field => {
+            const element = document.getElementById(field.id);
+            if (element && field.value) {
+                element.value = field.value;
+            }
+        });
+    }
+    
+    // Restore delivery info if it exists
     if (savedData.delivery) {
-        if (savedData.delivery.date) {
-            document.getElementById('dropoffDate').value = savedData.delivery.date;
+        // Restore location if it exists
+        const locationField = document.getElementById('locationField');
+        if (locationField && savedData.delivery.location) {
+            locationField.value = savedData.delivery.location;
         }
+        
+        // Restore date and time
+        if (savedData.delivery.date) {
+            const dateField = document.getElementById('dropoffDate');
+            if (dateField) {
+                dateField.value = savedData.delivery.date;
+            }
+        }
+        
         if (savedData.delivery.time) {
-            document.getElementById('dropoffTime').value = savedData.delivery.time;
+            const timeField = document.getElementById('dropoffTime');
+            if (timeField) {
+                timeField.value = savedData.delivery.time;
+            }
         }
     }
 
@@ -640,53 +991,82 @@ async function sendOrderEmail(event) {
 
         // Determine if we're on the Dug Out page
         const isDugOutPage = document.body.classList.contains('dugout-menu') || window.location.pathname.includes('the-dug-out-catering');
+        console.log('Is Dug Out page:', isDugOutPage);
+        
+        // Get location field value
+        const locationValue = document.getElementById('locationField')?.value || '';
+        console.log('Location field value:', locationValue);
         
         // Get all form data
         const formData = {
             source: document.body.classList.contains('muchacho-menu') ? 'Muchacho' : 
                    (document.body.classList.contains('dugout-menu') ? 'The Dug-Out' : 'Ladybird'),
             contact: {
-                name: document.getElementById('contactName').value,
-                email: document.getElementById('contactEmail').value,
-                phone: document.getElementById('contactPhone').value
+                name: document.getElementById('contactName')?.value || '',
+                email: document.getElementById('contactEmail')?.value || '',
+                phone: document.getElementById('contactPhone')?.value || ''
             },
-            delivery: isDugOutPage ? 
-                {
-                    // For Dug Out, use location field directly
-                    location: document.getElementById('locationField').value,
-                    // Add these for backward compatibility with the Google Sheet
-                    address: document.getElementById('locationField').value,
-                    city: "Atlanta",
-                    zip: "30309",
-                    date: document.getElementById('dropoffDate').value,
-                    time: document.getElementById('dropoffTime').value
-                } : 
-                {
-                    // For other pages, use the original structure
-                    location: document.getElementById('locationField').value,
-                    date: document.getElementById('dropoffDate').value,
-                    time: document.getElementById('dropoffTime').value
-                },
+            delivery: {
+                // Include all fields for all venues to ensure compatibility
+                location: locationValue,
+                address: locationValue, // Use location value as address
+                city: isDugOutPage ? "Atlanta" : document.getElementById('locationCity')?.value || '',
+                zip: isDugOutPage ? "30309" : document.getElementById('locationZip')?.value || '',
+                date: document.getElementById('dropoffDate')?.value || '',
+                time: document.getElementById('dropoffTime')?.value || ''
+            },
             partySize: getPartySize(),
             order: getOrderDetails(),
-            subtotal: document.getElementById('subtotalPrice').textContent.split(' + ')[0],
-            total: document.getElementById('totalPriceWithTax').textContent,
-            comments: document.getElementById('comments').value
+            subtotal: document.getElementById('subtotalPrice')?.textContent.split(' + ')[0] || '$0.00',
+            total: document.getElementById('totalPriceWithTax')?.textContent || '$0.00',
+            comments: document.getElementById('comments')?.value || ''
         };
         
         console.log('Form data prepared:', formData);
+        console.log('Delivery details:', {
+            location: formData.delivery.location,
+            address: formData.delivery.address,
+            city: formData.delivery.city,
+            zip: formData.delivery.zip
+        });
 
         // Check if we're in development
-        const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const forceDevMode = new URLSearchParams(window.location.search).get('devmode') === 'true';
+        const isDevelopment = forceDevMode || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const forceSubmit = new URLSearchParams(window.location.search).get('forcesubmit') === 'true';
         
         console.log('Environment:', isDevelopment ? 'Development' : 'Production');
+        console.log('Force submit:', forceSubmit ? 'Yes' : 'No');
 
-        if (isDevelopment) {
+        if (isDevelopment && !forceSubmit) {
             // Development code...
             console.log('Development mode - skipping actual submission');
+            console.log('%c FORM DATA THAT WOULD BE SENT:', 'background: #333; color: #bada55; font-size: 16px;');
+            console.table({
+                'Source': formData.source,
+                'Contact Name': formData.contact.name,
+                'Contact Email': formData.contact.email,
+                'Contact Phone': formData.contact.phone
+            });
+            console.table({
+                'Location': formData.delivery.location,
+                'Address': formData.delivery.address,
+                'City': formData.delivery.city,
+                'ZIP': formData.delivery.zip,
+                'Date': formData.delivery.date,
+                'Time': formData.delivery.time
+            });
+            console.log('Party Size:', formData.partySize);
+            console.log('Order Details:', formData.order);
+            console.log('Subtotal:', formData.subtotal);
+            console.log('Total:', formData.total);
+            console.log('Comments:', formData.comments);
+            
+            // Show a success notification for testing
+            showNotification('TEST MODE: Form data logged to console. Submission would be successful in production.', 'success');
             sheetSubmissionSuccessful = true;
         } else {
-            // Production mode - try both methods for sheet submission
+            // Production mode or forced submission from localhost
             try {
                 console.log('Attempting to submit to sheet via proxy');
                 // First try with proxy
@@ -732,36 +1112,42 @@ async function sendOrderEmail(event) {
 
             // Only proceed with email if sheet submission was successful
             if (sheetSubmissionSuccessful) {
-                console.log('Sheet submission successful, proceeding with email');
-                // Create FormData object for email
-                const emailForm = new FormData();
-                emailForm.append('access_key', 'f890e702-fef2-4b76-84bf-0e5bf3262032');
-                emailForm.append('subject', `Electric Events Catering Quote - ${formData.contact.name} - Party of ${formData.partySize}`);
-                emailForm.append('name', formData.contact.name);
-                emailForm.append('email', formData.contact.email);
-                emailForm.append('from_name', "Electric Events Catering");
-                emailForm.append('replyto', "brad@electric-hospitality.com");
-                emailForm.append('message', formatEmailMessage(formData));
-                emailForm.append('ccemail', "michael@electric-hospitality.com;joe@electric-hospitality.com; brad@electric-hospitality.com; Landon@electric-hospitality.com");
-                emailForm.append('botcheck', '');
-                emailForm.append('autoresponse', 'true');
-
-                console.log('Sending email via Web3Forms');
-                const emailResponse = await fetch('https://api.web3forms.com/submit', {
-                    method: 'POST',
-                    body: emailForm
-                });
-
-                const result = await emailResponse.json();
-                console.log('Email submission result:', result);
-                
-                if (result.success) {
-                    clearSavedData();
-                    showNotification('Quote request submitted successfully! We\'ll be in touch soon.', 'success');
-                    console.log('Form submitted successfully! Redirecting to thank-you page');
-                    window.location.href = 'thank-you.html';  // Re-enable the redirect
+                // If we're in development mode but forced submission, show a success message without sending email
+                if (isDevelopment && forceSubmit) {
+                    console.log('Sheet submission successful in test mode with forcesubmit=true');
+                    showNotification('TEST MODE: Successfully submitted to Google Sheet! Email sending skipped.', 'success');
                 } else {
-                    throw new Error(result.message || 'Failed to submit quote request');
+                    console.log('Sheet submission successful, proceeding with email');
+                    // Create FormData object for email
+                    const emailForm = new FormData();
+                    emailForm.append('access_key', 'f890e702-fef2-4b76-84bf-0e5bf3262032');
+                    emailForm.append('subject', `Electric Events Catering Quote - ${formData.contact.name} - Party of ${formData.partySize}`);
+                    emailForm.append('name', formData.contact.name);
+                    emailForm.append('email', formData.contact.email);
+                    emailForm.append('from_name', "Electric Events Catering");
+                    emailForm.append('replyto', "brad@electric-hospitality.com");
+                    emailForm.append('message', formatEmailMessage(formData));
+                    emailForm.append('ccemail', "michael@electric-hospitality.com;joe@electric-hospitality.com; brad@electric-hospitality.com; Landon@electric-hospitality.com");
+                    emailForm.append('botcheck', '');
+                    emailForm.append('autoresponse', 'true');
+
+                    console.log('Sending email via Web3Forms');
+                    const emailResponse = await fetch('https://api.web3forms.com/submit', {
+                        method: 'POST',
+                        body: emailForm
+                    });
+
+                    const result = await emailResponse.json();
+                    console.log('Email submission result:', result);
+                    
+                    if (result.success) {
+                        clearSavedData();
+                        showNotification('Quote request submitted successfully! We\'ll be in touch soon.', 'success');
+                        console.log('Form submitted successfully! Redirecting to thank-you page');
+                        window.location.href = 'thank-you.html';  // Re-enable the redirect
+                    } else {
+                        throw new Error(result.message || 'Failed to submit quote request');
+                    }
                 }
             }
         }
