@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tripleseat API Test - Improved</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1, h2, h3 {
+            color: #2563eb;
+        }
+        h1 {
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 10px;
+        }
+        .card {
+            background-color: #f9fafb;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        .explanation {
+            background-color: #eff6ff;
+            border-left: 4px solid #2563eb;
+        }
+        .warning {
+            background-color: #fff7ed;
+            border-left: 4px solid #f97316;
+        }
+        .success {
+            background-color: #d1fae5;
+            border-left: 4px solid #10b981;
+        }
+        .error {
+            background-color: #fee2e2;
+            border-left: 4px solid #ef4444;
+        }
+        pre {
+            background-color: #f3f4f6;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        code {
+            background-color: #f3f4f6;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        button {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.2s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #1d4ed8;
+        }
+        button.secondary {
+            background-color: #6b7280;
+        }
+        button.secondary:hover {
+            background-color: #4b5563;
+        }
+        button.success {
+            background-color: #10b981;
+        }
+        button.success:hover {
+            background-color: #059669;
+        }
+        button.warning {
+            background-color: #f97316;
+        }
+        button.warning:hover {
+            background-color: #ea580c;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            background-color: #f3f4f6;
+            max-height: 300px;
+            overflow: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Tripleseat API Test - Improved</h1>
+    
+    <div class="card explanation">
+        <h2>Understanding the CORS Issue</h2>
+        <p>We've identified why the Node.js script works but the browser doesn't:</p>
+        
+        <h3>Node.js (Server-Side) Works Because:</h3>
+        <ul>
+            <li>Node.js doesn't enforce CORS restrictions</li>
+            <li>It can make direct HTTP requests to any domain</li>
+            <li>Your API credentials are being sent correctly in both headers and request body</li>
+        </ul>
+        
+        <h3>Browser (Client-Side) Doesn't Work Because:</h3>
+        <ul>
+            <li>Browsers enforce CORS for security reasons</li>
+            <li>The Tripleseat API doesn't include CORS headers in its responses</li>
+            <li>When you try to make a direct request from the browser, it's blocked by CORS</li>
+            <li>Even with <code>no-cors</code> mode, you can send the request but can't read the response</li>
+        </ul>
+    </div>
+    
+    <div class="card warning">
+        <h2>Solution: Use a Proxy Server</h2>
+        <p>The solution is to use a proxy server that sits between your browser and the Tripleseat API:</p>
+        <ol>
+            <li>Your browser makes a request to your proxy server (same origin, no CORS issues)</li>
+            <li>Your proxy server makes a request to the Tripleseat API (server-to-server, no CORS issues)</li>
+            <li>Your proxy server receives the response and forwards it back to your browser</li>
+        </ol>
+        <p>We've already created a proxy server for you in <code>tripleseat-proxy.js</code>. It should be running on <code>http://localhost:3000</code>.</p>
+        <p>If the proxy server isn't running, start it with:</p>
+        <pre>node tripleseat-proxy.js</pre>
+        <p>Alternatively, you can use the modified proxy server on port 3002:</p>
+        <pre>node tripleseat-proxy-port-3002.js</pre>
+    </div>
+    
+    <div class="card">
+        <h2>Test Options</h2>
+        <p>Choose one of the following test options:</p>
+        
+        <button id="testNodeScript" class="success">Test with Node.js Script</button>
+        <button id="testDirectApi" class="warning">Test Direct API Call (Will Fail)</button>
+        <button id="testProxyApi" class="success">Test API Call via Proxy</button>
+        
+        <div id="testResult" class="result">Results will appear here...</div>
+    </div>
+    
+    <div class="card">
+        <h2>Implementation Options for Production</h2>
+        
+        <h3>Option 1: Deploy the Proxy Server (Recommended)</h3>
+        <p>This is the most reliable solution:</p>
+        <ol>
+            <li>Deploy the proxy server to a hosting service (Heroku, Vercel, etc.)</li>
+            <li>Update your client-side code to call the proxy instead of Tripleseat directly</li>
+            <li>The proxy will handle all communication with Tripleseat</li>
+        </ol>
+        <pre>// Client-side code
+fetch('https://your-proxy-server.com/api/tripleseat/leads', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(leadData)
+})
+.then(response => response.json())
+.then(data => console.log('Lead created:', data));</pre>
+        
+        <h3>Option 2: Use no-cors Mode (Limited)</h3>
+        <p>If you can't deploy a proxy server, you can use no-cors mode:</p>
+        <ol>
+            <li>Send requests with no-cors mode</li>
+            <li>You won't be able to read the response</li>
+            <li>You'll need to check Tripleseat manually to verify leads</li>
+        </ol>
+        <pre>// Client-side code
+fetch('https://api.tripleseat.com/v1/leads/create.js', {
+  method: 'POST',
+  mode: 'no-cors',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-Public-Key': publicKey,
+    'X-Consumer-Key': consumerKey,
+    'X-Consumer-Secret': consumerSecret
+  },
+  body: JSON.stringify(leadData)
+});</pre>
+    </div>
+    
+    <script>
+        // Test data
+        const testData = {
+            public_key: "c8b7ab91b0c9d00de35a853334586b71561a7431",
+            consumer_key: "Uef2cN123bPUupBzgGYjZKbxeUeAwwxaAnf02PSA",
+            consumer_secret: "ePYEyf4nnzE2pVkBJWk7wu7AInM2QwICpIilK8MR",
+            lead: {
+                first_name: "Test",
+                last_name: "User",
+                email: "test@example.com",
+                phone_number: "555-123-4567",
+                event_name: "Test Event",
+                description: "This is a test lead created from the improved test page.",
+                start_time: formatDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)),
+                end_time: formatDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000)),
+                guest_count: 10,
+                location_id: "20521",
+                room_id: "241847",
+                status: "new_lead",
+                event_type_id: "1",
+                lead_source_id: "112995"
+            }
+        };
+        
+        // Format date for Tripleseat (YYYY-MM-DD HH:MM:SS)
+        function formatDate(date) {
+            return date.toISOString().slice(0, 19).replace('T', ' ');
+        }
+        
+        // Test with Node.js Script
+        document.getElementById('testNodeScript').addEventListener('click', function() {
+            const resultDiv = document.getElementById('testResult');
+            resultDiv.textContent = 'Running Node.js script test...\n\n';
+            resultDiv.textContent += 'This test is running on the server, not in your browser.\n';
+            resultDiv.textContent += 'Check your terminal for results.\n\n';
+            resultDiv.textContent += 'Command: node tripleseat-api-test.js';
+            
+            // This button doesn't actually run the Node.js script
+            // It just shows instructions for running it manually
+        });
+        
+        // Test Direct API Call (Will Fail)
+        document.getElementById('testDirectApi').addEventListener('click', async function() {
+            const resultDiv = document.getElementById('testResult');
+            resultDiv.textContent = 'Testing direct API call (expected to fail due to CORS)...\n\n';
+            
+            try {
+                const webhookUrl = 'https://api.tripleseat.com/v1/leads/create.js';
+                
+                // Log the request details
+                console.log('Testing direct API call with:', {
+                    url: webhookUrl,
+                    data: testData
+                });
+                
+                // First try with standard mode (will fail with CORS error)
+                try {
+                    resultDiv.textContent += 'Attempting standard fetch (will fail with CORS error)...\n';
+                    
+                    const response = await fetch(webhookUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Public-Key': testData.public_key,
+                            'X-Consumer-Key': testData.consumer_key,
+                            'X-Consumer-Secret': testData.consumer_secret
+                        },
+                        body: JSON.stringify(testData)
+                    });
+                    
+                    // If we get here (unlikely due to CORS), show the response
+                    const responseData = await response.json();
+                    resultDiv.textContent += 'Unexpected success! Response:\n' + JSON.stringify(responseData, null, 2);
+                } catch (corsError) {
+                    resultDiv.textContent += 'CORS error (expected): ' + corsError.message + '\n\n';
+                    console.error('CORS error (expected):', corsError);
+                    
+                    // Now try with no-cors mode
+                    resultDiv.textContent += 'Now trying with no-cors mode...\n';
+                    
+                    const response = await fetch(webhookUrl, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Public-Key': testData.public_key,
+                            'X-Consumer-Key': testData.consumer_key,
+                            'X-Consumer-Secret': testData.consumer_secret
+                        },
+                        body: JSON.stringify(testData)
+                    });
+                    
+                    // With no-cors mode, we can't read the response status or body
+                    resultDiv.textContent += 'Request sent with no-cors mode.\n';
+                    resultDiv.textContent += 'Response type: ' + response.type + '\n\n';
+                    resultDiv.textContent += 'With no-cors mode, we cannot read the response status or body.\n';
+                    resultDiv.textContent += 'Check your Tripleseat account to see if the lead was created.';
+                    
+                    console.log('Response type with no-cors:', response.type);
+                }
+            } catch (error) {
+                resultDiv.textContent += 'Error: ' + error.message;
+                console.error('Test error:', error);
+            }
+        });
+        
+        // Test API Call via Proxy
+        document.getElementById('testProxyApi').addEventListener('click', async function() {
+            const resultDiv = document.getElementById('testResult');
+            resultDiv.textContent = 'Testing API call via proxy...\n\n';
+            
+            try {
+                const proxyUrl = 'http://localhost:3002/api/tripleseat/leads';
+                
+                // Log the request details
+                console.log('Testing API call via proxy:', {
+                    url: proxyUrl,
+                    data: testData
+                });
+                
+                // Make the request to the proxy server
+                const response = await fetch(proxyUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                // Get the response
+                const responseData = await response.json();
+                
+                // Display the result
+                if (response.ok) {
+                    resultDiv.textContent += 'Success! Response:\n' + JSON.stringify(responseData, null, 2) + '\n\n';
+                    resultDiv.textContent += 'This worked because the proxy server made the request to Tripleseat on behalf of your browser, avoiding CORS restrictions.';
+                    
+                    // Store the lead ID in localStorage for reference
+                    if (responseData.lead_id) {
+                        localStorage.setItem('lastTripleseatLeadId', responseData.lead_id);
+                        console.log(`Lead created successfully in Tripleseat with ID: ${responseData.lead_id}`);
+                    }
+                } else {
+                    resultDiv.textContent += `Error: ${response.status} ${response.statusText}\n\nResponse:\n${JSON.stringify(responseData, null, 2)}`;
+                }
+            } catch (error) {
+                resultDiv.textContent += 'Error: ' + error.message + '\n\n';
+                resultDiv.textContent += 'Make sure the proxy server is running on http://localhost:3002.\n';
+                resultDiv.textContent += 'Start it with: node tripleseat-proxy-port-3002.js';
+                console.error('Test error:', error);
+            }
+        });
+    </script>
+</body>
+</html> 

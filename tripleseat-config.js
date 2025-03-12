@@ -25,6 +25,10 @@ const TRIPLESEAT_CONFIG = {
         consumerKey: "Uef2cN123bPUupBzgGYjZKbxeUeAwwxaAnf02PSA",
         consumerSecret: "ePYEyf4nnzE2pVkBJWk7wu7AInM2QwICpIilK8MR",
         
+        // Proxy URL for avoiding CORS issues
+        // This is the URL of your proxy server that will make requests to Tripleseat on behalf of the browser
+        proxyUrl: "http://localhost:3002/api/tripleseat/leads",
+        
         // Set to true to enable Tripleseat integration in production
         enabled: true
     },

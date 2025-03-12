@@ -1236,32 +1236,178 @@ async function sendOrderEmail(event) {
                     console.log('Tripleseat integration is disabled in configuration');
                     tripleseatSubmissionSuccessful = false;
                 } else {
-                    // Get the webhook URL from configuration
-                    const tripleseatWebhookUrl = TRIPLESEAT_CONFIG.api.webhookUrl;
+                    // Prepare Tripleseat data
+                    const tripleseatData = prepareTripleseatData(formData);
+                    console.log('Tripleseat data prepared:', tripleseatData);
                     
-                    if (!tripleseatWebhookUrl || tripleseatWebhookUrl === "REPLACE_WITH_ACTUAL_WEBHOOK_URL") {
-                        console.error('Tripleseat webhook URL not configured properly');
-                        throw new Error('Tripleseat webhook URL not configured');
-                    }
-                    
-                    // Extract authentication details
-                    const { public_key, consumer_key, consumer_secret, lead } = tripleseatData;
-                    
-                    // Log authentication details for debugging (without showing full secret)
-                    console.log('Submitting to Tripleseat with authentication:', {
-                        public_key: public_key,
-                        public_key_length: public_key ? public_key.length : 0,
-                        consumer_key: consumer_key,
-                        consumer_key_length: consumer_key ? consumer_key.length : 0,
-                        consumer_secret_length: consumer_secret ? consumer_secret.length : 0,
-                        webhook_url: tripleseatWebhookUrl
-                    });
-                    
-                    // First try with standard CORS mode to get a proper error message if authentication fails
-                    try {
-                        console.log('Attempting standard fetch to Tripleseat API');
-                        const authResponse = await fetch(tripleseatWebhookUrl, {
+                    // Check if we should use the proxy server
+                    if (TRIPLESEAT_CONFIG.api.proxyUrl) {
+                        // Use the proxy server approach (recommended)
+                        console.log('Using proxy server for Tripleseat submission:', TRIPLESEAT_CONFIG.api.proxyUrl);
+                        
+                        // Make the request to the proxy server
+                        const response = await fetch(TRIPLESEAT_CONFIG.api.proxyUrl, {
                             method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(tripleseatData)
+                        });
+                        
+                        // Check if the request was successful
+                        if (!response.ok) {
+                            const errorText = await response.text();
+                            console.error(`Tripleseat error (${response.status}):`, errorText);
+                            showNotification(`Tripleseat error: ${response.status} ${response.statusText}. Details: ${errorText}`, 'error');
+                            tripleseatSubmissionSuccessful = false;
+                        } else {
+                            // Parse the response
+                            const tripleseatResult = await response.json();
+                            console.log('Tripleseat submission successful:', tripleseatResult);
+                            
+                            // Check if the lead was created successfully
+                            if (tripleseatResult && tripleseatResult.lead_id) {
+                                console.log(`Lead created successfully in Tripleseat with ID: ${tripleseatResult.lead_id}`);
+                                
+                                // Store the lead ID for reference
+                                localStorage.setItem('lastTripleseatLeadId', tripleseatResult.lead_id);
+                                
+                                // Show a success notification
+                                showNotification(`Lead #${tripleseatResult.lead_id} created successfully in Tripleseat!`, 'success');
+                                tripleseatSubmissionSuccessful = true;
+                            } else {
+                                console.warn('Tripleseat response missing lead ID:', tripleseatResult);
+                                showNotification('Received unexpected response from Tripleseat. Please check your account to verify if the lead was created.', 'error');
+                                tripleseatSubmissionSuccessful = false;
+                            }
+                        }
+                    } else {
+                        // Fall back to the direct API call approach (with CORS limitations)
+                        // Get the webhook URL from configuration
+                        const tripleseatWebhookUrl = TRIPLESEAT_CONFIG.api.webhookUrl;
+                        
+                        if (!tripleseatWebhookUrl || tripleseatWebhookUrl === "REPLACE_WITH_ACTUAL_WEBHOOK_URL") {
+                            console.error('Tripleseat webhook URL not configured properly');
+                            throw new Error('Tripleseat webhook URL not configured');
+                        }
+                        
+                        // Extract authentication details
+                        const { public_key, consumer_key, consumer_secret, lead } = tripleseatData;
+                        
+                        // Log authentication details for debugging (without showing full secret)
+                        console.log('Submitting to Tripleseat with authentication:', {
+                            public_key: public_key,
+                            public_key_length: public_key ? public_key.length : 0,
+                            consumer_key: consumer_key,
+                            consumer_key_length: consumer_key ? consumer_key.length : 0,
+                            consumer_secret_length: consumer_secret ? consumer_secret.length : 0,
+                            webhook_url: tripleseatWebhookUrl
+                        });
+                        
+                        // First try with standard CORS mode to get a proper error message if authentication fails
+                        try {
+                            console.log('Attempting standard fetch to Tripleseat API');
+                            const authResponse = await fetch(tripleseatWebhookUrl, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-Public-Key': public_key,
+                                    'X-Consumer-Key': consumer_key,
+                                    'X-Consumer-Secret': consumer_secret
+                                },
+                                // Include authentication parameters in the request body as well
+                                body: JSON.stringify({
+                                    public_key: public_key,
+                                    consumer_key: consumer_key,
+                                    consumer_secret: consumer_secret,
+                                    lead: lead
+                                })
+                            });
+                            
+                            console.log('Tripleseat API response status:', authResponse.status);
+                            
+                            // If we get here, CORS is not blocking and we can check the response
+                            if (authResponse.ok) {
+                                // Success! We can read the response
+                                const tripleseatResult = await authResponse.json();
+                                console.log('Tripleseat submission successful:', tripleseatResult);
+                                
+                                // Validate the response to ensure the lead was created successfully
+                                if (tripleseatResult && tripleseatResult.lead && tripleseatResult.lead.id) {
+                                    // Lead was created successfully with an ID
+                                    tripleseatSubmissionSuccessful = true;
+                                    console.log(`Lead created successfully in Tripleseat with ID: ${tripleseatResult.lead.id}`);
+                                    
+                                    // Store the lead ID for reference
+                                    const leadId = tripleseatResult.lead.id;
+                                    localStorage.setItem('lastTripleseatLeadId', leadId);
+                                    
+                                    // Show a success notification with the lead ID
+                                    showNotification(`Lead #${leadId} created successfully in Tripleseat!`, 'success');
+                                } else {
+                                    // Response was OK but lead ID is missing
+                                    console.warn('Tripleseat response missing lead ID:', tripleseatResult);
+                                    tripleseatSubmissionSuccessful = false;
+                                    showNotification('Received unexpected response from Tripleseat. Please check your account to verify if the lead was created.', 'error');
+                                }
+                                
+                                // No need to try no-cors mode since this worked
+                                return;
+                            } else if (authResponse.status === 401) {
+                                // Authentication failed - show a specific error message
+                                console.error('Tripleseat authentication failed (401 Unauthorized)');
+                                let errorText = '';
+                                try {
+                                    errorText = await authResponse.text();
+                                } catch (e) {
+                                    errorText = 'Could not read error details';
+                                }
+                                console.error('Authentication error details:', errorText);
+                                
+                                // Show a detailed error notification
+                                showNotification(`Tripleseat authentication failed (401 Unauthorized). 
+                                Please check your API keys in tripleseat-config.js:
+                                - Public Key: ${public_key ? public_key.substring(0, 5) + '...' : 'missing'}
+                                - Consumer Key: ${consumer_key ? consumer_key.substring(0, 5) + '...' : 'missing'}
+                                - Consumer Secret: ${consumer_secret ? '✓ present' : 'missing'}
+                                
+                                Error details: ${errorText}`, 'error');
+                                
+                                throw new Error('Tripleseat authentication failed. Please check your API keys in tripleseat-config.js');
+                            } else {
+                                // Other error
+                                let errorText = '';
+                                try {
+                                    errorText = await authResponse.text();
+                                } catch (e) {
+                                    errorText = 'Could not read error details';
+                                }
+                                console.error(`Tripleseat error (${authResponse.status}):`, errorText);
+                                showNotification(`Tripleseat error: ${authResponse.status} ${authResponse.statusText}. Details: ${errorText}`, 'error');
+                                throw new Error(`Tripleseat error: ${authResponse.status} ${authResponse.statusText}`);
+                            }
+                        } catch (corsError) {
+                            // If we get a CORS error, fall back to no-cors mode
+                            if (corsError.message.includes('Failed to fetch') || 
+                                corsError.message.includes('NetworkError') ||
+                                corsError.message.includes('CORS')) {
+                                console.log('CORS error detected, falling back to no-cors mode:', corsError);
+                            } else if (corsError.message.includes('authentication failed')) {
+                                // This is an authentication error we detected above, rethrow it
+                                throw corsError;
+                            } else {
+                                console.warn('Error during standard fetch, trying no-cors mode:', corsError);
+                            }
+                        }
+                        
+                        // If we get here, either CORS blocked the request or there was another error
+                        // Try again with no-cors mode
+                        console.log('Submitting to Tripleseat with no-cors mode');
+                        
+                        // Submit to Tripleseat with authentication in headers and no-cors mode
+                        const tripleseatResponse = await fetch(tripleseatWebhookUrl, {
+                            method: 'POST',
+                            mode: 'no-cors', // Add no-cors mode to handle CORS restrictions
                             headers: {
                                 'Content-Type': 'application/json',
                                 'X-Public-Key': public_key,
@@ -1277,118 +1423,20 @@ async function sendOrderEmail(event) {
                             })
                         });
                         
-                        console.log('Tripleseat API response status:', authResponse.status);
+                        // Since no-cors mode doesn't allow reading the response,
+                        // we'll assume success if we get here without an error
+                        console.log('Tripleseat submission completed with no-cors mode');
+                        console.log('Response type:', tripleseatResponse.type);
                         
-                        // If we get here, CORS is not blocking and we can check the response
-                        if (authResponse.ok) {
-                            // Success! We can read the response
-                            const tripleseatResult = await authResponse.json();
-                            console.log('Tripleseat submission successful:', tripleseatResult);
-                            
-                            // Validate the response to ensure the lead was created successfully
-                            if (tripleseatResult && tripleseatResult.lead && tripleseatResult.lead.id) {
-                                // Lead was created successfully with an ID
-                                tripleseatSubmissionSuccessful = true;
-                                console.log(`Lead created successfully in Tripleseat with ID: ${tripleseatResult.lead.id}`);
-                                
-                                // Store the lead ID for reference
-                                const leadId = tripleseatResult.lead.id;
-                                localStorage.setItem('lastTripleseatLeadId', leadId);
-                                
-                                // Show a success notification with the lead ID
-                                showNotification(`Lead #${leadId} created successfully in Tripleseat!`, 'success');
-                            } else {
-                                // Response was OK but lead ID is missing
-                                console.warn('Tripleseat response missing lead ID:', tripleseatResult);
-                                tripleseatSubmissionSuccessful = false;
-                                showNotification('Received unexpected response from Tripleseat. Please check your account to verify if the lead was created.', 'error');
-                            }
-                            
-                            // No need to try no-cors mode since this worked
-                            return;
-                        } else if (authResponse.status === 401) {
-                            // Authentication failed - show a specific error message
-                            console.error('Tripleseat authentication failed (401 Unauthorized)');
-                            let errorText = '';
-                            try {
-                                errorText = await authResponse.text();
-                            } catch (e) {
-                                errorText = 'Could not read error details';
-                            }
-                            console.error('Authentication error details:', errorText);
-                            
-                            // Show a detailed error notification
-                            showNotification(`Tripleseat authentication failed (401 Unauthorized). 
-                            Please check your API keys in tripleseat-config.js:
-                            - Public Key: ${public_key ? public_key.substring(0, 5) + '...' : 'missing'}
-                            - Consumer Key: ${consumer_key ? consumer_key.substring(0, 5) + '...' : 'missing'}
-                            - Consumer Secret: ${consumer_secret ? '✓ present' : 'missing'}
-                            
-                            Error details: ${errorText}`, 'error');
-                            
-                            throw new Error('Tripleseat authentication failed. Please check your API keys in tripleseat-config.js');
-                        } else {
-                            // Other error
-                            let errorText = '';
-                            try {
-                                errorText = await authResponse.text();
-                            } catch (e) {
-                                errorText = 'Could not read error details';
-                            }
-                            console.error(`Tripleseat error (${authResponse.status}):`, errorText);
-                            showNotification(`Tripleseat error: ${authResponse.status} ${authResponse.statusText}. Details: ${errorText}`, 'error');
-                            throw new Error(`Tripleseat error: ${authResponse.status} ${authResponse.statusText}`);
-                        }
-                    } catch (corsError) {
-                        // If we get a CORS error, fall back to no-cors mode
-                        if (corsError.message.includes('Failed to fetch') || 
-                            corsError.message.includes('NetworkError') ||
-                            corsError.message.includes('CORS')) {
-                            console.log('CORS error detected, falling back to no-cors mode:', corsError);
-                        } else if (corsError.message.includes('authentication failed')) {
-                            // This is an authentication error we detected above, rethrow it
-                            throw corsError;
-                        } else {
-                            console.warn('Error during standard fetch, trying no-cors mode:', corsError);
-                        }
+                        // Store a temporary lead ID for testing purposes
+                        // In production, you won't be able to get the actual lead ID due to CORS
+                        const tempLeadId = `temp-${Date.now()}`;
+                        localStorage.setItem('lastTripleseatLeadId', tempLeadId);
+                        
+                        // Show a notification about the submission
+                        showNotification('Lead submitted to Tripleseat. Due to CORS restrictions, we cannot confirm the lead ID.', 'success');
+                        tripleseatSubmissionSuccessful = true;
                     }
-                    
-                    // If we get here, either CORS blocked the request or there was another error
-                    // Try again with no-cors mode
-                    console.log('Submitting to Tripleseat with no-cors mode');
-                    
-                    // Submit to Tripleseat with authentication in headers and no-cors mode
-                    const tripleseatResponse = await fetch(tripleseatWebhookUrl, {
-                        method: 'POST',
-                        mode: 'no-cors', // Add no-cors mode to handle CORS restrictions
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Public-Key': public_key,
-                            'X-Consumer-Key': consumer_key,
-                            'X-Consumer-Secret': consumer_secret
-                        },
-                        // Include authentication parameters in the request body as well
-                        body: JSON.stringify({
-                            public_key: public_key,
-                            consumer_key: consumer_key,
-                            consumer_secret: consumer_secret,
-                            lead: lead
-                        })
-                    });
-                    
-                    // Since no-cors mode doesn't allow reading the response,
-                    // we'll assume success if we get here without an error
-                    console.log('Tripleseat submission completed with no-cors mode');
-                    console.log('Response type:', tripleseatResponse.type);
-                    
-                    // Store a temporary lead ID for testing purposes
-                    // In production, you won't be able to get the actual lead ID due to CORS
-                    const tempLeadId = `temp-${Date.now()}`;
-                    localStorage.setItem('lastTripleseatLeadId', tempLeadId);
-                    
-                    // Show a notification about the submission
-                    showNotification('Lead submitted to Tripleseat. Due to CORS restrictions, we cannot confirm the lead ID.', 'success');
-                    tripleseatSubmissionSuccessful = true;
                 }
             } catch (tripleseatError) {
                 console.error('Error submitting to Tripleseat:', tripleseatError);
