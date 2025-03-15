@@ -86,6 +86,21 @@
             padding: 2rem;
         }
     </style>
+    <script>
+        // Development mode detection
+        (function() {
+            // Check if we're in development mode - localhost or IP address
+            const isDevelopment = 
+                window.location.hostname === 'localhost' || 
+                window.location.hostname === '127.0.0.1' ||
+                window.location.hostname.match(/^192\.168\./);
+                
+            // If not in development mode, redirect to homepage
+            if (!isDevelopment) {
+                window.location.href = 'index.html';
+            }
+        })();
+    </script>
 </head>
 <body class="min-h-screen pb-20">
     <!-- Navigation -->

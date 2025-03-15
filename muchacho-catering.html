@@ -38,6 +38,12 @@
                 }
             }
         }
+        
+        // Check if we're in development mode
+        const isDevelopment = 
+            window.location.hostname === 'localhost' || 
+            window.location.hostname === '127.0.0.1' ||
+            window.location.hostname.match(/^192\.168\./);
     </script>
     <style>
         /* Keep only essential custom styles that aren't easily achieved with Tailwind */
@@ -212,10 +218,16 @@
             
             <!-- Navigation Links -->
             <div class="flex space-x-8">
-                <a href="menus.html" class="text-white hover:text-primary font-heading text-xl" style="display: none;">All Menus</a>
+
                 <a href="index.html" class="text-white hover:text-primary font-heading text-xl">Ladybird</a>
                 <a href="muchacho-catering.html" class="text-primary font-heading text-xl">Muchacho</a>
                 <a href="the-dug-out-catering.html" class="text-white hover:text-primary font-heading text-xl">The Dugout</a>
+                <script>
+                    // Only show dev tools link in development mode
+                    if (isDevelopment) {
+                        document.write('<a href="tripleseat-dev.html" class="text-gray-400 hover:text-primary font-heading text-xl">Dev Tools</a>');
+                    }
+                </script>
             </div>
         </div>
     </div>
