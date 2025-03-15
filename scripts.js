@@ -1137,11 +1137,13 @@ async function sendOrderEmail(event) {
                         showNotification('TEST MODE: Successfully sent to Tripleseat!', 'success');
                     } else {
                         console.warn('Tripleseat submission failed:', tripleseatResult.error);
-                        showNotification('TEST MODE: Tripleseat submission failed: ' + tripleseatResult.error, 'error');
+                        // Use user-friendly message if available, even in test mode
+                        const errorMsg = tripleseatResult.userMessage || tripleseatResult.error || 'Unknown error';
+                        showNotification('TEST MODE: Tripleseat submission failed: ' + errorMsg, 'error');
                     }
                 } catch (tripleseatError) {
                     console.error('Error sending to Tripleseat:', tripleseatError);
-                    showNotification('TEST MODE: Error sending to Tripleseat: ' + tripleseatError.message, 'error');
+                    showNotification('TEST MODE: Error sending to Tripleseat: ' + (tripleseatError.userMessage || tripleseatError.message), 'error');
                 }
             } else {
                 console.warn('Tripleseat integration not available');
@@ -1224,14 +1226,19 @@ async function sendOrderEmail(event) {
                             console.log('Tripleseat test result:', tripleseatResult);
                             
                             if (tripleseatResult.success) {
-                                showNotification('TEST MODE: Successfully sent to Tripleseat!', 'success');
+                                console.log('Successfully sent to Tripleseat:', tripleseatResult);
+                                tripleseatSuccess = true;
                             } else {
-                                console.warn('Tripleseat submission failed:', tripleseatResult.error);
-                                showNotification('TEST MODE: Tripleseat submission failed: ' + tripleseatResult.error, 'error');
+                                console.warn('Failed to send to Tripleseat:', tripleseatResult.error);
+                                // Log the error but don't block the successful form submission flow
+                                // If we have a user-friendly message, log it but don't show it since form submission was successful
+                                if (tripleseatResult.userMessage) {
+                                    console.log('User message for Tripleseat error:', tripleseatResult.userMessage);
+                                }
                             }
                         } catch (tripleseatError) {
                             console.error('Error sending to Tripleseat:', tripleseatError);
-                            showNotification('TEST MODE: Error sending to Tripleseat: ' + tripleseatError.message, 'error');
+                            // Log the error but don't block the successful form submission flow
                         }
                     } else {
                         console.warn('Tripleseat integration not available');
@@ -1275,6 +1282,10 @@ async function sendOrderEmail(event) {
                                 } else {
                                     console.warn('Failed to send to Tripleseat:', tripleseatResult.error);
                                     // Log the error but don't block the successful form submission flow
+                                    // If we have a user-friendly message, log it but don't show it since form submission was successful
+                                    if (tripleseatResult.userMessage) {
+                                        console.log('User message for Tripleseat error:', tripleseatResult.userMessage);
+                                    }
                                 }
                             } catch (tripleseatError) {
                                 console.error('Error sending to Tripleseat:', tripleseatError);
@@ -1310,14 +1321,75 @@ async function sendOrderEmail(event) {
 
 // Update the showNotification function
 function showNotification(message, type) {
+    // Check if we're in development mode
+    const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    
+    // Format production messages to be more user-friendly
+    let displayMessage = message;
+    if (!isDevelopment) {
+        // Filter out development-specific messages in production
+        if (message.includes('TEST MODE:')) {
+            // Don't show test mode messages in production
+            return;
+        }
+        
+        // Make error messages more user-friendly in production
+        if (type === 'error') {
+            // Replace technical error messages with user-friendly ones
+            if (message.includes('Failed to submit quote request')) {
+                displayMessage = 'We couldn\'t process your request right now. Please try again or contact us directly for assistance.';
+            } else if (message.includes('HTTP error') || message.includes('network') || message.includes('fetch')) {
+                displayMessage = 'We\'re having trouble connecting to our booking system. Please check your internet connection and try again.';
+            } else if (message.includes('Tripleseat')) {
+                displayMessage = 'We couldn\'t create your booking at this time. Your quote information has been saved, and our team will follow up with you.';
+            }
+        }
+        
+        // Make success messages more engaging in production
+        if (type === 'success') {
+            if (message.includes('Quote request submitted successfully')) {
+                displayMessage = '🎉 Your catering request has been submitted! We\'ll be in touch soon to confirm details.';
+            }
+        }
+    }
+    
+    // Create and style the notification
     const notification = document.createElement('div');
+    
+    // Add icons and better styling based on the message type
+    const iconHtml = type === 'success' 
+        ? '<svg class="w-6 h-6 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>'
+        : '<svg class="w-6 h-6 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>';
+    
     notification.className = `validation fixed top-4 right-4 p-4 rounded-lg ${
-        type === 'success' ? 'bg-green-900' : 'bg-red-900'
-    } text-white max-w-md whitespace-pre-line z-[33333]`; // Added z-index
+        type === 'success' ? 'bg-green-800' : 'bg-red-800'
+    } text-white max-w-md whitespace-pre-line z-[33333] shadow-lg flex items-start`;
+    
     notification.style.color = 'white !important'; // Force white text with !important
-    notification.textContent = message;
+    notification.innerHTML = `
+        ${iconHtml}
+        <div class="flex-1">${displayMessage}</div>
+    `;
+    
     document.body.appendChild(notification);
-    setTimeout(() => notification.remove(), 7000);
+    
+    // Add a subtle animation
+    notification.style.opacity = '0';
+    notification.style.transform = 'translateY(-20px)';
+    notification.style.transition = 'opacity 0.3s, transform 0.3s';
+    
+    setTimeout(() => {
+        notification.style.opacity = '1';
+        notification.style.transform = 'translateY(0)';
+    }, 10);
+    
+    // Auto dismiss after appropriate time based on message length
+    const displayTime = Math.max(4000, displayMessage.length * 50); // Longer messages stay longer
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateY(-20px)';
+        setTimeout(() => notification.remove(), 300);
+    }, displayTime);
 }
 
 // Helper functions

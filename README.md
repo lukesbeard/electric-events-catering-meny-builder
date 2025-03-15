@@ -28,6 +28,21 @@ To test the Tripleseat integration locally:
 
 3. Open the site in your browser at http://localhost:8000/index.html
 
+### Deployment to Vercel
+
+The application is configured for deployment on Vercel:
+
+1. Push your code to a Git repository (GitHub, GitLab, or Bitbucket)
+2. Import the project into Vercel
+3. Set up the following environment variables in the Vercel dashboard:
+   - `TRIPLESEAT_API_KEY` - Your Tripleseat API key
+   - `TRIPLESEAT_CONSUMER_KEY` - Your Tripleseat consumer key
+   - `TRIPLESEAT_CONSUMER_SECRET` - Your Tripleseat consumer secret
+
+4. Deploy the application
+
+The serverless API routes in the `/api` directory will handle proxy requests to Tripleseat, avoiding CORS issues.
+
 ### Testing Options
 
 The following URL parameters can be used for testing:
@@ -42,6 +57,9 @@ The following URL parameters can be used for testing:
 - `tripleseat-config.js` - Configuration settings for Tripleseat integration
 - `tripleseat-integration.js` - Main integration logic
 - `tripleseat_proxy.py` - Local proxy server for testing
+- `api/tripleseat/leads.js` - Serverless function for Tripleseat API proxy
+- `api/tripleseat/mock.js` - Serverless function for mock API responses
+- `vercel.json` - Vercel configuration
 
 ### Configuration
 

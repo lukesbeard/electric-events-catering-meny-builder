@@ -306,12 +306,24 @@ async function sendToTripleseat(formData) {
                 }
             } else if (responseData.error) {
                 result.error = responseData.error;
+                // Add a more user-friendly message for production
+                result.userMessage = 'We couldn\'t process your booking request at this time. Your form data has been saved and our team will follow up with you.';
             } else {
                 result.error = 'Unknown error from Tripleseat';
+                result.userMessage = 'Your catering request has been saved, but we couldn\'t connect to our booking system. Our team will follow up with you shortly.';
             }
         } catch (error) {
             logTripleSeatDebug('Error sending to Tripleseat:', error);
             result.error = error.message;
+            
+            // Add user-friendly messages based on error type
+            if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                result.userMessage = 'Connection issue: Please check your internet connection and try again.';
+            } else if (error.message.includes('Timeout')) {
+                result.userMessage = 'Our booking system is taking longer than expected to respond. Your request has been saved.';
+            } else {
+                result.userMessage = 'We encountered an unexpected issue with our booking system. Your quote information has been saved.';
+            }
         }
         
         return result;

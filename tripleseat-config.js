@@ -11,18 +11,63 @@ const TRIPLESEAT_CONFIG = {
         // The webhook URL for creating leads in Tripleseat
         webhookUrl: "https://api.tripleseat.com/v1/leads/create.js", 
         
-        // API key or authentication token for Tripleseat
-        apiKey: "c8b7ab91b0c9d00de35a853334586b71561a7431",
+        // API key or authentication token for Tripleseat (will use env variable in production)
+        apiKey: typeof process !== 'undefined' && process.env.TRIPLESEAT_API_KEY ? 
+                process.env.TRIPLESEAT_API_KEY : 
+                "c8b7ab91b0c9d00de35a853334586b71561a7431",
         
-        // Consumer keys for additional authentication if needed
-        consumerKey: "Uef2cN123bPUupBzgGYjZKbxeUeAwwxaAnf02PSA",
-        consumerSecret: "ePYEyf4nnzE2pVkBJWk7wu7AInM2QwICpIilK8MR",
+        // Consumer keys for additional authentication if needed (will use env variables in production)
+        consumerKey: typeof process !== 'undefined' && process.env.TRIPLESEAT_CONSUMER_KEY ? 
+                     process.env.TRIPLESEAT_CONSUMER_KEY : 
+                     "Uef2cN123bPUupBzgGYjZKbxeUeAwwxaAnf02PSA",
+        consumerSecret: typeof process !== 'undefined' && process.env.TRIPLESEAT_CONSUMER_SECRET ? 
+                        process.env.TRIPLESEAT_CONSUMER_SECRET : 
+                        "ePYEyf4nnzE2pVkBJWk7wu7AInM2QwICpIilK8MR",
         
         // Proxy URL for avoiding CORS issues
         proxyUrl: "/api/tripleseat/leads",
         
         // Set to true to enable Tripleseat integration in production
         enabled: true
+    },
+    
+    // Environment detection and URL helpers
+    getEnvironment: function() {
+        const hostname = window.location.hostname;
+        return (hostname === 'localhost' || hostname === '127.0.0.1') ? 'development' : 'production';
+    },
+    
+    getProxyUrl: function() {
+        // Check if we want to use mock API
+        const urlParams = new URLSearchParams(window.location.search);
+        const useMock = urlParams.get('mock') === 'true';
+        
+        // In development, use the local server
+        if (this.getEnvironment() === 'development') {
+            // For local development, port may vary
+            const localDevPort = '3002';
+            
+            return useMock ? 
+                `http://localhost:${localDevPort}/api/tripleseat/mock` : 
+                `http://localhost:${localDevPort}/api/tripleseat/leads`;
+        }
+        
+        // In production, always use the relative path
+        return useMock ? 
+            '/api/tripleseat/mock' : 
+            '/api/tripleseat/leads';
+    },
+    
+    // Feature toggle check
+    isEnabled: function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const disabled = urlParams.get('disableTripleseat') === 'true';
+        
+        if (disabled) {
+            return false;
+        }
+        
+        return this.api.enabled;
     },
     
     // Venue Configuration
@@ -86,39 +131,6 @@ const TRIPLESEAT_CONFIG = {
             "Electric Room": "288107",
             "Off-Site": "241847"
         }
-    },
-    
-    // Environment detection and URL helpers
-    getEnvironment: function() {
-        const hostname = window.location.hostname;
-        return (hostname === 'localhost' || hostname === '127.0.0.1') ? 'development' : 'production';
-    },
-    
-    getProxyUrl: function() {
-        if (this.getEnvironment() === 'development') {
-            // Check if we want to use real API or mock
-            const urlParams = new URLSearchParams(window.location.search);
-            const useMock = urlParams.get('mock') === 'true';
-            
-            return useMock ? 
-                'http://localhost:3002/api/tripleseat/mock' : 
-                'http://localhost:3002/api/tripleseat/leads';
-        }
-        
-        // Return production proxy URL
-        return '/api/tripleseat/leads';
-    },
-    
-    // Feature toggle check
-    isEnabled: function() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const disabled = urlParams.get('disableTripleseat') === 'true';
-        
-        if (disabled) {
-            return false;
-        }
-        
-        return this.api.enabled;
     }
 };
 

@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "routes": [
+    {
+      "src": "/api/tripleseat/(.*)",
+      "dest": "/api/tripleseat/$1"
+    },
+    {
+      "src": "/api/sheet-proxy",
+      "dest": "/api/sheet-proxy.js"
+    }
+  ],
+  "env": {
+    "VERCEL_ENV": "production"
+  }
+} 
