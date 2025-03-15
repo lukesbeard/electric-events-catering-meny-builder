@@ -1123,6 +1123,28 @@ async function sendOrderEmail(event) {
             // Show a success notification for testing
             showNotification('TEST MODE: Form data logged to console. Submission would be successful in production.', 'success');
             sheetSubmissionSuccessful = true;
+            
+            // Attempt to send to Tripleseat in test mode
+            if (typeof sendToTripleseat === 'function') {
+                console.log('Attempting to send to Tripleseat in test mode');
+                
+                try {
+                    const tripleseatResult = await sendToTripleseat(formData);
+                    console.log('Tripleseat test result:', tripleseatResult);
+                    
+                    if (tripleseatResult.success) {
+                        showNotification('TEST MODE: Successfully sent to Tripleseat!', 'success');
+                    } else {
+                        console.warn('Tripleseat submission failed:', tripleseatResult.error);
+                        showNotification('TEST MODE: Tripleseat submission failed: ' + tripleseatResult.error, 'error');
+                    }
+                } catch (tripleseatError) {
+                    console.error('Error sending to Tripleseat:', tripleseatError);
+                    showNotification('TEST MODE: Error sending to Tripleseat: ' + tripleseatError.message, 'error');
+                }
+            } else {
+                console.warn('Tripleseat integration not available');
+            }
         } else {
             // Production mode or forced submission from localhost
             try {
@@ -1191,6 +1213,28 @@ async function sendOrderEmail(event) {
                 if (isDevelopment && forceSubmit) {
                     console.log('Sheet submission successful in test mode with forcesubmit=true');
                     showNotification('TEST MODE: Successfully submitted to Google Sheet! Email sending skipped.', 'success');
+                    
+                    // Attempt to send to Tripleseat in test mode
+                    if (typeof sendToTripleseat === 'function') {
+                        console.log('Attempting to send to Tripleseat in test mode');
+                        
+                        try {
+                            const tripleseatResult = await sendToTripleseat(formData);
+                            console.log('Tripleseat test result:', tripleseatResult);
+                            
+                            if (tripleseatResult.success) {
+                                showNotification('TEST MODE: Successfully sent to Tripleseat!', 'success');
+                            } else {
+                                console.warn('Tripleseat submission failed:', tripleseatResult.error);
+                                showNotification('TEST MODE: Tripleseat submission failed: ' + tripleseatResult.error, 'error');
+                            }
+                        } catch (tripleseatError) {
+                            console.error('Error sending to Tripleseat:', tripleseatError);
+                            showNotification('TEST MODE: Error sending to Tripleseat: ' + tripleseatError.message, 'error');
+                        }
+                    } else {
+                        console.warn('Tripleseat integration not available');
+                    }
                 } else {
                     console.log('Sheet submission successful, proceeding with email');
                     // Create FormData object for email
@@ -1216,8 +1260,35 @@ async function sendOrderEmail(event) {
                     console.log('Email submission result:', result);
                     
                     if (result.success) {
+                        // Attempt to send to Tripleseat after email success
+                        let tripleseatSuccess = false;
+                        
+                        if (typeof sendToTripleseat === 'function') {
+                            try {
+                                console.log('Sending to Tripleseat in production mode');
+                                const tripleseatResult = await sendToTripleseat(formData);
+                                
+                                if (tripleseatResult.success) {
+                                    console.log('Successfully sent to Tripleseat:', tripleseatResult);
+                                    tripleseatSuccess = true;
+                                } else {
+                                    console.warn('Failed to send to Tripleseat:', tripleseatResult.error);
+                                    // Log the error but don't block the successful form submission flow
+                                }
+                            } catch (tripleseatError) {
+                                console.error('Error sending to Tripleseat:', tripleseatError);
+                                // Log the error but don't block the successful form submission flow
+                            }
+                        } else {
+                            console.warn('Tripleseat integration not available');
+                        }
+                        
                         clearSavedData();
-                        showNotification('Quote request submitted successfully! We\'ll be in touch soon.', 'success');
+                        
+                        // Show success message with Tripleseat status
+                        const tripleseatMsg = tripleseatSuccess ? ' Lead also created in Tripleseat.' : '';
+                        showNotification('Quote request submitted successfully!' + tripleseatMsg + ' We\'ll be in touch soon.', 'success');
+                        
                         console.log('Form submitted successfully! Redirecting to thank-you page');
                         window.location.href = 'thank-you.html';  // Re-enable the redirect
                     } else {
