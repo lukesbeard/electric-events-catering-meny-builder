@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tripleseat Integration Debug | Electric Events</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
+    <script src="tripleseat-config.js"></script>
+    <script src="tripleseat-integration.js"></script>
+    <!-- Add Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="EE-logo-mark.png">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: 'rgb(255, 199, 0)',  // Yellow
+                        secondary: '#2d3748',
+                        background: '#000000',
+                        surface: '#121212',    // Slightly lighter black for cards
+                    },
+                    fontFamily: {
+                        'heading': ['"Bebas Neue"', 'cursive'],
+                        'sans': ['"DM Sans"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Global Styles */
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background-color: #000000;
+            color: white;
+            margin: 0;
+            padding: 0;
+        }
+        h1, h2, h3, label, th {
+            font-family: 'Bebas Neue', cursive;
+            letter-spacing: 0.05em;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .result-box {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        /* Debug Log Entry Styles */
+        .log-entry {
+            padding: 4px 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            line-height: 1.4;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        
+        .log-success {
+            color: #4ade80;
+        }
+        
+        .log-error {
+            color: #f87171;
+        }
+        
+        .log-warning {
+            color: #facc15; 
+        }
+        
+        .log-info {
+            color: #93c5fd;
+        }
+        
+        /* Container Styles */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-20">
+    <!-- Navigation -->
+    <nav>
+        <div class="max-w-6xl mx-auto px-4 sm:px-6">
+            <div class="flex flex-col md:flex-row items-center justify-between py-4 md:h-16 gap-4 md:gap-0">
+                <!-- Logo -->
+                <div class="flex-shrink-0">
+                    <a href="https://www.electriceventsatl.com/" target="_blank" rel="noopener noreferrer">
+                        <img src="EE-wordmark.png" alt="Electric Events Logo" class="h-4">
+                    </a>
+                </div>
+                
+                <!-- Navigation Links -->
+                <div class="flex space-x-8">
+                    <a href="index.html" class="text-white hover:text-primary font-heading text-xl">Ladybird</a>
+                    <a href="muchacho-catering.html" class="text-white hover:text-primary font-heading text-xl">Muchacho</a>
+                    <a href="the-dug-out-catering.html" class="text-white hover:text-primary font-heading text-xl">The Dugout</a>
+                    <a href="tripleseat-dev.html" class="text-primary font-heading text-xl">Tripleseat Debug</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        <div class="flex flex-col items-center mb-7">
+            <h1 class="text-3xl font-heading text-primary">Tripleseat Integration Debug</h1>
+            <p class="mt-2 text-gray-400">Test and verify your Tripleseat integration</p>
+        </div>
+
+        <!-- Status Section -->
+        <div class="bg-surface rounded-lg shadow-sm p-8 mb-8">
+            <h2 class="text-2xl font-heading text-primary mb-4">Connection Status</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <p class="mb-2"><span class="font-bold">Environment:</span> <span id="environment-status">Checking...</span></p>
+                    <p class="mb-2"><span class="font-bold">Integration Enabled:</span> <span id="integration-status">Checking...</span></p>
+                    <p class="mb-2"><span class="font-bold">API URL:</span> <span id="api-url">Checking...</span></p>
+                    <p class="mb-2"><span class="font-bold">Proxy Server:</span> <span id="proxy-status" class="flex items-center">
+                        <span class="mr-2">Checking...</span>
+                        <svg id="check-proxy-spinner" class="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <button id="check-proxy-btn" class="bg-gray-700 text-white px-3 py-1 rounded text-sm ml-2 hidden">Check Again</button>
+                    </span></p>
+                </div>
+                <div>
+                    <p class="mb-2"><span class="font-bold">Public Key:</span> <span id="public-key">•••••••••••••••••</span></p>
+                    <p class="mb-2"><span class="font-bold">Consumer Key:</span> <span id="consumer-key">•••••••••••••••••</span></p>
+                    <button id="show-keys-btn" class="mt-2 bg-gray-700 text-white px-4 py-2 rounded text-sm">Show Keys</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Venue Configuration -->
+        <div class="bg-surface rounded-lg shadow-sm p-8 mb-8">
+            <h2 class="text-2xl font-heading text-primary mb-4">Venue Configuration</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <h3 class="text-xl font-heading mb-2">Ladybird</h3>
+                    <p><span class="font-bold">Venue ID:</span> <span id="ladybird-id">Checking...</span></p>
+                    <p><span class="font-bold">Rooms:</span> <span id="ladybird-rooms">Checking...</span></p>
+                </div>
+                <div>
+                    <h3 class="text-xl font-heading mb-2">Muchacho</h3>
+                    <p><span class="font-bold">Venue ID:</span> <span id="muchacho-id">Checking...</span></p>
+                    <p><span class="font-bold">Rooms:</span> <span id="muchacho-rooms">Checking...</span></p>
+                </div>
+                <div>
+                    <h3 class="text-xl font-heading mb-2">The Dug-Out</h3>
+                    <p><span class="font-bold">Venue ID:</span> <span id="dugout-id">Checking...</span></p>
+                    <p><span class="font-bold">Rooms:</span> <span id="dugout-rooms">Checking...</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Section -->
+        <div class="bg-surface rounded-lg shadow-sm p-8 mb-8">
+            <h2 class="text-2xl font-heading text-primary mb-4">Test Lead Creation</h2>
+            
+            <form id="test-form" class="space-y-6">
+                <!-- Venue Selector (Moved to top with enhanced styling) -->
+                <div class="bg-gray-900 rounded-lg p-4 border-2 border-primary">
+                    <label for="test-venue" class="block text-xl font-heading mb-2 text-primary">Select Venue to Test</label>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        <select id="test-venue" class="w-full rounded-md border-gray-700 bg-background text-white shadow-sm focus:border-primary focus:ring-primary p-3 text-lg font-bold">
+                            <option value="Ladybird">Ladybird</option>
+                            <option value="Muchacho">Muchacho</option>
+                            <option value="The Dug-Out">The Dug-Out</option>
+                        </select>
+                        <div id="venue-badge" class="flex items-center justify-center bg-primary text-black px-4 py-2 rounded-md font-heading text-lg">
+                            Testing: Ladybird
+                        </div>
+                        <div class="text-gray-400 flex items-center text-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            This will generate test data specific to the selected venue
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Basic Info -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label for="test-name" class="block text-lg font-heading mb-2">Contact Name</label>
+                        <input type="text" id="test-name" value="Test Customer" class="w-full rounded-md border-gray-700 bg-background text-white shadow-sm focus:border-primary focus:ring-primary p-3">
+                    </div>
+                    <div>
+                        <label for="test-email" class="block text-lg font-heading mb-2">Email</label>
+                        <input type="email" id="test-email" value="test@example.com" class="w-full rounded-md border-gray-700 bg-background text-white shadow-sm focus:border-primary focus:ring-primary p-3">
+                    </div>
+                    <div>
+                        <label for="test-phone" class="block text-lg font-heading mb-2">Phone</label>
+                        <input type="tel" id="test-phone" value="555-123-4567" class="w-full rounded-md border-gray-700 bg-background text-white shadow-sm focus:border-primary focus:ring-primary p-3">
+                    </div>
+                </div>
+                
+                <!-- Contact & Event Details -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label for="test-location" class="block text-lg font-heading mb-2">Location</label>
+                        <input type="text" id="test-location" value="Off-Site Event" class="w-full rounded-md border-gray-700 bg-background text-white shadow-sm focus:border-primary focus:ring-primary p-3">
+                    </div>
+                    <div>
+                        <label for="test-partysize" class="block text-lg font-heading mb-2">Party Size</label>
+                        <input type="number" id="test-partysize" value="25" class="w-full rounded-md border-gray-700 bg-background text-white shadow-sm focus:border-primary focus:ring-primary p-3">
+                    </div>
+                    <div>
+                        <label for="test-items" class="block text-lg font-heading mb-2">Test Order Items</label>
+                        <select id="test-items" class="w-full rounded-md border-gray-700 bg-background text-white shadow-sm focus:border-primary focus:ring-primary p-3">
+                            <option value="simple">Simple (1 item)</option>
+                            <option value="medium" selected>Medium (3 items)</option>
+                            <option value="complex">Complex (5+ items)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Date & Time -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="test-date" class="block text-lg font-heading mb-2">Event Date</label>
+                        <input type="date" id="test-date" class="w-full rounded-md border-gray-700 bg-background text-white shadow-sm focus:border-primary focus:ring-primary p-3">
+                    </div>
+                    <div>
+                        <label for="test-time" class="block text-lg font-heading mb-2">Event Time</label>
+                        <input type="time" id="test-time" value="15:00" class="w-full rounded-md border-gray-700 bg-background text-white shadow-sm focus:border-primary focus:ring-primary p-3">
+                    </div>
+                </div>
+                
+                <!-- Additional Options -->
+                <div class="flex flex-wrap gap-6">
+                    <div class="flex items-center">
+                        <input type="checkbox" id="test-mock" class="w-5 h-5 mr-2">
+                        <label for="test-mock">Use Mock API</label>
+                    </div>
+                    <div class="flex items-center">
+                        <input type="checkbox" id="test-show-payload" checked class="w-5 h-5 mr-2">
+                        <label for="test-show-payload">Show Request Payload</label>
+                    </div>
+                </div>
+                
+                <!-- Menu Preview Section -->
+                <div class="bg-gray-900 rounded-lg p-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="text-lg font-heading text-primary">Menu Items Preview</h3>
+                        <button type="button" id="refresh-preview" class="bg-gray-700 hover:bg-gray-600 text-white text-sm px-3 py-1 rounded">
+                            Refresh Preview
+                        </button>
+                    </div>
+                    <div id="menu-preview" class="text-sm max-h-40 overflow-y-auto p-2 border border-gray-700 rounded">
+                        Menu preview will appear here...
+                    </div>
+                </div>
+                
+                <!-- Submit Button -->
+                <div class="flex justify-end">
+                    <button type="submit" id="test-submit" class="bg-primary text-black px-8 py-3 rounded-lg font-heading text-xl hover:bg-opacity-90 flex items-center gap-2">
+                        <span>Send Test Lead</span>
+                        <svg id="test-spinner" class="hidden animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Results Section -->
+        <div class="bg-surface rounded-lg shadow-sm p-8 mb-8">
+            <h2 class="text-2xl font-heading text-primary mb-4">Test Results</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Request Payload -->
+                <div>
+                    <h3 class="text-xl font-heading mb-2">Request Payload</h3>
+                    <pre id="request-payload" class="bg-gray-900 p-4 rounded result-box">No request sent yet</pre>
+                </div>
+                
+                <!-- Response -->
+                <div>
+                    <h3 class="text-xl font-heading mb-2">Response</h3>
+                    <pre id="response-data" class="bg-gray-900 p-4 rounded result-box">No response yet</pre>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Debug Log Section -->
+        <div class="bg-surface rounded-lg shadow-sm p-8 mb-8">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-heading text-primary">Debug Log</h2>
+                <button id="clear-log-btn" class="bg-gray-700 text-white px-4 py-2 rounded text-sm">Clear Log</button>
+            </div>
+            <pre id="debug-log" class="bg-gray-900 p-4 rounded result-box h-64">Debug log will appear here...</pre>
+        </div>
+    </div>
+
+    <script>
+        // Initialize the page when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set today's date + 7 days as the default date
+            const dateField = document.getElementById('test-date');
+            const today = new Date();
+            today.setDate(today.getDate() + 7);
+            dateField.value = today.toISOString().split('T')[0];
+            
+            // Initialize status fields
+            updateStatusFields();
+            
+            // Check if proxy server is running
+            checkProxyServer();
+            
+            // Initialize venue badge
+            updateVenueBadge();
+            
+            // Add event listeners
+            document.getElementById('show-keys-btn').addEventListener('click', toggleApiKeys);
+            document.getElementById('test-form').addEventListener('submit', handleTestSubmit);
+            document.getElementById('clear-log-btn').addEventListener('click', clearDebugLog);
+            document.getElementById('check-proxy-btn').addEventListener('click', checkProxyServer);
+            document.getElementById('test-venue').addEventListener('change', updateVenueBadge);
+            document.getElementById('test-venue').addEventListener('change', updateMenuPreview);
+            document.getElementById('test-items').addEventListener('change', updateMenuPreview);
+            document.getElementById('refresh-preview').addEventListener('click', updateMenuPreview);
+            
+            // Log initial status
+            logToDebugConsole('Debug page initialized');
+            logToDebugConsole('Current environment: ' + TRIPLESEAT_CONFIG.getEnvironment());
+            
+            // Initialize menu preview
+            updateMenuPreview();
+        });
+        
+        // Update the venue badge when venue selection changes
+        function updateVenueBadge() {
+            const venueSelect = document.getElementById('test-venue');
+            const venueBadge = document.getElementById('venue-badge');
+            const selectedVenue = venueSelect.value;
+            
+            // Update badge text
+            venueBadge.textContent = 'Testing: ' + selectedVenue;
+            
+            // Update badge styling based on venue
+            if (selectedVenue === 'Ladybird') {
+                venueBadge.className = 'flex items-center justify-center bg-primary text-black px-4 py-2 rounded-md font-heading text-lg';
+            } else if (selectedVenue === 'Muchacho') {
+                venueBadge.className = 'flex items-center justify-center bg-pink-500 text-black px-4 py-2 rounded-md font-heading text-lg';
+            } else if (selectedVenue === 'The Dug-Out') {
+                venueBadge.className = 'flex items-center justify-center bg-blue-500 text-white px-4 py-2 rounded-md font-heading text-lg';
+            }
+            
+            // Log the venue change
+            logToDebugConsole('Selected venue changed to: ' + selectedVenue);
+            
+            // Update the test location field with a venue-specific suggestion
+            updateLocationSuggestion(selectedVenue);
+        }
+        
+        // Update location field with venue-specific suggestion
+        function updateLocationSuggestion(venue) {
+            const locationField = document.getElementById('test-location');
+            
+            if (venue === 'Ladybird') {
+                locationField.value = 'Ladybird Main Dining Room';
+            } else if (venue === 'Muchacho') {
+                locationField.value = 'Muchacho Private Event Space';
+            } else if (venue === 'The Dug-Out') {
+                locationField.value = 'The Dug-Out Stadium Room';
+            }
+        }
+        
+        // Update the status fields with current configuration
+        function updateStatusFields() {
+            // Environment and status
+            document.getElementById('environment-status').textContent = TRIPLESEAT_CONFIG.getEnvironment();
+            document.getElementById('integration-status').textContent = TRIPLESEAT_CONFIG.isEnabled() ? 'Enabled' : 'Disabled';
+            document.getElementById('api-url').textContent = TRIPLESEAT_CONFIG.getProxyUrl();
+            
+            // Venue IDs
+            document.getElementById('ladybird-id').textContent = TRIPLESEAT_CONFIG.venues['Ladybird'] || 'Not configured';
+            document.getElementById('muchacho-id').textContent = TRIPLESEAT_CONFIG.venues['Muchacho'] || 'Not configured';
+            document.getElementById('dugout-id').textContent = TRIPLESEAT_CONFIG.venues['The Dug-Out'] || 'Not configured';
+            
+            // Room counts
+            document.getElementById('ladybird-rooms').textContent = Object.keys(TRIPLESEAT_CONFIG.rooms['Ladybird'] || {}).length + ' rooms';
+            document.getElementById('muchacho-rooms').textContent = Object.keys(TRIPLESEAT_CONFIG.rooms['Muchacho'] || {}).length + ' rooms';
+            document.getElementById('dugout-rooms').textContent = Object.keys(TRIPLESEAT_CONFIG.rooms['The Dug-Out'] || {}).length + ' rooms';
+        }
+        
+        // Toggle API keys visibility
+        function toggleApiKeys() {
+            const publicKeyElement = document.getElementById('public-key');
+            const consumerKeyElement = document.getElementById('consumer-key');
+            const button = document.getElementById('show-keys-btn');
+            
+            if (publicKeyElement.textContent.includes('•')) {
+                publicKeyElement.textContent = TRIPLESEAT_CONFIG.api.apiKey;
+                consumerKeyElement.textContent = TRIPLESEAT_CONFIG.api.consumerKey;
+                button.textContent = 'Hide Keys';
+            } else {
+                publicKeyElement.textContent = '•••••••••••••••••';
+                consumerKeyElement.textContent = '•••••••••••••••••';
+                button.textContent = 'Show Keys';
+            }
+        }
+        
+        // Handle test form submission
+        async function handleTestSubmit(event) {
+            event.preventDefault();
+            
+            const submitButton = document.getElementById('test-submit');
+            const spinner = document.getElementById('test-spinner');
+            const responseArea = document.getElementById('response-data');
+            const requestArea = document.getElementById('request-payload');
+            
+            // Show loading state
+            submitButton.disabled = true;
+            spinner.classList.remove('hidden');
+            responseArea.textContent = 'Sending request...';
+            
+            try {
+                // Build test form data
+                const formData = buildTestFormData();
+                
+                // Log and display the request payload
+                logToDebugConsole('Sending test lead data');
+                if (document.getElementById('test-show-payload').checked) {
+                    requestArea.textContent = JSON.stringify(formData, null, 2);
+                } else {
+                    requestArea.textContent = 'Payload hidden (enable "Show Request Payload" to view)';
+                }
+                
+                // Check if we should use mock
+                const useMock = document.getElementById('test-mock').checked;
+                if (useMock) {
+                    // Add mock parameter to URL
+                    const urlParams = new URLSearchParams(window.location.search);
+                    urlParams.set('mock', 'true');
+                    window.history.replaceState({}, '', '?' + urlParams.toString());
+                    logToDebugConsole('Using mock API endpoint');
+                } else {
+                    // Remove mock parameter from URL
+                    const urlParams = new URLSearchParams(window.location.search);
+                    urlParams.delete('mock');
+                    window.history.replaceState({}, '', urlParams.toString() ? '?' + urlParams.toString() : window.location.pathname);
+                }
+                
+                // Send the data
+                const tripleseatResult = await sendToTripleseat(formData);
+                
+                // Display response
+                responseArea.textContent = JSON.stringify(tripleseatResult, null, 2);
+                
+                // Log result
+                if (tripleseatResult.success) {
+                    const leadId = tripleseatResult.lead_id ? ` (Lead ID: ${tripleseatResult.lead_id})` : '';
+                    logToDebugConsole(`Test lead created successfully!${leadId}`, 'success');
+                    
+                    // Display success message at the top of the response area
+                    if (tripleseatResult.lead_id) {
+                        const successBanner = document.createElement('div');
+                        successBanner.className = 'bg-green-900 text-white p-3 mb-3 rounded';
+                        successBanner.innerHTML = `
+                            <strong>✅ Success!</strong> Lead created in Tripleseat.<br>
+                            <span class="text-sm">Lead ID: ${tripleseatResult.lead_id}</span><br>
+                            <span class="text-sm mt-2 block">To verify: <a href="https://app.tripleseat.com/leads/${tripleseatResult.lead_id}" target="_blank" class="underline">View lead in Tripleseat</a> (requires Tripleseat login)</span>
+                        `;
+                        responseArea.parentNode.insertBefore(successBanner, responseArea);
+                        
+                        // Remove the banner after 30 seconds instead of 10
+                        setTimeout(() => successBanner.remove(), 30000);
+                    }
+                    
+                    // Add a special notice for mock responses
+                    if (useMock) {
+                        logToDebugConsole('Note: This was a mock response. No actual lead was created in Tripleseat.', 'info');
+                    } else if (tripleseatResult.lead_id) {
+                        // Add link to Tripleseat if we have a real lead ID
+                        const leadUrl = `https://app.tripleseat.com/leads/${tripleseatResult.lead_id}`;
+                        logToDebugConsole(`View lead in Tripleseat: <a href="${leadUrl}" target="_blank" class="text-blue-400 hover:underline">${leadUrl}</a>`, 'info');
+                        logToDebugConsole(`Note: You need to be logged into Tripleseat to view the lead. If you don't see it in your leads list, check your permissions or filters.`, 'info');
+                    }
+                } else {
+                    // Create error banner
+                    const errorBanner = document.createElement('div');
+                    errorBanner.className = 'bg-red-900 text-white p-3 mb-3 rounded';
+                    errorBanner.innerHTML = `
+                        <strong>❌ Error!</strong> Failed to create lead in Tripleseat.<br>
+                        <span class="text-sm">${tripleseatResult.error || 'Unknown error'}</span>
+                    `;
+                    responseArea.parentNode.insertBefore(errorBanner, responseArea);
+                    
+                    // Remove the banner after 20 seconds
+                    setTimeout(() => errorBanner.remove(), 20000);
+                    
+                    logToDebugConsole('Failed to create test lead: ' + (tripleseatResult.error || 'Unknown error'), 'error');
+                    
+                    // Display troubleshooting suggestions
+                    logToDebugConsole('Troubleshooting suggestions:', 'info');
+                    logToDebugConsole('1. Check that your API keys are correct', 'info');
+                    logToDebugConsole('2. Verify that your proxy server is running and correctly configured', 'info');
+                    logToDebugConsole('3. Examine the response data for specific error details', 'info');
+                }
+            } catch (error) {
+                // Display error
+                responseArea.textContent = JSON.stringify({
+                    success: false,
+                    error: error.message || 'An unexpected error occurred'
+                }, null, 2);
+                
+                // Create error banner for exceptions
+                const errorBanner = document.createElement('div');
+                errorBanner.className = 'bg-red-900 text-white p-3 mb-3 rounded';
+                errorBanner.innerHTML = `
+                    <strong>❌ Exception!</strong> An error occurred while processing the request.<br>
+                    <span class="text-sm">${error.message || 'Unknown error'}</span>
+                `;
+                responseArea.parentNode.insertBefore(errorBanner, responseArea);
+                
+                // Remove the banner after 20 seconds
+                setTimeout(() => errorBanner.remove(), 20000);
+                
+                logToDebugConsole('Error: ' + error.message, 'error');
+            } finally {
+                // Restore button state
+                submitButton.disabled = false;
+                spinner.classList.add('hidden');
+            }
+        }
+        
+        // Build test form data from the form fields
+        function buildTestFormData() {
+            const venue = document.getElementById('test-venue').value;
+            const name = document.getElementById('test-name').value;
+            const email = document.getElementById('test-email').value;
+            const phone = document.getElementById('test-phone').value;
+            const location = document.getElementById('test-location').value;
+            const partySize = document.getElementById('test-partysize').value;
+            const date = document.getElementById('test-date').value;
+            const time = document.getElementById('test-time').value;
+            const itemsCount = document.getElementById('test-items').value;
+            
+            // Create basic order items based on selected complexity
+            const orderItems = createTestOrderItems(itemsCount, venue);
+            
+            // Calculate subtotal
+            const subtotal = orderItems.reduce((sum, item) => sum + (parseFloat(item.subtotal.replace('$', '')) || 0), 0);
+            const tax = subtotal * 0.089;
+            const total = subtotal + tax;
+            
+            // Build form data object matching the structure expected by the Tripleseat integration
+            return {
+                source: venue,
+                contact: {
+                    name: name,
+                    email: email,
+                    phone: phone
+                },
+                delivery: {
+                    location: location,
+                    address: location + " (Test Address)",
+                    city: "Atlanta",
+                    zip: "30309",
+                    date: date,
+                    time: time
+                },
+                partySize: partySize,
+                order: orderItems,
+                subtotal: `$${subtotal.toFixed(2)}`,
+                total: `$${total.toFixed(2)}`,
+                comments: "This is a test order from the Tripleseat debug page."
+            };
+        }
+        
+        // Create test order items based on the selected complexity
+        function createTestOrderItems(complexity, venue) {
+            const items = [];
+            
+            // Menu items based on venue
+            const menuItems = {
+                'Ladybird': [
+                    { name: 'BBQ Pulled Pork', price: 18.95 },
+                    { name: 'Brisket', price: 22.95 },
+                    { name: 'Smoked Chicken', price: 16.95 },
+                    { name: 'Mac & Cheese', price: 5.95 },
+                    { name: 'Collard Greens', price: 4.95 },
+                    { name: 'Cornbread', price: 3.95 },
+                    { name: 'Apple Pie', price: 6.95 }
+                ],
+                'Muchacho': [
+                    { name: 'Breakfast Taco Pack', price: 42.95 },
+                    { name: 'Burrito Platter', price: 52.95 },
+                    { name: 'Guacamole & Chips', price: 12.95 },
+                    { name: 'Queso', price: 9.95 },
+                    { name: 'Rice & Beans', price: 7.95 },
+                    { name: 'Churros', price: 6.95 }
+                ],
+                'The Dug-Out': [
+                    { name: 'Hot Dog Bar', price: 14.95 },
+                    { name: 'Nachos', price: 12.95 },
+                    { name: 'Burger Sliders', price: 16.95 },
+                    { name: 'Wings', price: 15.95 },
+                    { name: 'Potato Salad', price: 5.95 },
+                    { name: 'Cookies', price: 4.95 }
+                ]
+            };
+            
+            // Get the appropriate menu for the venue
+            const menu = menuItems[venue] || menuItems['Ladybird'];
+            
+            // Determine how many items to add
+            let itemCount = 1;
+            if (complexity === 'medium') itemCount = 3;
+            if (complexity === 'complex') itemCount = 5;
+            
+            // Add items
+            for (let i = 0; i < Math.min(itemCount, menu.length); i++) {
+                const quantity = Math.floor(Math.random() * 3) + 1; // 1-3 quantity
+                const item = menu[i];
+                const subtotal = quantity * item.price;
+                
+                items.push({
+                    name: item.name,
+                    quantity: quantity,
+                    subtotal: `$${subtotal.toFixed(2)}`
+                });
+            }
+            
+            return items;
+        }
+        
+        // Log to the debug console
+        function logToDebugConsole(message, type = 'info') {
+            const debugLog = document.getElementById('debug-log');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] [${type.toUpperCase()}] ${message}`;
+            
+            // Create a new entry with proper HTML support
+            const entryElement = document.createElement('div');
+            entryElement.className = `log-entry log-${type}`;
+            entryElement.innerHTML = logEntry;
+            
+            // Append to the debug log
+            debugLog.appendChild(entryElement);
+            debugLog.scrollTop = debugLog.scrollHeight;
+            
+            // Also log to browser console
+            if (type === 'error') {
+                console.error(message);
+            } else {
+                console.log(message);
+            }
+        }
+        
+        // Clear the debug log
+        function clearDebugLog() {
+            document.getElementById('debug-log').textContent = '';
+            logToDebugConsole('Log cleared');
+        }
+        
+        // Override the original logTripleSeatDebug function to also log to our UI
+        const originalLogTripleSeatDebug = window.logTripleSeatDebug;
+        window.logTripleSeatDebug = function(message, data) {
+            // Call the original function
+            if (originalLogTripleSeatDebug) {
+                originalLogTripleSeatDebug(message, data);
+            }
+            
+            // Also log to our UI
+            logToDebugConsole(message + (data ? ': ' + JSON.stringify(data) : ''));
+        };
+        
+        // Check if the proxy server is running
+        async function checkProxyServer() {
+            const proxyStatusElement = document.getElementById('proxy-status').querySelector('span');
+            const spinner = document.getElementById('check-proxy-spinner');
+            const checkButton = document.getElementById('check-proxy-btn');
+            
+            // Reset UI
+            proxyStatusElement.textContent = 'Checking...';
+            proxyStatusElement.className = 'mr-2';
+            spinner.classList.remove('hidden');
+            checkButton.classList.add('hidden');
+            
+            // Get the proxy URL
+            const proxyUrl = TRIPLESEAT_CONFIG.getProxyUrl();
+            let mockEndpoint = '';
+            
+            // Determine the mock endpoint based on the proxy URL
+            if (proxyUrl.includes('localhost')) {
+                mockEndpoint = 'http://localhost:3002/api/tripleseat/mock';
+            } else {
+                // For production, append /mock to the proxy URL path
+                const url = new URL(proxyUrl, window.location.origin);
+                url.pathname = url.pathname.replace(/\/leads$/, '/mock');
+                mockEndpoint = url.toString();
+            }
+            
+            try {
+                logToDebugConsole('Checking proxy server at: ' + mockEndpoint);
+                
+                // We use the mock endpoint for checking since it doesn't make an actual API call
+                const response = await fetch(mockEndpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ test: true }),
+                });
+                
+                // If we get a response at all, the proxy is running
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (data && (data.success || data.lead_id)) {
+                        // Proxy server is running and returning expected response format
+                        proxyStatusElement.textContent = 'Running (OK)';
+                        proxyStatusElement.className = 'mr-2 text-green-400 font-bold';
+                        logToDebugConsole('Proxy server is running correctly', 'success');
+                    } else {
+                        // Proxy server is running but response format is unexpected
+                        proxyStatusElement.textContent = 'Running (Warning: Unexpected response)';
+                        proxyStatusElement.className = 'mr-2 text-yellow-400 font-bold';
+                        logToDebugConsole('Proxy server returned unexpected response format: ' + JSON.stringify(data), 'warning');
+                    }
+                } else {
+                    // Proxy server is running but returned an error
+                    proxyStatusElement.textContent = 'Running (Error: ' + response.status + ')';
+                    proxyStatusElement.className = 'mr-2 text-red-400 font-bold';
+                    logToDebugConsole('Proxy server returned error status: ' + response.status, 'error');
+                }
+            } catch (error) {
+                // Proxy server is not running or not accessible
+                proxyStatusElement.textContent = 'Not running or not accessible';
+                proxyStatusElement.className = 'mr-2 text-red-400 font-bold';
+                logToDebugConsole('Proxy server check failed: ' + error.message, 'error');
+                
+                // Add instructions
+                const debugLog = document.getElementById('debug-log');
+                debugLog.textContent += '\n\n[PROXY SERVER INSTRUCTIONS]\nTo start the proxy server, open a new terminal and run:\npython tripleseat_proxy.py\n';
+            } finally {
+                // Hide spinner and show check button
+                spinner.classList.add('hidden');
+                checkButton.classList.remove('hidden');
+            }
+        }
+        
+        // Update the menu preview based on venue and complexity
+        function updateMenuPreview() {
+            const venue = document.getElementById('test-venue').value;
+            const complexity = document.getElementById('test-items').value;
+            const previewElement = document.getElementById('menu-preview');
+            
+            // Generate a preview of the menu items
+            const testItems = createTestOrderItems(complexity, venue);
+            
+            if (testItems.length === 0) {
+                previewElement.innerHTML = '<div class="text-red-400">No menu items available for this venue</div>';
+                return;
+            }
+            
+            // Format the items into HTML
+            let previewHtml = `<div class="text-primary font-bold mb-2">${venue} Menu Preview (${complexity} complexity)</div>`;
+            previewHtml += '<div class="space-y-2">';
+            
+            testItems.forEach(item => {
+                previewHtml += `
+                <div class="flex justify-between border-b border-gray-700 pb-1">
+                    <div class="flex-1">
+                        <span class="font-medium">${item.name}</span>
+                        <span class="text-gray-400 ml-2">× ${item.quantity}</span>
+                    </div>
+                    <div class="text-green-400">${item.subtotal}</div>
+                </div>`;
+            });
+            
+            // Calculate total
+            const subtotal = testItems.reduce((sum, item) => sum + parseFloat(item.subtotal.replace('$', '')), 0);
+            previewHtml += `
+            <div class="flex justify-between pt-1 font-bold">
+                <div>Total:</div>
+                <div class="text-green-400">$${subtotal.toFixed(2)}</div>
+            </div>`;
+            
+            previewHtml += '</div>';
+            
+            // Update the preview element
+            previewElement.innerHTML = previewHtml;
+            
+            // Log the action
+            logToDebugConsole(`Updated menu preview for ${venue} (${complexity} complexity)`, 'info');
+        }
+    </script>
+</body>
+</html> 

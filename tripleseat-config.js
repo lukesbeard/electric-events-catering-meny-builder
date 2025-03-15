@@ -27,15 +27,15 @@ const TRIPLESEAT_CONFIG = {
     
     // Venue Configuration
     venues: {
-        "Ladybird": "REPLACE_WITH_LADYBIRD_VENUE_ID",
-        "Muchacho": "REPLACE_WITH_MUCHACHO_VENUE_ID",
+        "Ladybird": "18694",
+        "Muchacho": "18693",
         "The Dug-Out": "20521"
     },
     
     // Event Type Configuration
     eventTypes: {
-        catering: "1",
-        delivery: "1"
+        catering: "286252",
+        delivery: "286252"
     },
     
     // Lead Source Configuration

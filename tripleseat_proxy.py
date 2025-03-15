@@ -83,6 +83,41 @@ class TripleSeatProxy(BaseHTTPRequestHandler):
                 print(response_data.decode('utf-8'))
                 print("===============================\n")
                 
+                # DEBUGGING: Check if notes and custom fields were included in request
+                try:
+                    request_json = json.loads(post_data.decode('utf-8'))
+                    lead_info = request_json.get('lead', {})
+                    custom_fields = request_json.get('custom_fields', {})
+                    
+                    print("\n===== DEBUGGING REQUEST CONTENT =====")
+                    if 'notes' in lead_info:
+                        notes_length = len(lead_info['notes'])
+                        print(f"Notes field present: YES (length: {notes_length} characters)")
+                        print(f"Notes preview: {lead_info['notes'][:100]}...")
+                    else:
+                        print("Notes field present: NO")
+                    
+                    print(f"Custom fields present: {'YES' if custom_fields else 'NO'}")
+                    if custom_fields:
+                        print(f"Custom fields: {json.dumps(custom_fields)}")
+                    
+                    print("===================================\n")
+                except Exception as parsing_error:
+                    print(f"Error parsing request JSON: {parsing_error}")
+                
+                # DEBUGGING: Check response content
+                try:
+                    response_json = json.loads(response_data.decode('utf-8'))
+                    print("\n===== DEBUGGING RESPONSE CONTENT =====")
+                    print(f"Success indicated: {'YES' if 'success' in response_json or 'success_message' in response_json or 'lead_id' in response_json else 'NO'}")
+                    print(f"Lead ID present: {'YES' if 'lead_id' in response_json else 'NO'}")
+                    print(f"Errors present: {'YES' if 'errors' in response_json else 'NO'}")
+                    if 'errors' in response_json:
+                        print(f"Errors: {json.dumps(response_json['errors'])}")
+                    print("=====================================\n")
+                except Exception as parsing_error:
+                    print(f"Error parsing response JSON: {parsing_error}")
+                
                 # Send response back to client
                 self.send_response(200)
                 self.send_header('Content-type', 'application/json')
