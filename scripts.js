@@ -1065,8 +1065,9 @@ async function sendOrderEmail(event) {
             },
             delivery: {
                 // Include all fields for all venues to ensure compatibility
-                location: locationValue,
-                address: locationValue, // Use location value as address
+                location: locationValue || document.getElementById('locationStreet')?.value || '',
+                // Correctly use the street address field for address
+                address: document.getElementById('locationStreet')?.value || '',
                 city: isDugOutPage ? "Atlanta" : document.getElementById('locationCity')?.value || '',
                 zip: isDugOutPage ? "30309" : document.getElementById('locationZip')?.value || '',
                 date: document.getElementById('dropoffDate')?.value || '',

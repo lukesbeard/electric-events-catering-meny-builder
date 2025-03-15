@@ -136,6 +136,8 @@ function convertFormDataForTripleseat(formData) {
             last_name: formData.contact.name.split(' ').slice(1).join(' ') || '',
             email: formData.contact.email,
             phone_number: formData.contact.phone,
+            email_address: formData.contact.email,
+            phone: formData.contact.phone,
             location_id: venueId,
             // Add a location_name that includes order details - this field is often displayed prominently
             location_name: `Order: ${formData.order.map(item => `${item.name} (${item.quantity})`).join(', ')}`,
@@ -150,21 +152,50 @@ function convertFormDataForTripleseat(formData) {
             notes: notes.trim(),
             // Add order details to additional_information field per Tripleseat API docs
             additional_information: `
+--------------------------------------------------
+CATERING QUOTE DETAILS
+--------------------------------------------------
+
+CONTACT INFORMATION:
+Name: ${formData.contact.name}
+Email: ${formData.contact.email}
+Phone: ${formData.contact.phone}
+
+LOCATION & DELIVERY DETAILS:
+==========================
+Location: ${formData.delivery.location || 'Not specified'}
+${formData.delivery.address ? `STREET ADDRESS: ${formData.delivery.address}` : ''}
+${formData.delivery.city ? `CITY: ${formData.delivery.city}` : ''}
+${formData.delivery.zip ? `ZIP CODE: ${formData.delivery.zip}` : ''}
+${formData.delivery.state ? `STATE: ${formData.delivery.state}` : ''}
+${formData.delivery.instructions ? `Delivery Instructions: ${formData.delivery.instructions}` : ''}
+Delivery Date: ${formData.delivery.date ? new Date(formData.delivery.date).toLocaleDateString() : 'Not specified'}
+Delivery Time: ${formData.delivery.time || 'Not specified'}
+
+EVENT DETAILS:
+Party Size: ${formData.partySize || 'Not specified'}
+${formData.event ? `Event Type: ${formData.event.type || 'Not specified'}` : ''}
+${formData.event && formData.event.setup ? `Setup Time: ${formData.event.setup}` : ''}
+${formData.event && formData.event.startTime ? `Event Start Time: ${formData.event.startTime}` : ''}
+${formData.event && formData.event.endTime ? `Event End Time: ${formData.event.endTime}` : ''}
+Source: ${formData.source} Catering Form
+
 ORDER DETAILS:
 ${formData.order.map(item => `- ${item.name} (${item.quantity}) - ${item.subtotal}`).join('\n')}
 
-SUBTOTAL: ${formData.subtotal}
-TAX (8.9%): $${tax.toFixed(2)}
+PRICING:
+Subtotal: ${formData.subtotal}
+Tax (8.9%): $${tax.toFixed(2)}
+${formData.fees ? `Service Fees: ${formData.fees}` : ''}
+${formData.delivery && formData.delivery.fee ? `Delivery Fee: ${formData.delivery.fee}` : ''}
 TOTAL: $${total.toFixed(2)}
 
-DELIVERY INFORMATION:
-Location: ${formData.delivery.location || 'Not specified'}
-${formData.delivery.address ? `Address: ${formData.delivery.address}` : ''}
-${formData.delivery.city ? `City: ${formData.delivery.city}` : ''}
-${formData.delivery.zip ? `ZIP: ${formData.delivery.zip}` : ''}
-Delivery Date: ${formData.delivery.date ? new Date(formData.delivery.date).toLocaleDateString() : 'Not specified'}
-Delivery Time: ${formData.delivery.time || 'Not specified'}
-`
+${formData.comments ? `ADDITIONAL COMMENTS:
+${formData.comments}` : ''}
+
+--------------------------------------------------
+Form Submitted: ${new Date().toLocaleString()}
+--------------------------------------------------`
         },
         // Add custom fields if needed
         custom_fields: {
@@ -195,6 +226,20 @@ async function sendToTripleseat(formData) {
     try {
         logTripleSeatDebug('Preparing to send data to Tripleseat', formData);
         
+        // Better debugging for contact and address information
+        logTripleSeatDebug('CONTACT INFO BEING SENT:', {
+            name: formData.contact.name,
+            email: formData.contact.email,
+            phone: formData.contact.phone
+        });
+        
+        logTripleSeatDebug('ADDRESS INFO BEING SENT:', {
+            location: formData.delivery.location,
+            street: formData.delivery.address,
+            city: formData.delivery.city,
+            zip: formData.delivery.zip
+        });
+        
         // Convert form data to Tripleseat format
         const tripleseatData = convertFormDataForTripleseat(formData);
         
@@ -205,86 +250,73 @@ async function sendToTripleseat(formData) {
         // DEBUGGING: Log the custom fields we're sending
         logTripleSeatDebug('CUSTOM FIELDS BEING SENT:', tripleseatData.custom_fields);
         
-        // Get the appropriate URL based on environment
-        const tripleseatUrl = TRIPLESEAT_CONFIG.getProxyUrl();
-        logTripleSeatDebug(`Sending to Tripleseat via: ${tripleseatUrl}`);
-        
-        // DEBUGGING: Log entire payload to check for structural issues
-        logTripleSeatDebug('FULL PAYLOAD BEING SENT TO TRIPLESEAT:', JSON.stringify(tripleseatData));
-        
-        // Send the data
-        const response = await fetch(tripleseatUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(tripleseatData)
+        // Additional debug for the specific contact fields that should map to Tripleseat
+        logTripleSeatDebug('TRIPLESEAT API CONTACT FIELDS:', {
+            first_name: tripleseatData.lead.first_name, 
+            last_name: tripleseatData.lead.last_name,
+            email: tripleseatData.lead.email,
+            phone_number: tripleseatData.lead.phone_number,
+            email_address: tripleseatData.lead.email_address,
+            phone: tripleseatData.lead.phone
         });
         
-        // Handle no-cors responses
-        if (response.type === 'opaque') {
-            logTripleSeatDebug('Received opaque response due to no-cors mode');
-            return { 
-                success: true,
-                message: 'Request sent to Tripleseat. No response details available due to CORS restrictions.'
-            };
-        }
+        // Get the appropriate URL based on environment
+        const tripleseatUrl = TRIPLESEAT_CONFIG.getProxyUrl();
+        logTripleSeatDebug(`Sending data to Tripleseat via: ${tripleseatUrl}`);
+
+        // Check if we want to use mock API
+        const urlParams = new URLSearchParams(window.location.search);
+        const useMock = urlParams.get('mock') === 'true';
         
-        // DEBUGGING: Log raw response details
-        logTripleSeatDebug('RESPONSE STATUS:', response.status);
-        logTripleSeatDebug('RESPONSE STATUS TEXT:', response.statusText);
-        logTripleSeatDebug('RESPONSE HEADERS:', [...response.headers.entries()]);
+        // Prepare the response structure
+        let result = { success: false, error: null, lead_id: null, mock: false };
         
-        // Parse the response if possible
-        let result;
         try {
-            result = await response.json();
-            logTripleSeatDebug('Tripleseat response', result);
+            // Send the data to Tripleseat
+            const response = await fetch(tripleseatUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(tripleseatData)
+            });
             
-            // DEBUGGING: Check if response contains any error messages about fields
-            logTripleSeatDebug('CHECKING FOR FIELD ERRORS IN RESPONSE:', result.errors || 'No explicit errors');
-            
-            // Add more detailed logging about the lead location
-            if (result && result.lead_id) {
-                const leadUrl = `https://app.tripleseat.com/leads/${result.lead_id}`;
-                logTripleSeatDebug('Lead created successfully! View at:', leadUrl);
+            // Check if the response is ok
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
             
-            // Check for success message or lead_id to determine if creation was successful
-            if (result.success || result.success_message || result.lead_id) {
-                return {
-                    success: true,
-                    message: result.success_message || 'Lead created successfully!',
-                    leadId: result.lead_id || '',
-                    data: result
-                };
+            // Parse the response
+            const responseData = await response.json();
+            logTripleSeatDebug('Tripleseat response:', responseData);
+            
+            // For mock response, add a flag
+            if (useMock || responseData.mock) {
+                result.mock = true;
+            }
+            
+            // Check for success in the response - handle different response formats
+            if (responseData.lead_id || responseData.success_message || responseData.success) {
+                result.success = true;
+                result.lead_id = responseData.lead_id || null;
+                result.message = responseData.success_message || 'Lead created successfully';
+                
+                if (responseData.mock) {
+                    result.message += ' (Mock Response)';
+                }
+            } else if (responseData.error) {
+                result.error = responseData.error;
             } else {
-                return {
-                    success: false,
-                    error: result.error || 'Unknown error from Tripleseat',
-                    data: result
-                };
+                result.error = 'Unknown error from Tripleseat';
             }
-        } catch (parseError) {
-            logTripleSeatDebug('Error parsing Tripleseat response', parseError);
-            
-            // If we can't parse the response but got a successful status code, assume success
-            if (response.ok) {
-                return {
-                    success: true,
-                    message: 'Lead likely created successfully, but could not parse response',
-                    data: null
-                };
-            } else {
-                return {
-                    success: false,
-                    error: 'Could not parse Tripleseat response: ' + parseError.message,
-                    data: null
-                };
-            }
+        } catch (error) {
+            logTripleSeatDebug('Error sending to Tripleseat:', error);
+            result.error = error.message;
         }
+        
+        return result;
     } catch (error) {
-        logTripleSeatDebug('Error sending data to Tripleseat', error);
-        return { success: false, error: 'Error sending data to Tripleseat: ' + error.message };
+        logTripleSeatDebug('Error in sendToTripleseat function:', error);
+        return { success: false, error: error.message };
     }
 }
