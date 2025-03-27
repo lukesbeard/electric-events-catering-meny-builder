@@ -85,7 +85,30 @@ function convertFormDataForTripleseat(formData) {
     // Calculate event start and end times
     const eventDate = new Date(formData.delivery.date + 'T' + formData.delivery.time);
     const eventEndDate = new Date(eventDate);
-    eventEndDate.setHours(eventEndDate.getHours() + TRIPLESEAT_CONFIG.defaultEventDuration);
+    
+    // Use event start and end times if available and not empty, otherwise use delivery time + default duration
+    if (formData.event && formData.event.startTime && formData.event.endTime && 
+        formData.event.startTime.trim() !== '' && formData.event.endTime.trim() !== '') {
+        const startTime = new Date(formData.delivery.date + 'T' + formData.event.startTime);
+        const endTime = new Date(formData.delivery.date + 'T' + formData.event.endTime);
+        
+        if (!isNaN(startTime.getTime()) && !isNaN(endTime.getTime())) {
+            eventDate.setTime(startTime.getTime());
+            eventEndDate.setTime(endTime.getTime());
+            logTripleSeatDebug('Using provided event times:', {
+                start: formData.event.startTime,
+                end: formData.event.endTime
+            });
+        } else {
+            // Fallback to delivery time + default duration if event times are invalid
+            logTripleSeatDebug('Invalid event times, falling back to delivery time + default duration');
+            eventEndDate.setHours(eventEndDate.getHours() + TRIPLESEAT_CONFIG.defaultEventDuration);
+        }
+    } else {
+        // Use delivery time + default duration if no event times provided or they're empty
+        logTripleSeatDebug('No event times provided, using delivery time + default duration');
+        eventEndDate.setHours(eventEndDate.getHours() + TRIPLESEAT_CONFIG.defaultEventDuration);
+    }
     
     // Format dates for Tripleseat
     const formatTripleseatDate = (date) => {
@@ -149,6 +172,24 @@ function convertFormDataForTripleseat(formData) {
             guest_count: parseInt(formData.partySize) || 0,
             start_date: formatTripleseatDate(eventDate),
             end_date: formatTripleseatDate(eventEndDate),
+            event_style: "dropoff",
+            // Add full delivery address
+            address: formData.source === 'The Dug-Out' ? 
+                `${formData.delivery.location}, Frankie Allen Park, 100 Bagley St NE` : 
+                formData.delivery.address || '',
+            city: formData.delivery.city || 'Atlanta',
+            state: formData.delivery.state || 'GA',
+            zip: formData.delivery.zip || '30305',
+            // Add offsite address attributes for offsite events
+            offsite_address_attributes: {
+                address1: formData.source === 'The Dug-Out' ? 
+                    `${formData.delivery.location}, Frankie Allen Park, 100 Bagley St NE` : 
+                    formData.delivery.address || '',
+                address2: '',  // Optional second address line
+                zip_code: formData.delivery.zip || '30305',
+                city: formData.delivery.city || 'Atlanta',
+                state: formData.delivery.state || 'GA'
+            },
             notes: notes.trim(),
             // Add order details to additional_information field per Tripleseat API docs
             additional_information: `
@@ -263,6 +304,16 @@ async function sendToTripleseat(formData) {
         // Get the appropriate URL based on environment
         const tripleseatUrl = TRIPLESEAT_CONFIG.getProxyUrl();
         logTripleSeatDebug(`Sending data to Tripleseat via: ${tripleseatUrl}`);
+        
+        // Log the complete payload structure for verification
+        logTripleSeatDebug('Complete Tripleseat Payload:', {
+            event_style: tripleseatData.lead.event_style,
+            event_type_id: tripleseatData.lead.event_type_id,
+            start_date: tripleseatData.lead.start_date,
+            end_date: tripleseatData.lead.end_date,
+            location_id: tripleseatData.lead.location_id,
+            rooms: tripleseatData.lead.rooms
+        });
 
         // Check if we want to use mock API
         const urlParams = new URLSearchParams(window.location.search);
@@ -281,14 +332,21 @@ async function sendToTripleseat(formData) {
                 body: JSON.stringify(tripleseatData)
             });
             
+            // Log the full response for debugging
+            logTripleSeatDebug('Tripleseat API Response Status:', response.status);
+            logTripleSeatDebug('Tripleseat API Response Headers:', Object.fromEntries(response.headers.entries()));
+            logTripleSeatDebug('Tripleseat Payload Event Style:', tripleseatData.lead.event_style);
+            
             // Check if the response is ok
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                const errorText = await response.text();
+                logTripleSeatDebug('Tripleseat API Error Response:', errorText);
+                throw new Error(`HTTP error! status: ${response.status}, response: ${errorText}`);
             }
             
             // Parse the response
             const responseData = await response.json();
-            logTripleSeatDebug('Tripleseat response:', responseData);
+            logTripleSeatDebug('Tripleseat API Response Data:', responseData);
             
             // For mock response, add a flag
             if (useMock || responseData.mock) {
@@ -306,9 +364,17 @@ async function sendToTripleseat(formData) {
                 }
             } else if (responseData.error) {
                 result.error = responseData.error;
+                // Log the full error details
+                logTripleSeatDebug('Tripleseat API Error Details:', {
+                    error: responseData.error,
+                    errors: responseData.errors,
+                    message: responseData.message
+                });
                 // Add a more user-friendly message for production
                 result.userMessage = 'We couldn\'t process your booking request at this time. Your form data has been saved and our team will follow up with you.';
             } else {
+                // Log the unexpected response format
+                logTripleSeatDebug('Unexpected Tripleseat API Response Format:', responseData);
                 result.error = 'Unknown error from Tripleseat';
                 result.userMessage = 'Your catering request has been saved, but we couldn\'t connect to our booking system. Our team will follow up with you shortly.';
             }

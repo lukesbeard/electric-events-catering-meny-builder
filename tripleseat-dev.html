@@ -249,8 +249,43 @@
                         <input type="date" id="test-date" class="w-full rounded-md border-gray-700 bg-background text-white shadow-sm focus:border-primary focus:ring-primary p-3">
                     </div>
                     <div>
-                        <label for="test-time" class="block text-lg font-heading mb-2">Event Time</label>
+                        <label for="test-time" class="block text-lg font-heading mb-2">Delivery Time</label>
                         <input type="time" id="test-time" value="15:00" class="w-full rounded-md border-gray-700 bg-background text-white shadow-sm focus:border-primary focus:ring-primary p-3">
+                    </div>
+                </div>
+
+                <!-- Event Times -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="test-event-start" class="block text-lg font-heading mb-2">Event Start Time</label>
+                        <input type="time" id="test-event-start" class="w-full rounded-md border-gray-700 bg-background text-white shadow-sm focus:border-primary focus:ring-primary p-3">
+                    </div>
+                    <div>
+                        <label for="test-event-end" class="block text-lg font-heading mb-2">Event End Time</label>
+                        <input type="time" id="test-event-end" class="w-full rounded-md border-gray-700 bg-background text-white shadow-sm focus:border-primary focus:ring-primary p-3">
+                    </div>
+                </div>
+
+                <!-- Delivery Address -->
+                <div class="bg-gray-900 rounded-lg p-4 border-2 border-primary">
+                    <h3 class="text-xl font-heading mb-4 text-primary">Delivery Address</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="test-address" class="block text-lg font-heading mb-2">Street Address</label>
+                            <input type="text" id="test-address" value="123 Test Street" class="w-full rounded-md border-gray-700 bg-background text-white shadow-sm focus:border-primary focus:ring-primary p-3">
+                        </div>
+                        <div>
+                            <label for="test-city" class="block text-lg font-heading mb-2">City</label>
+                            <input type="text" id="test-city" value="Atlanta" class="w-full rounded-md border-gray-700 bg-background text-white shadow-sm focus:border-primary focus:ring-primary p-3">
+                        </div>
+                        <div>
+                            <label for="test-state" class="block text-lg font-heading mb-2">State</label>
+                            <input type="text" id="test-state" value="GA" class="w-full rounded-md border-gray-700 bg-background text-white shadow-sm focus:border-primary focus:ring-primary p-3">
+                        </div>
+                        <div>
+                            <label for="test-zip" class="block text-lg font-heading mb-2">ZIP Code</label>
+                            <input type="text" id="test-zip" value="30309" class="w-full rounded-md border-gray-700 bg-background text-white shadow-sm focus:border-primary focus:ring-primary p-3">
+                        </div>
                     </div>
                 </div>
                 
@@ -391,7 +426,7 @@
             } else if (venue === 'Muchacho') {
                 locationField.value = 'Muchacho Private Event Space';
             } else if (venue === 'The Dug-Out') {
-                locationField.value = 'The Dug-Out Stadium Room';
+                locationField.value = 'T-ball field';  // Default to T-ball field for testing
             }
         }
         
@@ -564,6 +599,8 @@
             const partySize = document.getElementById('test-partysize').value;
             const date = document.getElementById('test-date').value;
             const time = document.getElementById('test-time').value;
+            const eventStartTime = document.getElementById('test-event-start').value;
+            const eventEndTime = document.getElementById('test-event-end').value;
             const itemsCount = document.getElementById('test-items').value;
             
             // Create basic order items based on selected complexity
@@ -584,11 +621,19 @@
                 },
                 delivery: {
                     location: location,
-                    address: location + " (Test Address)",
-                    city: "Atlanta",
-                    zip: "30309",
+                    address: venue === 'The Dug-Out' ? 
+                        `${location}, Frankie Allen Park, 100 Bagley St NE` : 
+                        document.getElementById('test-address').value,
+                    city: venue === 'The Dug-Out' ? 'Atlanta' : document.getElementById('test-city').value,
+                    state: venue === 'The Dug-Out' ? 'GA' : document.getElementById('test-state').value,
+                    zip: venue === 'The Dug-Out' ? '30305' : document.getElementById('test-zip').value,
                     date: date,
                     time: time
+                },
+                event: {
+                    startTime: eventStartTime,
+                    endTime: eventEndTime,
+                    style: "dropoff"
                 },
                 partySize: partySize,
                 order: orderItems,
