@@ -414,10 +414,16 @@ function initializeEventListeners() {
     initializePartySizeToggle();
     initializeGuestCount();
     
-    // Calculate the date 3 days from now
+    // Calculate the date 3 days from now and round up to next hour
     const currentDate = new Date();
     const threeDaysFromNow = new Date(currentDate);
     threeDaysFromNow.setDate(currentDate.getDate() + 3); // Add 3 days
+    
+    // Round up to the next hour
+    threeDaysFromNow.setHours(threeDaysFromNow.getHours() + 1);
+    threeDaysFromNow.setMinutes(0);
+    threeDaysFromNow.setSeconds(0);
+    threeDaysFromNow.setMilliseconds(0);
     
     // Format the date to YYYY-MM-DD format
     const formattedMinDate = threeDaysFromNow.toISOString().split('T')[0];
@@ -439,6 +445,12 @@ function initializeEventListeners() {
             const currentDateTime = new Date();
             const minimumDateTime = new Date(currentDateTime.getTime() + (72 * 60 * 60 * 1000));
             
+            // Round minimum date up to next hour
+            minimumDateTime.setHours(minimumDateTime.getHours() + 1);
+            minimumDateTime.setMinutes(0);
+            minimumDateTime.setSeconds(0);
+            minimumDateTime.setMilliseconds(0);
+            
             if (selectedDate < minimumDateTime) {
                 // Reset to minimum allowed date
                 dateInput.value = formattedMinDate;
@@ -451,10 +463,13 @@ function initializeEventListeners() {
         dateInput.addEventListener('change', validateDate);
         dateInput.addEventListener('input', validateDate);
 
-        // Update the existing helper text element with clock emoji
+        // Update the existing helper text element with clock emoji and 12-hour time
         const helperTextElement = document.querySelector('.helper-date-text');
         if (helperTextElement) {
-            helperTextElement.textContent = `⏰ Earliest possible dropoff: ${threeDaysFromNow.toLocaleDateString()}`;
+            const hours = threeDaysFromNow.getHours();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            const hours12 = hours % 12 || 12; // Convert to 12-hour format
+            helperTextElement.textContent = `⏰ Earliest possible dropoff: ${threeDaysFromNow.toLocaleDateString()} at ${hours12}:00 ${ampm}`;
         }
     }
 }
@@ -1056,12 +1071,20 @@ async function sendOrderEmail(event) {
         const minimumDifferenceInMs = 72 * 60 * 60 * 1000; // 72 hours in milliseconds
         const earliestDateTime = new Date(currentDateTime.getTime() + minimumDifferenceInMs);
         
+        // Round up to the next hour
+        earliestDateTime.setHours(earliestDateTime.getHours() + 1);
+        earliestDateTime.setMinutes(0);
+        earliestDateTime.setSeconds(0);
+        earliestDateTime.setMilliseconds(0);
+        
         if (dropoffDateTime < earliestDateTime) {
             const formattedDate = earliestDateTime.toLocaleDateString();
-            const formattedTime = earliestDateTime.toLocaleTimeString();
+            const hours = earliestDateTime.getHours();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            const hours12 = hours % 12 || 12; // Convert to 12-hour format
             
-            // Show a user-friendly alert
-            alert(`⏰ We apologize, but we cannot accept orders for delivery less than 72 hours from now.\n\nEarliest possible delivery: ${formattedDate} after ${formattedTime}`);
+            // Show a user-friendly alert with 12-hour time
+            alert(`⏰ We apologize, but we cannot accept orders for delivery less than 72 hours from now.\n\nEarliest possible delivery: ${formattedDate} at ${hours12}:00 ${ampm}`);
             
             // Focus the date input
             const dateInput = document.getElementById('dropoffDate');
