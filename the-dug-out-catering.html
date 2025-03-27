@@ -45,6 +45,22 @@
             window.location.hostname === 'localhost' || 
             window.location.hostname === '127.0.0.1' ||
             window.location.hostname.match(/^192\.168\./);
+
+        // Set minimum date immediately
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentDate = new Date();
+            const threeDaysFromNow = new Date(currentDate);
+            threeDaysFromNow.setDate(currentDate.getDate() + 3);
+            const formattedMinDate = threeDaysFromNow.toISOString().split('T')[0];
+            
+            const dateInput = document.getElementById('dropoffDate');
+            if (dateInput) {
+                dateInput.min = formattedMinDate;
+                if (!dateInput.value || new Date(dateInput.value) < threeDaysFromNow) {
+                    dateInput.value = formattedMinDate;
+                }
+            }
+        });
     </script>
     <style>
         /* Keep only essential custom styles that aren't easily achieved with Tailwind */

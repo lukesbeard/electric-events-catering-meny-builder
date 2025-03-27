@@ -425,11 +425,13 @@ function initializeEventListeners() {
     // Set up the date input
     const dateInput = document.getElementById('dropoffDate');
     if (dateInput) {
-        // Set minimum date to 3 days from now
+        // Always update the minimum date to ensure it's current
         dateInput.min = formattedMinDate;
         
-        // Set default value to 3 days from now
-        dateInput.value = formattedMinDate;
+        // Only set the value if it's not already set or if it's before the minimum date
+        if (!dateInput.value || new Date(dateInput.value) < threeDaysFromNow) {
+            dateInput.value = formattedMinDate;
+        }
 
         // Update the existing helper text element with clock emoji
         const helperTextElement = document.querySelector('.helper-date-text');
