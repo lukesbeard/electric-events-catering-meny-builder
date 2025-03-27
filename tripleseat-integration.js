@@ -92,6 +92,7 @@ function convertFormDataForTripleseat(formData) {
         const startTime = new Date(formData.delivery.date + 'T' + formData.event.startTime);
         const endTime = new Date(formData.delivery.date + 'T' + formData.event.endTime);
         
+        // Only update if the times are valid
         if (!isNaN(startTime.getTime()) && !isNaN(endTime.getTime())) {
             eventDate.setTime(startTime.getTime());
             eventEndDate.setTime(endTime.getTime());
