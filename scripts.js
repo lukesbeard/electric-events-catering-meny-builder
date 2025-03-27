@@ -433,6 +433,24 @@ function initializeEventListeners() {
             dateInput.value = formattedMinDate;
         }
 
+        // Add validation for both change and input events
+        const validateDate = (event) => {
+            const selectedDate = new Date(dateInput.value);
+            const currentDateTime = new Date();
+            const minimumDateTime = new Date(currentDateTime.getTime() + (72 * 60 * 60 * 1000));
+            
+            if (selectedDate < minimumDateTime) {
+                // Reset to minimum allowed date
+                dateInput.value = formattedMinDate;
+                // Show error message
+                showNotification('⏰ Please select a date at least 72 hours from now', 'error');
+            }
+        };
+
+        // Add event listeners for both change and input events
+        dateInput.addEventListener('change', validateDate);
+        dateInput.addEventListener('input', validateDate);
+
         // Update the existing helper text element with clock emoji
         const helperTextElement = document.querySelector('.helper-date-text');
         if (helperTextElement) {
@@ -1027,6 +1045,33 @@ function clearSavedData() {
 async function sendOrderEmail(event) {
     console.log('sendOrderEmail function called');
     event.preventDefault();
+    
+    // First check the 72-hour requirement
+    const dropoffDate = document.getElementById('dropoffDate')?.value;
+    const dropoffTime = document.getElementById('dropoffTime')?.value;
+    
+    if (dropoffDate && dropoffTime) {
+        const dropoffDateTime = new Date(`${dropoffDate}T${dropoffTime}`);
+        const currentDateTime = new Date();
+        const minimumDifferenceInMs = 72 * 60 * 60 * 1000; // 72 hours in milliseconds
+        const earliestDateTime = new Date(currentDateTime.getTime() + minimumDifferenceInMs);
+        
+        if (dropoffDateTime < earliestDateTime) {
+            const formattedDate = earliestDateTime.toLocaleDateString();
+            const formattedTime = earliestDateTime.toLocaleTimeString();
+            
+            // Show a user-friendly alert
+            alert(`⏰ We apologize, but we cannot accept orders for delivery less than 72 hours from now.\n\nEarliest possible delivery: ${formattedDate} after ${formattedTime}`);
+            
+            // Focus the date input
+            const dateInput = document.getElementById('dropoffDate');
+            if (dateInput) {
+                dateInput.focus();
+            }
+            
+            return;
+        }
+    }
     
     if (!validateContactDetails()) {
         console.log('Form validation failed');
