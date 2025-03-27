@@ -1086,9 +1086,10 @@ async function sendOrderEmail(event) {
             // Show a user-friendly alert with 12-hour time
             alert(`⏰ We apologize, but we cannot accept orders for delivery less than 72 hours from now.\n\nEarliest possible delivery: ${formattedDate} at ${hours12}:00 ${ampm}`);
             
-            // Focus the date input
+            // Focus the date input and set it to the earliest valid date
             const dateInput = document.getElementById('dropoffDate');
             if (dateInput) {
+                dateInput.value = earliestDateTime.toISOString().split('T')[0];
                 dateInput.focus();
             }
             
