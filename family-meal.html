@@ -563,6 +563,7 @@
                                     console.log('Order count increment result:', incrementData);
                                     
                                     if (incrementData.success) {
+                                        // We don't need to send email here because it's handled in directFormSubmission
                                         // Show success message
                                         showNotification('Your order has been successfully submitted! We\'ll be in touch soon.', 'success');
                                         
@@ -796,6 +797,7 @@
                         console.log('Order count increment result:', incrementData);
                         
                         if (incrementData.success) {
+                            // We don't need to send email here because it's handled in directFormSubmission
                             // Show success message
                             showNotification('Your order has been successfully submitted! We\'ll be in touch soon.', 'success');
                             
