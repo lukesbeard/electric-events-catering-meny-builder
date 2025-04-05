@@ -203,7 +203,7 @@
             
             // Get references to relevant elements
             const orderDeadlineSelect = document.getElementById('orderDeadlineSelect');
-            const timingInfoElement = document.querySelector('.helper-date-text');
+            const timingInfoElement = document.getElementById('deadline-info');
             const availabilityElement = document.getElementById('orderAvailability');
             
             // Function to check order availability for a date
@@ -625,18 +625,8 @@
         
         // Helper function to get party size
         function getPartySize() {
-            const exactSizeElement = document.getElementById('exactSize');
-            const exactPartySizeElement = document.getElementById('exactPartySize');
-            const partySizeMinElement = document.getElementById('partySizeMin');
-            const partySizeMaxElement = document.getElementById('partySizeMax');
-            
-            if (exactSizeElement && exactSizeElement.checked && exactPartySizeElement) {
-                return exactPartySizeElement.value;
-            } else if (partySizeMinElement && partySizeMaxElement) {
-                return `${partySizeMinElement.value}-${partySizeMaxElement.value}`;
-            }
-            
-            return '';
+            // Since we've removed the party size inputs, return a default value
+            return "1";
         }
         
         // Helper function to get order details
@@ -1119,7 +1109,7 @@
                 </div>
                 
                 <!-- Order Deadline Row -->
-                <div class="flex flex-col md:flex-row gap-8">
+                <div class="flex flex-col w-full">
                     <!-- Order Deadline Selection -->
                     <div class="space-y-3 w-full">
                         <div class="mb-4">
@@ -1132,37 +1122,12 @@
                                 <!-- Options will be populated dynamically -->
                             </select>
                             <div id="orderAvailability" class="mt-2 text-sm font-bold"></div>
-                            <p class="helper-date-text text-sm mt-1 text-primary"></p>
-                        </div>
-                    </div>
-                    
-                    <!-- Party Size -->
-                    <div class="space-y-3">
-                        <label class="block text-lg font-heading text-white mb-2">Party Size</label>
-                        <div class="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-8">
-                            <div class="flex items-center space-x-4">
-                                <input type="radio" id="exactSize" name="partySizeType" value="exact" checked 
-                                       class="w-5 h-5">
-                                <label for="exactSize" class="text-lg font-heading text-white">Exact</label>
-                                <input type="number" placeholder="0" id="exactPartySize" min="1" 
-                                       class="w-24 rounded-md border-gray-700 bg-background text-white shadow-sm focus:border-primary focus:ring-primary p-3">
-                            </div>
-                            <div class="flex items-center space-x-4">
-                                <input type="radio" id="rangeSize" name="partySizeType" value="range" 
-                                       class="w-5 h-5">
-                                <label for="rangeSize" class="text-lg font-heading text-white">Range</label>
-                                <input type="number" id="partySizeMin" min="1" placeholder="Min" disabled 
-                                       class="w-24 rounded-md border-gray-700 bg-background text-white shadow-sm focus:border-primary focus:ring-primary p-3">
-                                <span class="text-white">-</span>
-                                <input type="number" id="partySizeMax" min="1" placeholder="Max" disabled 
-                                       class="w-24 rounded-md border-gray-700 bg-background text-white shadow-sm focus:border-primary focus:ring-primary p-3">
-                            </div>
                         </div>
                     </div>
                 </div>
                
             </div>
-            <p class="text-s mt-3 text-primary">⏰ Orders must be placed by end of day Thursday for pickup the following week. We'll contact you to arrange specific pickup details.</p>
+            <p id="deadline-info" class="text-s mt-3 text-primary">⏰ Orders must be placed before end of day Thursday for pickup the following week. We'll contact you to arrange specific pickup details.</p>
         </div>
 
         <!-- Menu Sections -->
@@ -1212,7 +1177,8 @@
                     <input type="hidden" name="from_name" id="from_name">
                     <input type="hidden" name="subject" id="email_subject">
                     <input type="hidden" name="ccemail" value="michael@electric-hospitality.com; brad@electric-hospitality.com">
-                    <input type="checkbox" class="hidden" style="display:none" name="botcheck">
+                    <input type="hidden" name="botcheck" style="display:none">
+                    <input type="hidden" name="party_size" id="party_size" value="1">
                     
                     <div class="py-4 flex justify-between items-center">
                         <span class="text-3xl font-heading text-white">Total:</span>
