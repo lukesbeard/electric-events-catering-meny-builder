@@ -158,7 +158,8 @@
             // Update the deadline and pickup info for Family Meal
             updateFamilyMealTimingInfo();
             
-            // Intercept form submission for order limit checking
+            // Make sure form is properly set up for submission
+            console.log("Setting up form submission handlers");
             interceptFormSubmission();
             
             // Add event listeners for quantity inputs
@@ -176,6 +177,19 @@
                     console.log('Deadline changed, updating submit button state');
                     updateSubmitButtonState();
                 });
+            }
+            
+            // Verify we have a working submit button with the correct handler
+            const submitButton = document.getElementById('submitButton');
+            if (submitButton) {
+                console.log("Found submit button, ensuring click handlers are attached");
+                
+                // Clear any existing click handlers and add our own
+                submitButton.onclick = function(event) {
+                    console.log("Submit button clicked directly");
+                    directFormSubmission();
+                    return false;
+                };
             }
             
             // Initial check for submit button state
@@ -490,13 +504,55 @@
                             try {
                                 console.log('Submitting Family Meal order to Google Apps Script...');
                                 
-                                // Submit the order data directly to our Orders sheet
-                                const orderSubmitUrl = `${orderCountUrl}?action=submitOrder&week=${weekId}&name=${encodeURIComponent(contactName)}&email=${encodeURIComponent(contactEmail)}&phone=${encodeURIComponent(contactPhone)}&partySize=${encodeURIComponent(partySize)}&orderDetails=${encodeURIComponent(orderDetailsText)}&subtotal=$${subtotal.toFixed(2)}&total=$${total.toFixed(2)}&comments=${encodeURIComponent(comments)}`;
+                                // Handle potential URL length issues
+                                const baseUrl = `${orderCountUrl}?action=submitOrder&week=${weekId}&name=${encodeURIComponent(contactName)}&email=${encodeURIComponent(contactEmail)}&phone=${encodeURIComponent(contactPhone)}&partySize=${encodeURIComponent(partySize)}&subtotal=$${subtotal.toFixed(2)}&total=$${total.toFixed(2)}&comments=${encodeURIComponent(comments)}`;
                                 
-                                console.log('Request URL:', orderSubmitUrl);
-                                const orderSubmitResponse = await fetch(orderSubmitUrl);
+                                // Check if adding orderDetails would make URL too long (2000 chars is a safe limit)
+                                const withOrderDetails = baseUrl + `&orderDetails=${encodeURIComponent(orderDetailsText)}`;
                                 
-                                const orderSubmitData = await orderSubmitResponse.json();
+                                console.log('URL length with order details:', withOrderDetails.length);
+                                
+                                let orderSubmitResponse;
+                                let orderSubmitData;
+                                
+                                // Log the values being sent
+                                const debugData = {
+                                    week: weekId,
+                                    name: contactName,
+                                    email: contactEmail,
+                                    phone: contactPhone,
+                                    partySize: partySize,
+                                    subtotal: `$${subtotal.toFixed(2)}`,
+                                    total: `$${total.toFixed(2)}`,
+                                    orderItemCount: order.length
+                                };
+                                console.log('Sending order data:', debugData);
+                                
+                                if (withOrderDetails.length > 1900) {
+                                    console.log('URL too long, using POST method instead...');
+                                    // Use POST method if URL would be too long
+                                    const formData = new FormData();
+                                    formData.append('action', 'submitOrder');
+                                    formData.append('week', weekId);
+                                    formData.append('name', contactName);
+                                    formData.append('email', contactEmail);
+                                    formData.append('phone', contactPhone);
+                                    formData.append('partySize', partySize);
+                                    formData.append('orderDetails', orderDetailsText);
+                                    formData.append('subtotal', `$${subtotal.toFixed(2)}`);
+                                    formData.append('total', `$${total.toFixed(2)}`);
+                                    formData.append('comments', comments);
+                                    
+                                    orderSubmitResponse = await fetch(orderCountUrl, {
+                                        method: 'POST',
+                                        body: formData
+                                    });
+                                } else {
+                                    console.log('Using standard GET request with orderDetails in URL');
+                                    orderSubmitResponse = await fetch(withOrderDetails);
+                                }
+                                
+                                orderSubmitData = await orderSubmitResponse.json();
                                 console.log('Order submission response:', orderSubmitData);
                                 
                                 if (orderSubmitData.success) {
@@ -625,24 +681,199 @@
             return orderItems;
         }
 
+        // Direct form submission function that doesn't rely on events
+        function directFormSubmission() {
+            console.log("Direct form submission initiated...");
+            
+            // Get necessary form values
+            const orderDeadlineSelect = document.getElementById('orderDeadlineSelect');
+            if (!orderDeadlineSelect || !orderDeadlineSelect.value) {
+                console.error("No deadline selected");
+                return false;
+            }
+            
+            const deadlineDate = new Date(orderDeadlineSelect.value);
+            const formattedDate = deadlineDate.toISOString().split('T')[0];
+            const weekId = `order_week_${formattedDate}`;
+            
+            // Get contact info
+            const contactName = document.getElementById('contactName').value;
+            const contactEmail = document.getElementById('contactEmail').value;
+            const contactPhone = document.getElementById('contactPhone').value;
+            const partySize = getPartySize();
+            const comments = document.getElementById('comments').value;
+            
+            // Get order details
+            const order = getOrderDetails();
+            if (!order || order.length === 0) {
+                showNotification('Please select at least one menu item.', 'error');
+                return false;
+            }
+            
+            // Calculate subtotal and total
+            const subtotal = order.reduce((sum, item) => sum + parseFloat(item.subtotal.replace('$', '')), 0);
+            const tax = subtotal * 0.089;
+            const total = subtotal + tax;
+            
+            // Format order details for submission
+            const orderDetailsText = order.map(item => 
+                `${item.name} (${item.quantity}) - $${item.subtotal}`
+            ).join('\n');
+            
+            // Show submitting state
+            const submitButton = document.getElementById('submitButton');
+            const submitSpinner = document.getElementById('submitSpinner');
+            if (submitButton) {
+                submitButton.disabled = true;
+                const spanElement = submitButton.querySelector('span');
+                if (spanElement) {
+                    spanElement.innerText = 'Submitting...';
+                }
+                if (submitSpinner) {
+                    submitSpinner.classList.remove('hidden');
+                }
+            }
+            
+            // Submit directly to the Google Apps Script
+            const orderCountUrl = `https://script.google.com/macros/s/AKfycbyRm9Tmop0ay-GHNyq13OEP8S4W-QAl1bS4BTnigpvPjnuttC3rkRCLYK-R9_GYas3VNQ/exec`;
+            
+            // Prepare URL or form data
+            const baseUrl = `${orderCountUrl}?action=submitOrder&week=${weekId}&name=${encodeURIComponent(contactName)}&email=${encodeURIComponent(contactEmail)}&phone=${encodeURIComponent(contactPhone)}&partySize=${encodeURIComponent(partySize)}&subtotal=$${subtotal.toFixed(2)}&total=$${total.toFixed(2)}&comments=${encodeURIComponent(comments)}`;
+            const withOrderDetails = baseUrl + `&orderDetails=${encodeURIComponent(orderDetailsText)}`;
+            
+            console.log('URL length with order details:', withOrderDetails.length);
+            
+            // Log the values being sent
+            const debugData = {
+                week: weekId,
+                name: contactName,
+                email: contactEmail,
+                phone: contactPhone,
+                partySize: partySize,
+                subtotal: `$${subtotal.toFixed(2)}`,
+                total: `$${total.toFixed(2)}`,
+                orderItemCount: order.length
+            };
+            console.log('Sending order data:', debugData);
+            
+            // Submit the order
+            (async function() {
+                try {
+                    let orderSubmitResponse;
+                    
+                    if (withOrderDetails.length > 1900) {
+                        console.log('URL too long, using POST method instead...');
+                        // Use POST method if URL would be too long
+                        const formData = new FormData();
+                        formData.append('action', 'submitOrder');
+                        formData.append('week', weekId);
+                        formData.append('name', contactName);
+                        formData.append('email', contactEmail);
+                        formData.append('phone', contactPhone);
+                        formData.append('partySize', partySize);
+                        formData.append('orderDetails', orderDetailsText);
+                        formData.append('subtotal', `$${subtotal.toFixed(2)}`);
+                        formData.append('total', `$${total.toFixed(2)}`);
+                        formData.append('comments', comments);
+                        
+                        orderSubmitResponse = await fetch(orderCountUrl, {
+                            method: 'POST',
+                            body: formData
+                        });
+                    } else {
+                        console.log('Using standard GET request with orderDetails in URL');
+                        orderSubmitResponse = await fetch(withOrderDetails);
+                    }
+                    
+                    const orderSubmitData = await orderSubmitResponse.json();
+                    console.log('Order submission response:', orderSubmitData);
+                    
+                    if (orderSubmitData.success) {
+                        console.log('Order successfully submitted, incrementing count...');
+                        // Increment the order count
+                        const incrementResponse = await fetch(`${orderCountUrl}?action=increment&week=${weekId}`);
+                        const incrementData = await incrementResponse.json();
+                        console.log('Order count increment result:', incrementData);
+                        
+                        if (incrementData.success) {
+                            // Show success message
+                            showNotification('Your order has been successfully submitted! We\'ll be in touch soon.', 'success');
+                            
+                            // Clear any saved form data
+                            if (typeof clearSavedData === 'function') {
+                                clearSavedData();
+                            }
+                            
+                            // Redirect to thank you page
+                            window.location.href = 'thank-you.html';
+                            return true;
+                        } else {
+                            throw new Error(incrementData.error || 'Failed to update order count');
+                        }
+                    } else {
+                        throw new Error(orderSubmitData.error || 'Failed to submit order.');
+                    }
+                } catch (error) {
+                    console.error('Error submitting order:', error);
+                    showNotification('Failed to submit your order. Please try again later.', 'error');
+                    if (submitButton) {
+                        submitButton.disabled = false;
+                        const spanElement = submitButton.querySelector('span');
+                        if (spanElement) {
+                            spanElement.innerText = 'Submit Order';
+                        }
+                        if (submitSpinner) {
+                            submitSpinner.classList.add('hidden');
+                        }
+                    }
+                    return false;
+                }
+            })();
+        }
+
         // Add redundant validation for the submit button
         document.addEventListener('DOMContentLoaded', function() {
+            // Get the button and the span inside it
             const submitButton = document.getElementById('submitButton');
+            
+            // Function to handle submit button click
+            function handleSubmitButtonClick(event) {
+                console.log("Submit button or span clicked, handling Family Meal order submission...");
+                
+                // First check if any items are selected
+                const order = getOrderDetails();
+                if (!order || order.length === 0) {
+                    showNotification('Please select at least one menu item.', 'error');
+                    return;
+                }
+                
+                // Make sure deadline is selected
+                const orderDeadlineSelect = document.getElementById('orderDeadlineSelect');
+                if (!orderDeadlineSelect || !orderDeadlineSelect.value) {
+                    showNotification('Please select an order deadline to continue', 'error');
+                    orderDeadlineSelect.classList.add('border-red-500');
+                    orderDeadlineSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
+                
+                // Call the global directFormSubmission function
+                directFormSubmission();
+            }
+            
+            // Add the click handler to the button
             if (submitButton) {
-                submitButton.addEventListener('click', function(event) {
-                    console.log("Submit button clicked, handling Family Meal order submission...");
-                    
-                    // Manually trigger our form submission handler
-                    const form = document.getElementById('orderForm');
-                    if (form) {
-                        const submitEvent = new Event('submit', { cancelable: true });
-                        // This will trigger our interceptFormSubmission handler
-                        const result = form.dispatchEvent(submitEvent);
-                        console.log("Form submission event dispatched, result:", result);
-                    } else {
-                        console.error("Form not found, couldn't dispatch submit event");
-                    }
-                });
+                submitButton.addEventListener('click', handleSubmitButtonClick);
+                
+                // Also add the handler to the span inside the button
+                const buttonSpan = submitButton.querySelector('span');
+                if (buttonSpan) {
+                    buttonSpan.addEventListener('click', function(event) {
+                        // Stop the event here to prevent duplicate handling
+                        event.stopPropagation();
+                        // Call the same handler
+                        handleSubmitButtonClick(event);
+                    });
+                }
             }
         });
     </script>
@@ -899,7 +1130,7 @@
                                 <!-- Options will be populated dynamically -->
                             </select>
                             <div id="orderAvailability" class="mt-2 text-sm font-bold"></div>
-                            
+                            <p class="helper-date-text text-sm mt-1 text-primary"></p>
                         </div>
                     </div>
                     
@@ -991,6 +1222,7 @@
                             <button type="button" 
                                     id="submitButton"
                                     disabled
+                                    onclick="try { console.log('Direct onclick handler from HTML attribute'); if(!this.disabled && typeof directFormSubmission === 'function') { directFormSubmission(); } else { console.error('Button disabled or directFormSubmission not defined: ' + (typeof directFormSubmission)); } } catch(err) { console.error('Error in onclick handler:', err); alert('An error occurred. Please try again.'); }"
                                     class="bg-primary text-black px-8 py-3 rounded-lg font-heading text-xl hover:bg-opacity-90 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed min-w-[100px] justify-center">
                                 <span>Submit Order</span>
                                 <svg id="submitSpinner" class="hidden animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -1054,15 +1286,62 @@
                 submitButton.addEventListener('click', function(event) {
                     console.log("Submit button clicked, handling Family Meal order submission...");
                     
+                    // First check if any items are selected
+                    const order = getOrderDetails();
+                    if (!order || order.length === 0) {
+                        showNotification('Please select at least one menu item.', 'error');
+                        return;
+                    }
+                    
+                    // Make sure deadline is selected
+                    const orderDeadlineSelect = document.getElementById('orderDeadlineSelect');
+                    if (!orderDeadlineSelect || !orderDeadlineSelect.value) {
+                        showNotification('Please select an order deadline to continue', 'error');
+                        orderDeadlineSelect.classList.add('border-red-500');
+                        orderDeadlineSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        return;
+                    }
+                    
+                    // Disable the button and show spinner before dispatching the form event
+                    const submitSpinner = document.getElementById('submitSpinner');
+                    submitButton.disabled = true;
+                    submitButton.querySelector('span').innerText = 'Submitting...';
+                    submitSpinner.classList.remove('hidden');
+                    
                     // Manually trigger our form submission handler
                     const form = document.getElementById('orderForm');
                     if (form) {
-                        const submitEvent = new Event('submit', { cancelable: true });
-                        // This will trigger our interceptFormSubmission handler
-                        const result = form.dispatchEvent(submitEvent);
-                        console.log("Form submission event dispatched, result:", result);
+                        // Try both approaches for maximum compatibility
+                        try {
+                            console.log("Attempting to submit form via event dispatch...");
+                            const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+                            // This will trigger our interceptFormSubmission handler
+                            const result = form.dispatchEvent(submitEvent);
+                            console.log("Form submission event dispatched, result:", result);
+                            
+                            // If the event didn't run (or was canceled), try direct function call
+                            if (!result) {
+                                console.log("Event was canceled or failed, trying direct function call...");
+                                // Try direct function call as fallback
+                                directFormSubmission();
+                            }
+                        } catch (error) {
+                            console.error("Error dispatching form event:", error);
+                            // Try direct function call as fallback
+                            directFormSubmission();
+                        }
                     } else {
                         console.error("Form not found, couldn't dispatch submit event");
+                        if (submitButton) {
+                            submitButton.disabled = false;
+                            const spanElement = submitButton.querySelector('span');
+                            if (spanElement) {
+                                spanElement.innerText = 'Submit Order';
+                            }
+                            if (submitSpinner) {
+                                submitSpinner.classList.add('hidden');
+                            }
+                        }
                     }
                 });
             }
