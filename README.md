@@ -2,6 +2,21 @@
 
 This repository contains the code for the Electric Events Catering Menu Builder with Tripleseat Integration.
 
+## Quick Start
+
+To run the application locally with a single command:
+
+```
+python start.py
+```
+
+This script will:
+1. Start a local HTTP server on port 8000 to serve the static files
+2. Start the Tripleseat proxy server on port 3002 for API requests
+3. Open your default browser to the application
+
+Press Ctrl+C to stop all servers when you're done.
+
 ## Tripleseat Integration
 
 The catering form now integrates with Tripleseat to automatically create leads when customers submit catering requests.

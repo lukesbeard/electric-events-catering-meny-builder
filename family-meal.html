@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electric Events ⚡︎ Family Meal Catering</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
+    <script src="scripts.js" defer></script>
+    <!-- Add Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="EE-logo-mark.png">
+    <meta property="og:title" content="Electric Events ⚡︎ Family Meal Catering">
+    <meta property="og:description" content="Take home a delicious family meal from your favorite game at Electric Events.">
+    <meta property="og:image" content="Ladybird-catering-og.jpg">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Electric Events ⚡︎ Family Meal Catering">
+    <meta name="twitter:description" content="Take home a delicious family meal from your favorite game at Electric Events.">
+    <meta name="twitter:image" content="Ladybird-catering-og.jpg">
+    <script>
+        // Add a specific family-meal config to scripts.js
+        if (typeof SHEET_CONFIGS !== 'undefined') {
+            SHEET_CONFIGS.familyMeal = {
+                id: '1CjPzoq7gPhXCCqvMV-TBImJyS0TU2NXJlfBbuf3ixP8',
+                sheets: {
+                    muchacho: {
+                        name: 'A1:D50',
+                        title: 'Muchacho Family Meals'
+                    },
+                    ladybird: {
+                        name: 'A1:D50',
+                        title: 'Ladybird Family Meals'
+                    },
+                    dugout: {
+                        name: 'A1:D50',
+                        title: 'The Dugout Family Meals'
+                    }
+                },
+                skipTripleseat: true
+            };
+        }
+
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: 'rgb(255, 199, 0)',  // Yellow
+                        secondary: '#2d3748',
+                        background: '#000000',
+                        surface: '#121212',    // Slightly lighter black for cards
+                    },
+                    fontFamily: {
+                        'heading': ['"Bebas Neue"', 'cursive'],
+                        'sans': ['"DM Sans"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+        
+        // Check if we're in development mode
+        const isDevelopment = 
+            window.location.hostname === 'localhost' || 
+            window.location.hostname === '127.0.0.1' ||
+            window.location.hostname.match(/^192\.168\./);
+
+        // Helper function to get next Thursday
+        function getNextThursday(fromDate = new Date()) {
+            const result = new Date(fromDate);
+            result.setDate(result.getDate() + (4 + 7 - result.getDay()) % 7);
+            // Set to end of day Thursday (11:59:59 PM)
+            result.setHours(23, 59, 59, 999);
+            return result;
+        }
+
+        // Helper function to get the following Thursday
+        function getFollowingThursday(fromDate = new Date()) {
+            const nextThurs = getNextThursday(fromDate);
+            return getNextThursday(new Date(nextThurs.getTime() + 24 * 60 * 60 * 1000));
+        }
+        
+        // Helper function to format date in readable format
+        function formatDate(date) {
+            return date.toLocaleDateString('en-US', { 
+                weekday: 'long',
+                month: 'long', 
+                day: 'numeric'
+            });
+        }
+
+        // Helper function to check if current time is past Thursday cutoff
+        function isPastThursdayCutoff() {
+            const today = new Date();
+            const thisThursday = getNextThursday();
+            return today > thisThursday;
+        }
+
+        // Generate available Thursday dates for the next 8 weeks
+        function generateAvailableThursdays() {
+            const thursdays = [];
+            let currentDate = new Date();
+
+            // If we're past this Thursday's cutoff, start from next Thursday
+            if (isPastThursdayCutoff()) {
+                currentDate = getNextThursday();
+                // Add one day to start from Friday
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+
+            // Get the first upcoming Thursday (the order deadline)
+            let nextThursday = getNextThursday(currentDate);
+            
+            // Generate 8 Thursdays for future weeks
+            for (let i = 0; i < 8; i++) {
+                // For each Thursday deadline, we offer the following week for pickup
+                const pickupWeekStart = new Date(nextThursday);
+                pickupWeekStart.setDate(pickupWeekStart.getDate() + 4); // Monday after Thursday
+                
+                const pickupWeekEnd = new Date(pickupWeekStart);
+                pickupWeekEnd.setDate(pickupWeekStart.getDate() + 4); // Friday of that week
+                
+                // Create a user-friendly label
+                const label = `${formatDate(nextThursday)} deadline for pickup week of ${formatDate(pickupWeekStart)}`;
+                
+                thursdays.push({
+                    deadline: nextThursday,
+                    label: label,
+                    value: nextThursday.toISOString().split('T')[0], // YYYY-MM-DD format
+                    pickupWeekStart: pickupWeekStart,
+                    pickupWeekEnd: pickupWeekEnd
+                });
+                
+                // Move to the next Thursday
+                nextThursday = getNextThursday(new Date(nextThursday.getTime() + 24 * 60 * 60 * 1000));
+            }
+            
+            return thursdays;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set the menu class for the current page
+            document.body.classList.add('family-meal-menu');
+            console.log('Added family-meal-menu class to body. Body classes:', document.body.className);
+            
+            // Disable any global document-level submit handlers for the Family Meal page
+            const originalDocumentSubmitHandler = document.addEventListener;
+            document.addEventListener = function(type, listener, options) {
+                if (type === 'submit') {
+                    console.log('Intercepted attempt to add a global submit handler. This is blocked on the Family Meal page to prevent conflicts.');
+                    return;
+                }
+                return originalDocumentSubmitHandler.call(document, type, listener, options);
+            };
+            
+            // Update the deadline and pickup info for Family Meal
+            updateFamilyMealTimingInfo();
+            
+            // Intercept form submission for order limit checking
+            interceptFormSubmission();
+            
+            // Add event listeners for quantity inputs
+            document.addEventListener('input', function(event) {
+                if (event.target.classList.contains('quantity-input')) {
+                    console.log('Quantity changed, updating submit button state');
+                    updateSubmitButtonState();
+                }
+            });
+            
+            // Add change listener for deadline select
+            const deadlineSelect = document.getElementById('orderDeadlineSelect');
+            if (deadlineSelect) {
+                deadlineSelect.addEventListener('change', function() {
+                    console.log('Deadline changed, updating submit button state');
+                    updateSubmitButtonState();
+                });
+            }
+            
+            // Initial check for submit button state
+            setTimeout(updateSubmitButtonState, 1000); // Delay slightly to ensure menus are loaded
+        });
+        
+        // Function to update the Family Meal timing information 
+        function updateFamilyMealTimingInfo() {
+            // Generate available Thursdays
+            const availableThursdays = generateAvailableThursdays();
+            
+            // Get references to relevant elements
+            const orderDeadlineSelect = document.getElementById('orderDeadlineSelect');
+            const timingInfoElement = document.querySelector('.helper-date-text');
+            const availabilityElement = document.getElementById('orderAvailability');
+            
+            // Function to check order availability for a date
+            async function checkOrderAvailability(deadlineDate) {
+                if (!availabilityElement) return;
+                
+                try {
+                    // Format the date as YYYY-MM-DD for the key
+                    const formattedDate = deadlineDate.toISOString().split('T')[0];
+                    
+                    // Create a tracking ID for this week
+                    const weekId = `order_week_${formattedDate}`;
+                    
+                    console.log(`Checking order availability for week: ${weekId}`);
+                    
+                    // Show loading state
+                    availabilityElement.innerHTML = 'Checking availability...';
+                    availabilityElement.classList.remove('hidden', 'text-red-500', 'text-green-500');
+                    availabilityElement.classList.add('text-gray-400');
+                    
+                    // Build the URL to check order counts - this would point to your Google Apps Script
+                    const orderCountUrl = `https://script.google.com/macros/s/AKfycbyRm9Tmop0ay-GHNyq13OEP8S4W-QAl1bS4BTnigpvPjnuttC3rkRCLYK-R9_GYas3VNQ/exec`;
+                    
+                    // Check the current order count
+                    const response = await fetch(`${orderCountUrl}?action=check&week=${weekId}`);
+                    const data = await response.json();
+                    
+                    console.log('Order availability check response:', data);
+                    
+                    // If we have a valid response, parse it and update UI
+                    if (data.success) {
+                        const currentCount = parseInt(data.count || 0);
+                        const available = 25 - currentCount;
+                        
+                        console.log(`Current orders for week ${weekId}: ${currentCount}/25 (${available} available)`);
+                        
+                        // Update the availability display
+                        if (available <= 0) {
+                            availabilityElement.innerHTML = '❌ This week is fully booked. Please select another week.';
+                            availabilityElement.classList.remove('text-gray-400', 'text-green-500');
+                            availabilityElement.classList.add('text-red-500');
+                            
+                            // Disable the submit button if this deadline is selected
+                            const submitButton = document.getElementById('submitButton');
+                            if (submitButton) {
+                                submitButton.disabled = true;
+                                submitButton.title = 'This week is fully booked';
+                            }
+                        } else {
+                            availabilityElement.innerHTML = `✅ ${available} of 25 slots available for this week`;
+                            availabilityElement.classList.remove('text-gray-400', 'text-red-500');
+                            availabilityElement.classList.add('text-green-500');
+                            
+                            // Re-enable the submit button if it was disabled
+                            const submitButton = document.getElementById('submitButton');
+                            if (submitButton && document.querySelector('input[type="number"][value]:not([value="0"])')) {
+                                submitButton.disabled = false;
+                                submitButton.title = '';
+                            }
+                        }
+                    } else {
+                        // Error checking availability
+                        console.error('Error checking order count:', data.error);
+                        availabilityElement.innerHTML = 'Unable to check availability. Please proceed with your order.';
+                        availabilityElement.classList.remove('hidden', 'text-red-500', 'text-green-500');
+                        availabilityElement.classList.add('text-gray-400');
+                    }
+                } catch (error) {
+                    console.error('Error checking order availability:', error);
+                    availabilityElement.innerHTML = 'Unable to check availability. Please proceed with your order.';
+                    availabilityElement.classList.remove('hidden', 'text-red-500', 'text-green-500');
+                    availabilityElement.classList.add('text-gray-400');
+                }
+            }
+            
+            // Populate the order deadline dropdown
+            if (orderDeadlineSelect) {
+                orderDeadlineSelect.innerHTML = '';
+                
+                // Add available Thursdays as options (no default empty option)
+                availableThursdays.forEach((thursday, index) => {
+                    const option = document.createElement('option');
+                    option.value = thursday.value;
+                    option.textContent = thursday.label;
+                    option.dataset.pickupWeekStart = thursday.pickupWeekStart.toISOString().split('T')[0];
+                    option.dataset.pickupWeekEnd = thursday.pickupWeekEnd.toISOString().split('T')[0];
+                    // Set the first deadline as selected by default
+                    if (index === 0) {
+                        option.selected = true;
+                    }
+                    orderDeadlineSelect.appendChild(option);
+                });
+                
+                // Handle deadline selection change
+                orderDeadlineSelect.addEventListener('change', function() {
+                    // Update the timing info text
+                    updateTimingInfoText();
+                    
+                    // Check availability for the selected deadline
+                    const selectedDeadline = this.options[this.selectedIndex];
+                    if (selectedDeadline && selectedDeadline.value) {
+                        const deadlineDate = new Date(selectedDeadline.value);
+                        checkOrderAvailability(deadlineDate);
+                    } else {
+                        // Hide availability indicator if no deadline selected
+                        if (availabilityElement) {
+                            availabilityElement.classList.add('hidden');
+                        }
+                    }
+                });
+                
+                // Trigger the change event to initialize timing info and availability check
+                // for the default selected option
+                if (availableThursdays.length > 0) {
+                    updateTimingInfoText();
+                    const deadlineDate = new Date(availableThursdays[0].value);
+                    checkOrderAvailability(deadlineDate);
+                }
+            }
+            
+            // Function to update the timing info text
+            function updateTimingInfoText() {
+                if (timingInfoElement) {
+                    const selectedDeadline = orderDeadlineSelect.options[orderDeadlineSelect.selectedIndex];
+                    
+                    if (selectedDeadline && selectedDeadline.value) {
+                        const deadlineDate = new Date(selectedDeadline.value);
+                        const formattedDeadline = formatDate(deadlineDate);
+                        
+                        // Get pickup week start date
+                        const pickupWeekStart = new Date(selectedDeadline.dataset.pickupWeekStart);
+                        const formattedPickupWeek = formatDate(pickupWeekStart);
+                        
+                        timingInfoElement.innerHTML = `⏰ Orders must be placed before end of day on ${formattedDeadline} for pickup during the week of ${formattedPickupWeek}`;
+                        timingInfoElement.classList.remove('text-red-500');
+                        timingInfoElement.classList.add('text-primary');
+                    } else {
+                        timingInfoElement.innerHTML = `⏰ Please select an order deadline to see available pickup weeks`;
+                        timingInfoElement.classList.remove('text-primary');
+                        timingInfoElement.classList.add('text-red-500');
+                    }
+                }
+            }
+        }
+
+        // Function to increment order count for a deadline
+        async function incrementOrderCount(deadlineDate) {
+            try {
+                // Format the date as YYYY-MM-DD for the key
+                const formattedDate = deadlineDate.toISOString().split('T')[0];
+                
+                // Create a tracking ID for this week
+                const weekId = `order_week_${formattedDate}`;
+                
+                console.log(`Incrementing order count for week: ${weekId}`);
+                
+                // Build the URL to update order counts
+                const orderCountUrl = `https://script.google.com/macros/s/AKfycbyRm9Tmop0ay-GHNyq13OEP8S4W-QAl1bS4BTnigpvPjnuttC3rkRCLYK-R9_GYas3VNQ/exec`;
+                
+                // Increment the order count
+                const response = await fetch(`${orderCountUrl}?action=increment&week=${weekId}`);
+                const data = await response.json();
+                
+                console.log('Order count update response:', data);
+                
+                return data.success;
+            } catch (error) {
+                console.error('Error updating order count:', error);
+                return false;
+            }
+        }
+
+        // Function to check if any menu items are selected and update the submit button state
+        function updateSubmitButtonState() {
+            const submitButton = document.getElementById('submitButton');
+            if (!submitButton) return;
+            
+            // Check if any menu items are selected (quantity > 0)
+            const anyItemsSelected = document.querySelectorAll('input.quantity-input').length > 0 && 
+                                    Array.from(document.querySelectorAll('input.quantity-input'))
+                                        .some(input => input.value && parseInt(input.value) > 0);
+            
+            // Check if deadline is selected
+            const deadlineSelected = document.getElementById('orderDeadlineSelect') && 
+                                     document.getElementById('orderDeadlineSelect').value;
+            
+            // Enable button only if both conditions are met
+            submitButton.disabled = !(anyItemsSelected && deadlineSelected);
+            
+            // Update button appearance
+            if (submitButton.disabled) {
+                submitButton.classList.add('opacity-50', 'cursor-not-allowed');
+                submitButton.title = anyItemsSelected ? 'Please select a deadline' : 'Please select at least one menu item';
+            } else {
+                submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                submitButton.title = '';
+            }
+        }
+
+        // Helper function to check if we should intercept the form submission
+        function interceptFormSubmission() {
+            // Add event listener to the form
+            const form = document.getElementById('orderForm');
+            
+            if (form) {
+                form.addEventListener('submit', async function(event) {
+                    // Always prevent default form submission
+                    event.preventDefault();
+                    event.stopPropagation();
+                    
+                    console.log("Family Meal form submit event intercepted, validating order deadline...");
+                    
+                    // Get the order deadline select element
+                    const orderDeadlineSelect = document.getElementById('orderDeadlineSelect');
+                    
+                    // First check: validate order deadline is selected
+                    if (!orderDeadlineSelect || !orderDeadlineSelect.value) {
+                        console.log("Order deadline not selected!");
+                        
+                        // Show prominent notification that order deadline is required
+                        if (typeof window.showNotification === 'function') {
+                            window.showNotification('Please select an order deadline to continue', 'error');
+                        } else {
+                            alert('Error: Please select an order deadline to continue');
+                        }
+                        
+                        // Highlight the field with a red border
+                        if (orderDeadlineSelect) {
+                            orderDeadlineSelect.classList.add('border-red-500');
+                            // Scroll to the order deadline field
+                            orderDeadlineSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                        
+                        // Prevent form submission
+                        return false;
+                    }
+                    
+                    console.log("Order deadline validated, continuing with form submission...");
+                    
+                    // If a deadline is selected, continue with submission
+                    const deadlineDate = new Date(orderDeadlineSelect.value);
+                    
+                    // Check availability one last time before submitting
+                    try {
+                        const formattedDate = deadlineDate.toISOString().split('T')[0];
+                        const weekId = `order_week_${formattedDate}`;
+                        
+                        console.log(`Final availability check for week: ${weekId}`);
+                        
+                        const orderCountUrl = `https://script.google.com/macros/s/AKfycbyRm9Tmop0ay-GHNyq13OEP8S4W-QAl1bS4BTnigpvPjnuttC3rkRCLYK-R9_GYas3VNQ/exec`;
+                        const response = await fetch(`${orderCountUrl}?action=check&week=${weekId}`);
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            const currentCount = parseInt(data.count || 0);
+                            const available = 25 - currentCount;
+                            
+                            if (available <= 0) {
+                                // This week is fully booked
+                                alert('We apologize, but this week has just reached its order limit. Please select a different week.');
+                                return false;
+                            }
+                            
+                            // Week is available, proceed with custom submission
+                            console.log('Week still has availability, proceeding with form submission');
+                            
+                            // For family meal page, we'll handle the submission ourselves
+                            const contactName = document.getElementById('contactName').value;
+                            const contactEmail = document.getElementById('contactEmail').value;
+                            const contactPhone = document.getElementById('contactPhone').value;
+                            const partySize = getPartySize();
+                            const comments = document.getElementById('comments').value;
+                            
+                            // Get order details
+                            const order = getOrderDetails();
+                            if (!order || order.length === 0) {
+                                showNotification('Please select at least one menu item.', 'error');
+                                return false;
+                            }
+                            
+                            // Calculate subtotal and total
+                            const subtotal = order.reduce((sum, item) => sum + parseFloat(item.subtotal.replace('$', '')), 0);
+                            const tax = subtotal * 0.089;
+                            const total = subtotal + tax;
+                            
+                            // Format order details as a string for the spreadsheet
+                            const orderDetailsText = order.map(item => 
+                                `${item.name} (${item.quantity}) - $${item.subtotal}`
+                            ).join('\n');
+                            
+                            // Disable the submit button during submission
+                            const submitButton = document.getElementById('submitButton');
+                            const submitSpinner = document.getElementById('submitSpinner');
+                            submitButton.disabled = true;
+                            submitButton.querySelector('span').innerText = 'Submitting...';
+                            submitSpinner.classList.remove('hidden');
+                            
+                            try {
+                                console.log('Submitting Family Meal order to Google Apps Script...');
+                                
+                                // Submit the order data directly to our Orders sheet
+                                const orderSubmitUrl = `${orderCountUrl}?action=submitOrder&week=${weekId}&name=${encodeURIComponent(contactName)}&email=${encodeURIComponent(contactEmail)}&phone=${encodeURIComponent(contactPhone)}&partySize=${encodeURIComponent(partySize)}&orderDetails=${encodeURIComponent(orderDetailsText)}&subtotal=$${subtotal.toFixed(2)}&total=$${total.toFixed(2)}&comments=${encodeURIComponent(comments)}`;
+                                
+                                console.log('Request URL:', orderSubmitUrl);
+                                const orderSubmitResponse = await fetch(orderSubmitUrl);
+                                
+                                const orderSubmitData = await orderSubmitResponse.json();
+                                console.log('Order submission response:', orderSubmitData);
+                                
+                                if (orderSubmitData.success) {
+                                    console.log('Order successfully submitted, incrementing count...');
+                                    // Increment the order count
+                                    const incrementResponse = await fetch(`${orderCountUrl}?action=increment&week=${weekId}`);
+                                    const incrementData = await incrementResponse.json();
+                                    console.log('Order count increment result:', incrementData);
+                                    
+                                    if (incrementData.success) {
+                                        // Show success message
+                                        showNotification('Your order has been successfully submitted! We\'ll be in touch soon.', 'success');
+                                        
+                                        // Clear any saved form data
+                                        if (typeof clearSavedData === 'function') {
+                                            clearSavedData();
+                                        }
+                                        
+                                        // Redirect to thank you page
+                                        window.location.href = 'thank-you.html';
+                                        return true;
+                                    } else {
+                                        throw new Error(incrementData.error || 'Failed to update order count');
+                                    }
+                                } else {
+                                    throw new Error(orderSubmitData.error || 'Failed to submit order.');
+                                }
+                            } catch (error) {
+                                console.error('Error submitting order:', error);
+                                showNotification('Failed to submit your order. Please try again later.', 'error');
+                                submitButton.disabled = false;
+                                submitSpinner.classList.add('hidden');
+                                submitButton.querySelector('span').innerText = 'Submit Order';
+                                return false;
+                            }
+                        } else {
+                            console.error('Error checking availability:', data.error);
+                            showNotification('Unable to verify availability. Please try again.', 'error');
+                            return false;
+                        }
+                    } catch (error) {
+                        console.error('Error in final availability check:', error);
+                        showNotification('Error processing your request. Please try again.', 'error');
+                        return false;
+                    }
+                    
+                    // If we reached here, something went wrong
+                    console.warn('Form submission reached end of handler without completing');
+                    return false;
+                });
+            }
+        }
+        
+        // Helper function for displaying notifications
+        function showNotification(message, type = 'info') {
+            // If we're using our own custom notification or we need to fall back to alert
+            if (typeof window.showNotification === 'function') {
+                // If there's a global showNotification function in scripts.js, use it
+                window.showNotification(message, type);
+            } else {
+                // Simple fallback using alert
+                if (type === 'error') {
+                    alert('Error: ' + message);
+                } else {
+                    alert(message);
+                }
+            }
+        }
+        
+        // Helper function to get party size
+        function getPartySize() {
+            const exactSizeElement = document.getElementById('exactSize');
+            const exactPartySizeElement = document.getElementById('exactPartySize');
+            const partySizeMinElement = document.getElementById('partySizeMin');
+            const partySizeMaxElement = document.getElementById('partySizeMax');
+            
+            if (exactSizeElement && exactSizeElement.checked && exactPartySizeElement) {
+                return exactPartySizeElement.value;
+            } else if (partySizeMinElement && partySizeMaxElement) {
+                return `${partySizeMinElement.value}-${partySizeMaxElement.value}`;
+            }
+            
+            return '';
+        }
+        
+        // Helper function to get order details
+        function getOrderDetails() {
+            // This function should be defined in scripts.js
+            // If it's not directly accessible, we can implement a simple version here
+            if (typeof window.getOrderDetails === 'function') {
+                return window.getOrderDetails();
+            }
+            
+            // Simple implementation to gather order items
+            const orderItems = [];
+            
+            // Find all quantity inputs
+            const quantityInputs = document.querySelectorAll('input.quantity-input');
+            quantityInputs.forEach(input => {
+                if (input.value && parseInt(input.value) > 0) {
+                    const quantity = parseInt(input.value);
+                    
+                    // Find parent item container
+                    const itemContainer = input.closest('.menu-item');
+                    if (itemContainer) {
+                        // Get item name and price from the container
+                        const nameElement = itemContainer.querySelector('.item-name');
+                        const priceElement = itemContainer.querySelector('.item-price');
+                        
+                        if (nameElement && priceElement) {
+                            const name = nameElement.textContent.trim();
+                            const price = parseFloat(priceElement.textContent.replace('$', '').trim());
+                            const subtotal = (price * quantity).toFixed(2);
+                            
+                            orderItems.push({
+                                name: name,
+                                price: price.toFixed(2),
+                                quantity: quantity,
+                                subtotal: subtotal
+                            });
+                        }
+                    }
+                }
+            });
+            
+            return orderItems;
+        }
+
+        // Add redundant validation for the submit button
+        document.addEventListener('DOMContentLoaded', function() {
+            const submitButton = document.getElementById('submitButton');
+            if (submitButton) {
+                submitButton.addEventListener('click', function(event) {
+                    console.log("Submit button clicked, handling Family Meal order submission...");
+                    
+                    // Manually trigger our form submission handler
+                    const form = document.getElementById('orderForm');
+                    if (form) {
+                        const submitEvent = new Event('submit', { cancelable: true });
+                        // This will trigger our interceptFormSubmission handler
+                        const result = form.dispatchEvent(submitEvent);
+                        console.log("Form submission event dispatched, result:", result);
+                    } else {
+                        console.error("Form not found, couldn't dispatch submit event");
+                    }
+                });
+            }
+        });
+    </script>
+    <style>
+        /* Keep only essential custom styles that aren't easily achieved with Tailwind */
+        .quantity-input {
+            width: 60px;
+            padding: 0.25rem;
+            border: 1px solid #4a5568;
+            border-radius: 0.25rem;
+            background-color: #000000;
+            color: white;
+        }
+
+        .main-wrapper,.your-event {
+          position: relative;
+        }
+
+        .your-event:before {
+          position: absolute;
+          content: "";
+          top: 3%;
+          height: 100px;
+          width: 100px;
+          transform: rotate(18deg);
+          right: 3%;
+          background:url(EE-logo-mark.png) no-repeat center center;
+          background-size: cover;
+          opacity: 0.3;
+        }
+
+        nav {
+            position: relative;
+            z-index: 333333;
+        }
+
+        .main-wrapper:before {
+          position: absolute;
+          content: "";
+          top: -64px;
+          height: 600px;
+          width: 100%;
+          left: 0;
+          background:url(dugout-hero.jpg) no-repeat center center;
+          background-size: cover;
+          z-index: -1;
+          opacity: 0.7;
+          background-attachment: fixed;
+        }
+
+        @media (max-width: 768px) {
+            .main-wrapper:before {
+                height: 440px;
+                background-attachment: scroll;
+                top: -104px;
+            }
+        }
+
+        .quantity-input:focus {
+            border-color: rgb(255, 199, 0);
+            outline: none;
+            ring-color: rgb(255, 199, 0);
+        }
+
+        /* Update button styles */
+        button, 
+        input[type="submit"],
+        .btn {
+            background-color: rgb(255, 199, 0);
+            color: black;
+            font-weight: 500;
+        }
+
+        button:hover,
+        input[type="submit"]:hover,
+        .btn:hover {
+            background-color: rgb(230, 180, 0);
+        }
+
+        @media (max-width: 768px) {
+            .item-description {
+                display: none;
+            }
+            
+            /* Add this to hide table headers on mobile */
+            thead {
+                display: none;
+            }
+        }
+
+        /* Add styles for headings and labels */
+        h1, h2, label, th {
+            font-family: 'Bebas Neue', cursive;
+            letter-spacing: 0.05em;
+        }
+
+        /* Add styles for the sticky bar animation */
+        .sticky-bar {
+            transform: translateY(100%);
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .sticky-bar.visible {
+            transform: translateY(0);
+        }
+
+        @keyframes wobble {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(-10deg); }
+            50% { transform: rotate(10deg); }
+            75% { transform: rotate(-5deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        .wobble-animation {
+            animation: wobble 1s ease-in-out;
+            animation-iteration-count: 1;
+        }
+
+        /* Add hover animation */
+        #wobbleLogo:hover {
+            animation: wobble 1s ease-in-out;
+            cursor: pointer;
+        }
+
+        /* Add this class when you want to trigger the animation */
+        .wobble-active {
+            animation: wobble 1s ease-in-out;
+        }
+
+        /* Add base font for body */
+        body {
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        /* Remove top margin from all inputs */
+        input, textarea {
+            margin-top: 0 !important;
+        }
+
+        /* Adjust the spacing in the input containers */
+        .space-y-3 > * + * {
+            margin-top: 0;
+        }
+
+        /* Update all table tbody elements */
+        .divide-y.divide-none {
+            border-top-width: 0;
+            border-bottom-width: 0;
+        }
+
+        /* Remove divider lines between rows */
+        .divide-y > :not([hidden]) ~ :not([hidden]) {
+            border: none !important;
+        }
+    </style>
+</head>
+<body class="bg-background text-white min-h-screen pb-20 family-meal-menu">
+
+<!-- Update the navigation -->
+<nav>
+    <div class="max-w-6xl mx-auto px-4 sm:px-6">
+        <div class="flex flex-col md:flex-row items-center justify-between py-4 md:h-16 gap-4 md:gap-0">
+            <!-- Logo -->
+            <div class="flex-shrink-0">
+                <a href="index.html">
+                    <img src="EE-wordmark.png" alt="Electric Events Logo" class="h-4">
+                </a>
+            </div>
+            
+            <!-- Navigation Links -->
+            <div class="flex space-x-8">
+                <a href="ladybird-catering.html" class="text-white hover:text-primary font-heading text-xl">Ladybird</a>
+                <a href="muchacho-catering.html" class="text-white hover:text-primary font-heading text-xl">Muchacho</a>
+                <a href="the-dug-out-catering.html" class="text-white hover:text-primary font-heading text-xl">The Dugout</a>
+                <a href="family-meal.html" class="text-primary font-heading text-xl">Family Meal</a>
+                <script>
+                    // Only show dev tools link in development mode
+                    if (isDevelopment) {
+                        document.write('<a href="tripleseat-dev.html" class="text-gray-400 hover:text-primary font-heading text-xl">Dev Tools</a>');
+                    }
+                </script>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<div class="main-wrapper" style="position: relative;background-color: #000000;z-index: 100;" class="pt-8">
+    
+    <!-- Add centered header section -->
+    <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        <div class="flex flex-col items-center mb-7">
+            <img src="EE-logo-mark.png" 
+                 alt="Electric Events Logo" 
+                 class="w-[300px] md:w-[400px] mb-6 mt-10">
+            <h1 class="text-3xl font-heading text-primary">Family Meal Catering</h1>
+            <p class="text-md text-gray-300 max-w-2xl text-center mt-4">
+                Take home delicious meals from your favorite game to enjoy with your family. 
+            </p>
+            <p class="text-sm text-primary mt-2">Limited to 25 orders per week. Orders are processed on a first-come, first-served basis.</p>
+       
+        </div>
+    </div>
+
+
+    <!-- Main content container -->
+    <div class="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
+        <!-- Contact & Delivery Section -->
+        <div class="bg-surface your-event rounded-lg shadow-sm p-8 mb-8">
+            <h2 class="text-4xl font-heading text-primary mb-8">Your Event</h2>
+            <div class="grid grid-cols-1 gap-8">
+                <!-- Contact Info Row -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="space-y-3">
+                        <label for="contactName" class="block text-lg font-heading text-white mb-2">Contact Name</label>
+                        <input type="text" 
+                               id="contactName" 
+                               required 
+                               class="w-full rounded-md border-gray-700 bg-background text-white shadow-sm focus:border-primary focus:ring-primary p-3">
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <label for="contactEmail" class="block text-lg font-heading text-white mb-2">Email Address</label>
+                        <input type="email" 
+                               id="contactEmail" 
+                               required 
+                               pattern="[^@\s]+@[^@\s]+\.[^@\s]+" 
+                               title="Please enter a valid email address"
+                               class="w-full rounded-md border-gray-700 bg-background text-white shadow-sm focus:border-primary focus:ring-primary p-3">
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <label for="contactPhone" class="block text-lg font-heading text-white mb-2">Phone Number</label>
+                        <input type="tel" 
+                               id="contactPhone" 
+                               required 
+                               pattern="[0-9\s\-\(\)]+" 
+                               title="Please enter a valid phone number"
+                               class="w-full rounded-md border-gray-700 bg-background text-white shadow-sm focus:border-primary focus:ring-primary p-3">
+                    </div>
+                </div>
+                
+                <!-- Order Deadline Row -->
+                <div class="flex flex-col md:flex-row gap-8">
+                    <!-- Order Deadline Selection -->
+                    <div class="space-y-3 w-full">
+                        <div class="mb-4">
+                            <label for="orderDeadlineSelect" class="block text-lg font-heading text-white mb-2">Order Deadline <span class="text-red-500">*</span> <span class="text-xs text-gray-400">(Pre-selected to nearest available date)</span></label>
+                            <select id="orderDeadlineSelect" 
+                                   required="required"
+                                   data-required="true"
+                                   aria-required="true"
+                                   class="w-full rounded-md border-gray-700 bg-background text-white shadow-sm focus:border-primary focus:ring-primary p-3">
+                                <!-- Options will be populated dynamically -->
+                            </select>
+                            <div id="orderAvailability" class="mt-2 text-sm font-bold"></div>
+                            
+                        </div>
+                    </div>
+                    
+                    <!-- Party Size -->
+                    <div class="space-y-3">
+                        <label class="block text-lg font-heading text-white mb-2">Party Size</label>
+                        <div class="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-8">
+                            <div class="flex items-center space-x-4">
+                                <input type="radio" id="exactSize" name="partySizeType" value="exact" checked 
+                                       class="w-5 h-5">
+                                <label for="exactSize" class="text-lg font-heading text-white">Exact</label>
+                                <input type="number" placeholder="0" id="exactPartySize" min="1" 
+                                       class="w-24 rounded-md border-gray-700 bg-background text-white shadow-sm focus:border-primary focus:ring-primary p-3">
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <input type="radio" id="rangeSize" name="partySizeType" value="range" 
+                                       class="w-5 h-5">
+                                <label for="rangeSize" class="text-lg font-heading text-white">Range</label>
+                                <input type="number" id="partySizeMin" min="1" placeholder="Min" disabled 
+                                       class="w-24 rounded-md border-gray-700 bg-background text-white shadow-sm focus:border-primary focus:ring-primary p-3">
+                                <span class="text-white">-</span>
+                                <input type="number" id="partySizeMax" min="1" placeholder="Max" disabled 
+                                       class="w-24 rounded-md border-gray-700 bg-background text-white shadow-sm focus:border-primary focus:ring-primary p-3">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+               
+            </div>
+            <p class="text-s mt-3 text-primary">⏰ Orders must be placed by end of day Thursday for pickup the following week. We'll contact you to arrange specific pickup details.</p>
+        </div>
+
+        <!-- Menu Sections -->
+        <div class="space-y-8">
+            <!-- Muchacho Section -->
+            <div class="bg-surface rounded-lg shadow-sm p-4 md:p-8 mb-8">
+                <h2 class="text-4xl md:text-7xl font-heading text-primary mb-8">Muchacho Meals</h2>
+                <div id="muchachoMenu" class="space-y-6">
+                    <!-- Menu items will be inserted here -->
+                </div>
+            </div>
+
+            <!-- Ladybird Section -->
+            <div class="bg-surface rounded-lg shadow-sm p-4 md:p-8 mb-8">
+                <h2 class="text-4xl md:text-7xl font-heading text-primary mb-8">Ladybird Meals</h2>
+                <div id="ladybirdMenu" class="space-y-6">
+                    <!-- Menu items will be inserted here -->
+                </div>
+            </div>
+
+            <!-- The Dugout Section -->
+            <div class="bg-surface rounded-lg shadow-sm p-4 md:p-8 mb-8">
+                <h2 class="text-4xl md:text-7xl font-heading text-primary mb-8">The Dugout Meals</h2>
+                <div id="dugoutMenu" class="space-y-6">
+                    <!-- Menu items will be inserted here -->
+                </div>
+            </div>
+
+            <!-- Comments Section -->
+            <div class="bg-surface rounded-lg shadow-sm p-8">
+                <h2 class="text-4xl font-heading text-primary mb-2">Additional Comments</h2>
+                <div class="space-y-3">
+                    <label for="comments" class="block text-md text-white mb-3">Need something else? Let us know:</label>
+                    <textarea id="comments" 
+                              rows="4" 
+                              class="w-full rounded-md border-gray-700 bg-background text-white shadow-sm focus:border-primary focus:ring-primary p-3" placeholder="We are happy to hear what you need even if it's not on our menu."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sticky total section -->
+        <div class="fixed bottom-0 left-0 right-0 bg-surface border-t border-gray-800 shadow-lg">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+                <form id="orderForm" class="contents" onsubmit="return false;">
+                    <!-- Add hidden fields for Web3Forms -->
+                    <input type="hidden" name="access_key" value="f890e702-fef2-4b76-84bf-0e5bf3262032">
+                    <input type="hidden" name="from_name" id="from_name">
+                    <input type="hidden" name="subject" id="email_subject">
+                    <input type="hidden" name="ccemail" value="michael@electric-hospitality.com; brad@electric-hospitality.com">
+                    <input type="checkbox" class="hidden" style="display:none" name="botcheck">
+                    
+                    <div class="py-4 flex justify-between items-center">
+                        <span class="text-3xl font-heading text-white">Total:</span>
+                        <div class="flex items-center gap-6">
+                            <div class="flex flex-col items-end">
+                                <span id="totalPriceWithTax" class="text-3xl font-heading text-primary">$0.00</span>
+                                <span id="subtotalPrice" class="text-sm text-white-400">$0.00 + 8.9% Tax</span>
+                            </div>
+                            <button type="button" 
+                                    id="submitButton"
+                                    disabled
+                                    class="bg-primary text-black px-8 py-3 rounded-lg font-heading text-xl hover:bg-opacity-90 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed min-w-[100px] justify-center">
+                                <span>Submit Order</span>
+                                <svg id="submitSpinner" class="hidden animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Add padding to the bottom of the body to prevent content from being hidden behind sticky total -->
+    </div>
+
+    <footer class="py-20 text-center">
+        <div class="flex flex-col items-center max-w-4xl mx-auto px-4">
+            <img src="EE-logo-mark.png" 
+                 alt="Electric Events Logo" 
+                 class="w-[200px] mb-8" 
+                 id="wobbleLogo">
+            <h1 class="text-4xl font-heading text-primary mb-6">
+                Atlanta's Full-Service Events & Catering Group
+            </h1>
+            <p class="text-white">
+                Talk to a human at 
+                <a href="mailto:landon@electric-hospitality.com" 
+                   class="text-primary hover:underline">landon@electric-hospitality.com</a> 
+
+            </p>
+        </div>
+    </footer>
+</div>
+  
+    <script>
+        const logo = document.getElementById('wobbleLogo');
+        let isAnimating = false;
+        
+        function wobbleLogo() {
+            if (!isAnimating) {
+                isAnimating = true;
+                logo.classList.add('wobble-animation');
+                setTimeout(() => {
+                    logo.classList.remove('wobble-animation');
+                    isAnimating = false;
+                }, 1000);
+            }
+        }
+
+        // Initial wobble
+        wobbleLogo();
+        
+        // Wobble every minute
+        setInterval(wobbleLogo, 60000);
+        
+        // Add redundant validation for the submit button
+        document.addEventListener('DOMContentLoaded', function() {
+            const submitButton = document.getElementById('submitButton');
+            if (submitButton) {
+                submitButton.addEventListener('click', function(event) {
+                    console.log("Submit button clicked, handling Family Meal order submission...");
+                    
+                    // Manually trigger our form submission handler
+                    const form = document.getElementById('orderForm');
+                    if (form) {
+                        const submitEvent = new Event('submit', { cancelable: true });
+                        // This will trigger our interceptFormSubmission handler
+                        const result = form.dispatchEvent(submitEvent);
+                        console.log("Form submission event dispatched, result:", result);
+                    } else {
+                        console.error("Form not found, couldn't dispatch submit event");
+                    }
+                });
+            }
+        });
+    </script>
+    
+    <!-- Tripleseat Integration -->
+    <script src="tripleseat-config.js"></script>
+    <script src="tripleseat-integration.js"></script>
+</body>
+</html> 

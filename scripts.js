@@ -42,6 +42,24 @@ const SHEET_CONFIGS = {
                 title: 'Extra Innings'
             }
         }
+    },
+    familyMeal: {
+        id: '1CjPzoq7gPhXCCqvMV-TBImJyS0TU2NXJlfBbuf3ixP8',
+        sheets: {
+            muchacho: {
+                name: 'A1:D50',
+                title: 'Muchacho Family Meals'
+            },
+            ladybird: {
+                name: 'A1:D50',
+                title: 'Ladybird Family Meals'
+            },
+            dugout: {
+                name: 'A1:D50',
+                title: 'The Dugout Family Meals'
+            }
+        },
+        skipTripleseat: true
     }
 };
 
@@ -50,10 +68,16 @@ const API_KEY = 'AIzaSyAILUy99UCHJ6eV341T33UR4Hkj1JlCuNE';
 // Determine which configuration to use based on the page
 function getCurrentConfig() {
     if (document.body.classList.contains('muchacho-menu')) {
+        console.log('Using Muchacho config');
         return SHEET_CONFIGS.muchacho;
     } else if (document.body.classList.contains('dugout-menu') || window.location.pathname.includes('the-dug-out-catering')) {
+        console.log('Using Dugout config');
         return SHEET_CONFIGS.dugout;
+    } else if (document.body.classList.contains('family-meal-menu') || window.location.pathname.includes('family-meal')) {
+        console.log('Using Family Meal config:', SHEET_CONFIGS.familyMeal);
+        return SHEET_CONFIGS.familyMeal;
     } else {
+        console.log('Using Ladybird config (default)');
         return SHEET_CONFIGS.ladybird;
     }
 }
@@ -61,26 +85,41 @@ function getCurrentConfig() {
 // Fetch data from Google Sheets
 async function fetchSheetData(sheetConfig) {
     const currentConfig = getCurrentConfig();
+    console.log('Fetching data with config:', currentConfig);
+    
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${currentConfig.id}/values/${sheetConfig.name}?key=${API_KEY}`;
+    console.log('Sheet URL:', url);
     
     try {
         console.log(`Fetching ${sheetConfig.title} from: ${sheetConfig.name}`);
         const response = await fetch(url);
+        
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        const data = await response.json();
         
-        console.log(`Raw ${sheetConfig.title} data:`, data);
+        const data = await response.json();
         const parsedData = parseSheetData(data.values || []);
         console.log(`Parsed ${sheetConfig.title} data:`, parsedData);
         
         return parsedData;
     } catch (error) {
         console.error(`Error fetching ${sheetConfig.title} data:`, error);
+        
+        // Provide more helpful error message based on error type
+        let errorMessage = `Failed to load ${sheetConfig.title.toLowerCase()} menu items`;
+        
+        if (error.message.includes('400')) {
+            errorMessage += ". The sheet may not be accessible or doesn't exist with the specified name.";
+        } else if (error.message.includes('403')) {
+            errorMessage += ". Access to the sheet is forbidden. Make sure the sheet is published and accessible.";
+        } else if (error.message.includes('404')) {
+            errorMessage += ". The spreadsheet could not be found. Check the spreadsheet ID.";
+        }
+        
         // Don't show errors for optional menus on pages that don't need them
         if (!(currentConfig === SHEET_CONFIGS.dugout && sheetConfig.title.toLowerCase() === 'deserts')) {
-            showError(`Failed to load ${sheetConfig.title.toLowerCase()} menu items`);
+            showError(errorMessage);
         }
         return [];
     }
@@ -166,6 +205,7 @@ async function initializeMenuTables() {
     setLoadingState(true);
     try {
         const currentConfig = getCurrentConfig();
+        console.log('Initializing menu tables with config:', currentConfig);
         const promises = [];
         const menuData = {};
 
@@ -174,6 +214,7 @@ async function initializeMenuTables() {
             const menuId = `${key}Menu`;
             // Only fetch data if we have a corresponding element on the page
             if (document.getElementById(menuId)) {
+                console.log(`Found menu element with ID: ${menuId}, fetching data`);
                 promises.push(
                     fetchSheetData(sheet).then(data => {
                         menuData[key] = data;
@@ -185,6 +226,7 @@ async function initializeMenuTables() {
         });
 
         await Promise.all(promises);
+        console.log('All sheet data fetched:', menuData);
 
         // Initialize each menu section that exists in the current page
         Object.entries(currentConfig.sheets).forEach(([key, sheet]) => {
@@ -192,7 +234,13 @@ async function initializeMenuTables() {
             const menuElement = document.getElementById(menuId);
             // Only initialize if the menu element exists in the page and we have data for it
             if (menuElement && menuData[key]) {
+                console.log(`Initializing table ${key}Table with ${menuData[key].length} items`);
                 initializeTable(key + 'Table', menuData[key]);
+                
+                // Add a message if no items were found
+                if (menuData[key].length === 0) {
+                    menuElement.innerHTML = '<p class="text-white">No menu items available</p>';
+                }
             }
         });
 
@@ -301,6 +349,7 @@ function debugTestButtons() {
 // UI Helper Functions
 function createMenuRow(item) {
     const servingInfo = item.measurement || item.servingSuggestion;
+    console.log('Creating menu row for item:', item);
     
     const menuItem = document.createElement('div');
     menuItem.className = 'flex flex-col md:flex-row gap-4 border-b border-white/10 pb-6 last:border-b-0';
@@ -378,9 +427,17 @@ function initializeTable(tableId, items) {
         return;
     }
     
+    console.log(`Initializing menu with ID: ${menuId}, Items count: ${items.length}`);
     menuContainer.innerHTML = ''; // Clear existing items
     
+    if (items.length === 0) {
+        console.log(`No items to display for ${menuId}`);
+        menuContainer.innerHTML = '<p class="text-white">No menu items available</p>';
+        return;
+    }
+    
     items.forEach(item => {
+        console.log(`Creating menu item: ${item.name}, Price: $${item.price}`);
         const menuItem = createMenuRow(item);
         menuContainer.appendChild(menuItem);
     });
@@ -474,59 +531,99 @@ function initializeEventListeners() {
     }
 }
 
-// Update validate72HourRequirement to include the clock emoji
+// Update validate72HourRequirement to validate Thursday deadline for family meals
 function validate72HourRequirement(showAlert = true) {
-    const dropoffDateElement = document.getElementById('dropoffDate');
-    const dropoffTimeElement = document.getElementById('dropoffTime');
+    // Check if we're on the family meal page
+    const isFamilyMealPage = document.body.classList.contains('family-meal-menu') || window.location.pathname.includes('family-meal');
     
-    if (!dropoffDateElement || !dropoffTimeElement) {
-        console.warn('Dropoff date or time elements not found');
-        return true; // Skip validation if elements don't exist
-    }
-    
-    const dropoffDate = dropoffDateElement.value;
-    const dropoffTime = dropoffTimeElement.value;
-    
-    if (dropoffDate && dropoffTime) {
-        // Combine date and time to create a timestamp
-        const dropoffDateTime = new Date(`${dropoffDate}T${dropoffTime}`);
-        const currentDateTime = new Date();
-        const minimumDifferenceInMs = 72 * 60 * 60 * 1000; // 72 hours in milliseconds
-        const earliestDateTime = new Date(currentDateTime.getTime() + minimumDifferenceInMs);
+    if (isFamilyMealPage) {
+        // For family meal, validate only the order deadline selection
+        const orderDeadlineSelect = document.getElementById('orderDeadlineSelect');
         
-        // Calculate difference in milliseconds
-        const differenceInMs = dropoffDateTime - currentDateTime;
+        if (!orderDeadlineSelect) {
+            console.warn('Order deadline element not found');
+            return true; // Skip validation if element doesn't exist
+        }
         
-        if (differenceInMs < minimumDifferenceInMs) {
-            const dateTimeFields = [
-                dropoffDateElement,
-                dropoffTimeElement
-            ];
-            
-            dateTimeFields.forEach(field => field.classList.add('border-red-500'));
-            
+        // Check if a deadline is selected
+        if (orderDeadlineSelect.value === '') {
             if (showAlert) {
-                const formattedDate = earliestDateTime.toLocaleDateString();
-                const formattedTime = earliestDateTime.toLocaleTimeString();
-                
-                showNotification(
-                    `⏰ Earliest possible dropoff: ${formattedDate} after ${formattedTime}`,
-                    'error'
-                );
-                
-                // Reset the date to the minimum allowed date
-                dropoffDateElement.value = earliestDateTime.toISOString().split('T')[0];
+                showNotification('Please select an order deadline to continue', 'error');
+                orderDeadlineSelect.classList.add('border-red-500');
             }
-            
             return false;
-        } else {
-            // Remove error styling if date is valid
-            const dateTimeFields = [
-                dropoffDateElement,
-                dropoffTimeElement
-            ];
-            dateTimeFields.forEach(field => field.classList.remove('border-red-500'));
-            return true;
+        }
+        
+        // Check if selected deadline is in the past
+        const selectedDeadline = new Date(orderDeadlineSelect.value);
+        selectedDeadline.setHours(23, 59, 59, 999); // End of day
+        const currentDateTime = new Date();
+        
+        if (currentDateTime > selectedDeadline) {
+            if (showAlert) {
+                showNotification('The selected order deadline has passed. Please select a future deadline.', 'error');
+                orderDeadlineSelect.classList.add('border-red-500');
+            }
+            return false;
+        }
+        
+        // If validations pass
+        orderDeadlineSelect.classList.remove('border-red-500');
+        return true;
+    } else {
+        // Original 72-hour validation for other pages
+        const dropoffDateElement = document.getElementById('dropoffDate');
+        const dropoffTimeElement = document.getElementById('dropoffTime');
+        
+        if (!dropoffDateElement || !dropoffTimeElement) {
+            console.warn('Dropoff date or time elements not found');
+            return true; // Skip validation if elements don't exist
+        }
+        
+        const dropoffDate = dropoffDateElement.value;
+        const dropoffTime = dropoffTimeElement.value;
+        
+        if (dropoffDate && dropoffTime) {
+            // Combine date and time to create a timestamp
+            const dropoffDateTime = new Date(`${dropoffDate}T${dropoffTime}`);
+            const currentDateTime = new Date();
+            const minimumDifferenceInMs = 72 * 60 * 60 * 1000; // 72 hours in milliseconds
+            const earliestDateTime = new Date(currentDateTime.getTime() + minimumDifferenceInMs);
+            
+            // Calculate difference in milliseconds
+            const differenceInMs = dropoffDateTime - currentDateTime;
+            
+            if (differenceInMs < minimumDifferenceInMs) {
+                const dateTimeFields = [
+                    dropoffDateElement,
+                    dropoffTimeElement
+                ];
+                
+                dateTimeFields.forEach(field => field.classList.add('border-red-500'));
+                
+                if (showAlert) {
+                    const formattedDate = earliestDateTime.toLocaleDateString();
+                    const formattedTime = earliestDateTime.toLocaleTimeString();
+                    
+                    showNotification(
+                        `⏰ Earliest possible dropoff: ${formattedDate} after ${formattedTime}`,
+                        'error'
+                    );
+                    
+                    // Reset the date to the minimum allowed date
+                    dropoffDateElement.value = earliestDateTime.toISOString().split('T')[0];
+                }
+                
+                return false;
+            } else {
+                // Remove error styling if date is valid
+                const dateTimeFields = [
+                    dropoffDateElement,
+                    dropoffTimeElement
+                ];
+                dateTimeFields.forEach(field => field.classList.remove('border-red-500'));
+                return true;
+            }
         }
     }
     return true;
@@ -862,15 +959,34 @@ function formatEmailMessage(formData) {
     const tax = subtotal * 0.089;
     const total = subtotal + tax;
 
-    // Determine if this is a Dug Out order
+    // Determine if this is a Dug Out order or Family Meal order
     const isDugOutOrder = formData.source === 'The Dug-Out';
+    const isFamilyMealOrder = formData.source === 'Family Meal';
 
-    // Format the location display based on the source
-    let locationDisplay = '';
-    if (isDugOutOrder) {
-        locationDisplay = `Drop Off Location: ${formData.delivery.location}`;
+    // Format the delivery section based on the source
+    let deliverySection = '';
+    
+    if (isFamilyMealOrder) {
+        // Format for Family Meal orders (pickup only, no specific date/time)
+        deliverySection = `Pickup Details
+---------------
+Available for pickup: ${formData.delivery.pickupWeek}
+Order Deadline: ${formData.orderDeadline}
+Note: Specific pickup date & time will be arranged after order confirmation`;
+    } else if (isDugOutOrder) {
+        // Format for Dug Out orders
+        deliverySection = `Delivery Details
+---------------
+Drop Off Location: ${formData.delivery.location}
+Dropoff Date: ${new Date(formData.delivery.date).toLocaleDateString()}
+Dropoff Time: ${formData.delivery.time}`;
     } else {
-        locationDisplay = `Location: ${formData.delivery.location}`;
+        // Format for other venues
+        deliverySection = `Delivery Details
+---------------
+Location: ${formData.delivery.location}
+Dropoff Date: ${new Date(formData.delivery.date).toLocaleDateString()}
+Dropoff Time: ${formData.delivery.time}`;
     }
 
     return `
@@ -887,11 +1003,7 @@ Name: ${formData.contact.name}
 Email: ${formData.contact.email}
 Phone: ${formData.contact.phone}
 
-Delivery Details
----------------
-${locationDisplay}
-Dropoff Date: ${new Date(formData.delivery.date).toLocaleDateString()}
-Dropoff Time: ${formData.delivery.time}
+${deliverySection}
 
 Party Size: ${formData.partySize}
 
@@ -1056,148 +1168,171 @@ function clearSavedData() {
     localStorage.removeItem('cateringFormData');
 }
 
-// Update the sendOrderEmail function to add more logging
+// Update sendOrderEmail function to handle Family Meal without address
 async function sendOrderEmail(event) {
     console.log('sendOrderEmail function called');
+    
+    // Prevent default form submission
     event.preventDefault();
     
-    // First check the 72-hour requirement
-    const dropoffDate = document.getElementById('dropoffDate')?.value;
-    const dropoffTime = document.getElementById('dropoffTime')?.value;
-    
-    if (dropoffDate && dropoffTime) {
-        const dropoffDateTime = new Date(`${dropoffDate}T${dropoffTime}`);
-        const currentDateTime = new Date();
-        const minimumDifferenceInMs = 72 * 60 * 60 * 1000; // 72 hours in milliseconds
-        const earliestDateTime = new Date(currentDateTime.getTime() + minimumDifferenceInMs);
-        
-        // Round up to the next hour
-        earliestDateTime.setHours(earliestDateTime.getHours() + 1);
-        earliestDateTime.setMinutes(0);
-        earliestDateTime.setSeconds(0);
-        earliestDateTime.setMilliseconds(0);
-        
-        if (dropoffDateTime < earliestDateTime) {
-            const formattedDate = earliestDateTime.toLocaleDateString();
-            const hours = earliestDateTime.getHours();
-            const ampm = hours >= 12 ? 'PM' : 'AM';
-            const hours12 = hours % 12 || 12; // Convert to 12-hour format
-            
-            // Show a user-friendly alert with 12-hour time
-            alert(`⏰ We apologize, but we cannot accept orders for delivery less than 72 hours from now.\n\nEarliest possible delivery: ${formattedDate} at ${hours12}:00 ${ampm}`);
-            
-            // Focus the date input and set it to the earliest valid date
-            const dateInput = document.getElementById('dropoffDate');
-            if (dateInput) {
-                dateInput.value = earliestDateTime.toISOString().split('T')[0];
-                dateInput.focus();
-            }
-            
-            return;
-        }
-    }
-    
+    // Validate contact details first
     if (!validateContactDetails()) {
-        console.log('Form validation failed');
-        return;
+        return false;
     }
     
-    console.log('Form validation passed, proceeding with submission');
-
+    // Set the button to loading state
     const submitButton = document.getElementById('submitButton');
     const submitSpinner = document.getElementById('submitSpinner');
-    const buttonText = submitButton.querySelector('span');
-    let sheetSubmissionSuccessful = false;
+    submitButton.disabled = true;
+    submitButton.querySelector('span').innerText = 'Submitting...';
+    submitSpinner.classList.remove('hidden');
 
     try {
-        // Show spinner and disable button
-        submitButton.disabled = true;
-        submitSpinner.classList.remove('hidden');
-        buttonText.textContent = 'Sending...';
+        // Get current venue info
+        const currentConfig = getCurrentConfig();
+        const source = currentConfig === SHEET_CONFIGS.muchacho ? 'Muchacho' : 
+                       currentConfig === SHEET_CONFIGS.dugout ? 'The Dug-Out' : 
+                       currentConfig === SHEET_CONFIGS.familyMeal ? 'Family Meal' :
+                       'Ladybird';
         
-        console.log('Preparing form data for submission');
+        // Get order details
+        const order = getOrderDetails();
+        if (!order || order.length === 0) {
+            showNotification('Please select at least one menu item.', 'error');
+            return false;
+        }
+        
+        // Calculate subtotal
+        const subtotal = order.reduce((sum, item) => sum + parseFloat(item.subtotal.replace('$', '')), 0);
+        const tax = subtotal * 0.089;
+        const total = subtotal + tax;
+        
+        // Get party size
+        const partySize = getPartySize();
+        if (!partySize) {
+            showNotification('Please specify a party size.', 'error');
+            return false;
+        }
 
-        // Determine if we're on the Dug Out page
-        const isDugOutPage = document.body.classList.contains('dugout-menu') || window.location.pathname.includes('the-dug-out-catering');
-        console.log('Is Dug Out page:', isDugOutPage);
+        // Different form data based on page type
+        const isFamilyMeal = source === 'Family Meal';
+        let formData;
         
-        // Get location field value
-        const locationValue = document.getElementById('locationField')?.value || '';
-        console.log('Location field value:', locationValue);
+        if (isFamilyMeal) {
+            // Get order deadline information
+            const orderDeadlineSelect = document.getElementById('orderDeadlineSelect');
+            const deadlineDate = new Date(orderDeadlineSelect.value);
+            const formattedDeadline = deadlineDate.toLocaleDateString('en-US', { 
+                weekday: 'long', month: 'long', day: 'numeric' 
+            });
+            
+            // Extract pickup week information from the selected option
+            const selectedOption = orderDeadlineSelect.options[orderDeadlineSelect.selectedIndex];
+            const pickupWeekStart = new Date(selectedOption.dataset.pickupWeekStart);
+            const formattedPickupWeek = `Week of ${pickupWeekStart.toLocaleDateString('en-US', { 
+                month: 'long', day: 'numeric' 
+            })}`;
+            
+            // Get comments
+            const comments = document.getElementById('comments').value;
+            
+            // Create form data object for Family Meal
+            formData = {
+                source: source,
+                order: order,
+                subtotal: '$' + subtotal.toFixed(2),
+                total: '$' + (subtotal + tax).toFixed(2),
+                contact: {
+                    name: document.getElementById('contactName').value,
+                    email: document.getElementById('contactEmail').value,
+                    phone: document.getElementById('contactPhone').value
+                },
+                delivery: {
+                    // No specific date/time or address for pickup
+                    pickupWeek: formattedPickupWeek
+                },
+                orderDeadline: formattedDeadline,
+                partySize: partySize,
+                comments: comments,
+                isPickup: true
+            };
+        } else {
+            // For non-family meal pages
+            const locationField = document.getElementById('locationField') ? 
+                                  document.getElementById('locationField').value : '';
+            
+            // Get dropoff date and time
+            const dropoffDate = document.getElementById('dropoffDate').value;
+            let dropoffTime;
+            
+            // Check if dropoffTime is a select or input element
+            const dropoffTimeElement = document.getElementById('dropoffTime');
+            if (dropoffTimeElement.tagName === 'SELECT') {
+                dropoffTime = dropoffTimeElement.options[dropoffTimeElement.selectedIndex].text;
+            } else {
+                // Convert 24-hour to AM/PM format if it's an input time field
+                const timeValue = dropoffTimeElement.value;
+                const timeParts = timeValue.split(':');
+                const hours = parseInt(timeParts[0]);
+                const minutes = timeParts[1];
+                const period = hours >= 12 ? 'PM' : 'AM';
+                const hours12 = hours % 12 || 12;
+                dropoffTime = `${hours12}:${minutes} ${period}`;
+            }
+            
+            // Get comments
+            const comments = document.getElementById('comments').value;
+            
+            // Create form data object for standard pages
+            formData = {
+                source: source,
+                order: order,
+                subtotal: '$' + subtotal.toFixed(2),
+                total: '$' + (subtotal + tax).toFixed(2),
+                contact: {
+                    name: document.getElementById('contactName').value,
+                    email: document.getElementById('contactEmail').value,
+                    phone: document.getElementById('contactPhone').value
+                },
+                delivery: {
+                    location: locationField,
+                    date: dropoffDate,
+                    time: dropoffTime
+                },
+                partySize: partySize,
+                comments: comments
+            };
+        }
         
-        // Get all form data
-        const formData = {
-            source: document.body.classList.contains('muchacho-menu') ? 'Muchacho' : 
-                   (document.body.classList.contains('dugout-menu') ? 'The Dug-Out' : 'Ladybird'),
-            contact: {
-                name: document.getElementById('contactName')?.value || '',
-                email: document.getElementById('contactEmail')?.value || '',
-                phone: document.getElementById('contactPhone')?.value || ''
-            },
-            delivery: {
-                // Include all fields for all venues to ensure compatibility
-                location: locationValue || document.getElementById('locationStreet')?.value || '',
-                // Correctly use the street address field for address
-                address: document.getElementById('locationStreet')?.value || '',
-                city: isDugOutPage ? "Atlanta" : document.getElementById('locationCity')?.value || '',
-                zip: isDugOutPage ? "30309" : document.getElementById('locationZip')?.value || '',
-                date: document.getElementById('dropoffDate')?.value || '',
-                time: document.getElementById('dropoffTime')?.value || ''
-            },
-            partySize: getPartySize(),
-            order: getOrderDetails(),
-            subtotal: document.getElementById('subtotalPrice')?.textContent.split(' + ')[0] || '$0.00',
-            total: document.getElementById('totalPriceWithTax')?.textContent || '$0.00',
-            comments: document.getElementById('comments')?.value || '',
-            isTest: true // Flag to indicate this is a test submission
-        };
+        console.log('Submission data:', formData);
         
-        console.log('Form data prepared:', formData);
-        console.log('Delivery details:', {
-            location: formData.delivery.location,
-            address: formData.delivery.address,
-            city: formData.delivery.city,
-            zip: formData.delivery.zip
-        });
-
-        // Check if we're in development
-        const forceDevMode = new URLSearchParams(window.location.search).get('devmode') === 'true';
-        const isDevelopment = forceDevMode || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        const forceSubmit = new URLSearchParams(window.location.search).get('forcesubmit') === 'true';
+        // Check if we need to force submission in development mode
+        const urlParams = new URLSearchParams(window.location.search);
+        const forceSubmit = urlParams.get('forcesubmit') === 'true';
+        
+        // Flags to track submission success
+        let sheetSubmissionSuccessful = false;
+        
+        // Check if we're in development mode
+        const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         
         console.log('Environment:', isDevelopment ? 'Development' : 'Production');
         console.log('Force submit:', forceSubmit ? 'Yes' : 'No');
 
         if (isDevelopment && !forceSubmit) {
-            // Development code...
-            console.log('Development mode - skipping actual submission');
-            console.log('%c FORM DATA THAT WOULD BE SENT:', 'background: #333; color: #bada55; font-size: 16px;');
-            console.table({
-                'Source': formData.source,
-                'Contact Name': formData.contact.name,
-                'Contact Email': formData.contact.email,
-                'Contact Phone': formData.contact.phone
-            });
-            console.table({
-                'Location': formData.delivery.location,
-                'Address': formData.delivery.address,
-                'City': formData.delivery.city,
-                'ZIP': formData.delivery.zip,
-                'Date': formData.delivery.date,
-                'Time': formData.delivery.time
-            });
-            console.log('Party Size:', formData.partySize);
-            console.log('Order Details:', formData.order);
-            console.log('Subtotal:', formData.subtotal);
-            console.log('Total:', formData.total);
-            console.log('Comments:', formData.comments);
+            console.log('TEST MODE: Would save the following data:', formData);
             
-            // Show a success notification for testing
-            showNotification('TEST MODE: Form data logged to console. Submission would be successful in production.', 'success');
-            sheetSubmissionSuccessful = true;
+            // Show test notification
+            showNotification('TEST MODE: Order data prepared for submission. Add ?forcesubmit=true to the URL to actually submit.', 'info');
+            
+            // Display the data in the menu preview area for easier testing
+            const previewArea = document.getElementById('menu-preview');
+            if (previewArea) {
+                previewArea.innerText = JSON.stringify(formData, null, 2);
+            }
             
             // Attempt to send to Tripleseat in test mode
-            if (typeof sendToTripleseat === 'function') {
+            if (typeof sendToTripleseat === 'function' && !currentConfig.skipTripleseat) {
                 console.log('Attempting to send to Tripleseat in test mode');
                 
                 try {
@@ -1217,68 +1352,7 @@ async function sendOrderEmail(event) {
                     showNotification('TEST MODE: Error sending to Tripleseat: ' + (tripleseatError.userMessage || tripleseatError.message), 'error');
                 }
             } else {
-                console.warn('Tripleseat integration not available');
-            }
-        } else {
-            // Production mode or forced submission from localhost
-            try {
-                console.log('Attempting to submit to sheet via proxy');
-                // First try with proxy
-                const sheetResponse = await fetch('/api/sheet-proxy', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(formData)
-                });
-
-                const sheetResult = await sheetResponse.json();
-                console.log('Sheet response:', sheetResult);
-
-                if (sheetResult.success) {
-                    sheetSubmissionSuccessful = true;
-                } else {
-                    throw new Error(sheetResult.error || 'Failed to save to spreadsheet');
-                }
-            } catch (proxyError) {
-                console.log('Proxy error, trying direct submission:', proxyError);
-                
-                // Fallback to direct submission
-                try {
-                    console.log('Attempting direct submission to Google Script');
-                    
-                    // Add test flag to URL for test submissions
-                    let scriptUrl = 'https://script.google.com/macros/s/AKfycbxk4H4ldwyfsSRk_g6rAp5FDRmqct2oMihQxrt_kpqMFhJmL6aOJ74a3HfgBQCXLPTIug/exec';
-                    if (isDevelopment && forceSubmit) {
-                        scriptUrl += '?test=true';
-                        console.log('Adding test flag to script URL');
-                    }
-                    
-                    const directResponse = await fetch(scriptUrl, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(formData),
-                        redirect: 'follow'
-                    });
-                    
-                    console.log('Direct submission completed');
-                    console.log('Response status:', directResponse.status);
-                    console.log('Response type:', directResponse.type);
-                    
-                    // Since no-cors mode doesn't allow reading the response,
-                    // we'll assume success if we get here without an error
-                    sheetSubmissionSuccessful = true;
-                    
-                    // Add a delay to ensure the submission has time to process
-                    await new Promise(resolve => setTimeout(resolve, 2000));
-                    
-                } catch (directError) {
-                    console.error('Direct submission failed:', directError);
-                    throw new Error('Failed to save to spreadsheet after both attempts');
-                }
+                console.warn('Tripleseat integration not available or disabled for this menu');
             }
 
             // Only proceed with email if sheet submission was successful
@@ -1289,7 +1363,7 @@ async function sendOrderEmail(event) {
                     showNotification('TEST MODE: Successfully submitted to Google Sheet! Email sending skipped.', 'success');
                     
                     // Attempt to send to Tripleseat in test mode
-                    if (typeof sendToTripleseat === 'function') {
+                    if (typeof sendToTripleseat === 'function' && !currentConfig.skipTripleseat) {
                         console.log('Attempting to send to Tripleseat in test mode');
                         
                         try {
@@ -1312,7 +1386,7 @@ async function sendOrderEmail(event) {
                             // Log the error but don't block the successful form submission flow
                         }
                     } else {
-                        console.warn('Tripleseat integration not available');
+                        console.warn('Tripleseat integration not available or disabled for this menu');
                     }
                 } else {
                     console.log('Sheet submission successful, proceeding with email');
@@ -1342,7 +1416,7 @@ async function sendOrderEmail(event) {
                         // Attempt to send to Tripleseat after email success
                         let tripleseatSuccess = false;
                         
-                        if (typeof sendToTripleseat === 'function') {
+                        if (typeof sendToTripleseat === 'function' && !currentConfig.skipTripleseat) {
                             try {
                                 console.log('Sending to Tripleseat in production mode');
                                 const tripleseatResult = await sendToTripleseat(formData);
@@ -1363,7 +1437,7 @@ async function sendOrderEmail(event) {
                                 // Log the error but don't block the successful form submission flow
                             }
                         } else {
-                            console.warn('Tripleseat integration not available');
+                            console.warn('Tripleseat integration not available or disabled for this menu');
                         }
                         
                         clearSavedData();
@@ -1386,7 +1460,7 @@ async function sendOrderEmail(event) {
     } finally {
         submitButton.disabled = false;
         submitSpinner.classList.add('hidden');
-        buttonText.textContent = 'Get Quote';
+        submitButton.querySelector('span').innerText = 'Get Quote';
     }
 }
 
@@ -1541,28 +1615,42 @@ function initializeAutoSave() {
     });
 }
 
-// Update the validateContactDetails function with the dynamic message
+// Update validateContactDetails to include order deadline validation for family meals
 function validateContactDetails() {
-    // Determine if we're on the Dug Out page
+    // Determine if we're on the Dug Out page or Family Meal page
     const isDugOutPage = document.body.classList.contains('dugout-menu') || window.location.pathname.includes('the-dug-out-catering');
+    const isFamilyMealPage = document.body.classList.contains('family-meal-menu') || window.location.pathname.includes('family-meal');
     
+    // Set up the required fields
     const requiredFields = [
         { id: 'contactName', label: 'Contact Name' },
         { id: 'contactEmail', label: 'Email Address' },
-        { id: 'contactPhone', label: 'Phone Number' },
-        { id: 'locationField', label: isDugOutPage ? 'Drop Off Location' : 'Event Location' },
-        { id: 'dropoffTime', label: 'Dropoff Time' }
+        { id: 'contactPhone', label: 'Phone Number' }
     ];
+    
+    // Add location fields - not needed for Family Meal as it's pickup only
+    if (!isFamilyMealPage) {
+        // For other pages, use general location field
+        requiredFields.push(
+            { id: 'locationField', label: isDugOutPage ? 'Drop Off Location' : 'Event Location' }
+        );
+    }
+    
+    // Add date/time fields
+    if (isFamilyMealPage) {
+        // For family meal page, add order deadline
+        requiredFields.push(
+            { id: 'orderDeadlineSelect', label: 'Order Deadline' }
+        );
+    } else {
+        // For other pages, add dropoff time
+        requiredFields.push(
+            { id: 'dropoffTime', label: 'Dropoff Time' }
+        );
+    }
 
     const missingFields = [];
     const invalidFields = [];
-
-    // Calculate earliest possible date for the error message
-    const currentDateTime = new Date();
-    const earliestDateTime = new Date(currentDateTime.getTime() + (72 * 60 * 60 * 1000));
-    const formattedDate = earliestDateTime.toLocaleDateString();
-    const formattedTime = earliestDateTime.toLocaleTimeString();
-    const earliestDateMessage = `⏰ Earliest possible dropoff: ${formattedDate} after ${formattedTime}`;
 
     // Check party size
     const exactSizeElement = document.getElementById('exactSize');
@@ -1628,9 +1716,26 @@ function validateContactDetails() {
         element.classList.remove('border-red-500');
     }
 
-    // Update the 72-hour requirement check with new message
-    if (!validate72HourRequirement(false) && !invalidFields.includes(earliestDateMessage)) {
-        invalidFields.push(earliestDateMessage);
+    // Different validation for deadline/pickup based on page type
+    if (isFamilyMealPage) {
+        // Validate order deadline and pickup date for family meal
+        if (!validate72HourRequirement(false)) {
+            // Don't add specific errors here, they'll be handled by validate72HourRequirement
+            return false;
+        }
+    } else {
+        // Standard 72-hour validation for other pages
+        if (!validate72HourRequirement(false)) {
+            const currentDateTime = new Date();
+            const minimumDateTime = new Date(currentDateTime.getTime() + (72 * 60 * 60 * 1000));
+            const formattedDate = minimumDateTime.toLocaleDateString();
+            const formattedTime = minimumDateTime.toLocaleTimeString();
+            const earliestDateMessage = `⏰ Earliest possible dropoff: ${formattedDate} after ${formattedTime}`;
+            
+            if (!invalidFields.includes(earliestDateMessage)) {
+                invalidFields.push(earliestDateMessage);
+            }
+        }
     }
 
     if (missingFields.length > 0 || invalidFields.length > 0) {
