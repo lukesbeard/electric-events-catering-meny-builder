@@ -140,6 +140,77 @@
         input:checked + .toggle-slider:before {
             transform: translateX(24px);
         }
+        
+        /* Modal styles */
+        #iframe-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.75);
+            z-index: 50;
+            overflow: hidden;
+        }
+        
+        .modal-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 1000px;
+            height: 90%;
+            max-height: 800px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background-color: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            color: #64748b;
+            transition: all 0.2s;
+        }
+        
+        .modal-close:hover {
+            background-color: #e2e8f0;
+            color: #1e293b;
+        }
+        
+        .modal-body {
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .modal-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
     </style>
 </head>
 <body class="bg-gray-50 font-sans">
@@ -152,6 +223,23 @@
             </div>
         </div>
     </header>
+
+    <!-- Modal for iframe content -->
+    <div id="iframe-modal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 class="modal-title">Venue Details</h3>
+                <button class="modal-close" onclick="closeModal()">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <iframe id="venue-iframe" class="modal-iframe" src="" title="Venue Details"></iframe>
+            </div>
+        </div>
+    </div>
 
     <!-- Main Form Section -->
     <main class="container mx-auto px-4 md:px-6 lg:px-8 py-10 pb-32">
@@ -232,7 +320,18 @@
                         </div>
                     </div>
 
-                    <div class="flex justify-end mt-8">
+                    <div class="flex justify-between items-center mt-8">
+                        <div class="flex items-start">
+                            <label class="toggle-switch mt-0.5">
+                                <input type="checkbox" id="auto-save" name="auto-save" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <div class="ml-3">
+                                <label for="auto-save" class="text-sm font-medium text-gray-700">Auto save your progress</label>
+                                <p class="text-xs text-gray-500">And have the team follow up</p>
+                            </div>
+                        </div>
+                        
                         <button type="button" id="step-1-next" 
                             class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                             Next: Event Details →
@@ -246,85 +345,206 @@
                     
                     <!-- Event Type Field - Full Width -->
                     <div class="mb-6">
-                        <label for="event-type" class="block text-sm font-medium text-gray-700 mb-1 required-field">Event Type</label>
-                        <select id="event-type" name="event-type" required
-                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="">Select event type...</option>
-                            <option value="wedding">Wedding</option>
-                            <option value="corporate">Corporate Event</option>
-                            <option value="social">Social Gathering</option>
-                            <option value="birthday">Birthday Party</option>
-                            <option value="holiday">Holiday Party</option>
-                            <option value="fundraiser">Fundraiser</option>
-                            <option value="conference">Conference/Meeting</option>
-                            <option value="other">Other (please specify)</option>
-                        </select>
-                    </div>
-                    
-                    <!-- Other Event Type Field - Shown conditionally -->
-                    <div id="other-event-type-container" class="hidden mb-6">
-                        <label for="other-event-type" class="block text-sm font-medium text-gray-700 mb-1">Please specify</label>
-                        <input type="text" id="other-event-type" name="other-event-type" 
-                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <label class="block text-sm font-medium text-gray-700 mb-2 required-field">Event Type</label>
+                        
+                        <!-- Hidden input to store selected event type -->
+                        <input type="hidden" id="event-type" name="event-type" required>
+                        
+                        <!-- Event Type Cards -->
+                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-3">
+                            <!-- Wedding -->
+                            <div class="event-type-card cursor-pointer border rounded-lg p-3 hover:border-blue-500 transition-colors" data-value="wedding">
+                                <div class="flex items-center mb-2">
+                                    <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center text-blue-600">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6">
+                                            <path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5"></path>
+                                            <path d="M8.5 8.5a2.5 2.5 0 0 0 5 0c0-2-2.5-2-2.5-5 0 3-2.5 3-2.5 5Z"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="ml-3 font-medium">Wedding</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Corporate Event -->
+                            <div class="event-type-card cursor-pointer border rounded-lg p-3 hover:border-blue-500 transition-colors" data-value="corporate">
+                                <div class="flex items-center mb-2">
+                                    <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center text-blue-600">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6">
+                                            <path d="M3 3v18h18"></path>
+                                            <path d="M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"></path>
+                                            <path d="M8 12l4-4 2 2 4-4"></path>
+                                            <path d="M15 12v6"></path>
+                                            <path d="M9 18v-9"></path>
+                                            <path d="M9 6v.01"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="ml-3 font-medium">Corporate</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Social Gathering -->
+                            <div class="event-type-card cursor-pointer border rounded-lg p-3 hover:border-blue-500 transition-colors" data-value="social">
+                                <div class="flex items-center mb-2">
+                                    <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center text-blue-600">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6">
+                                            <circle cx="17" cy="5" r="3"></circle>
+                                            <circle cx="12" cy="12" r="3"></circle>
+                                            <circle cx="5" cy="5" r="3"></circle>
+                                            <circle cx="5" cy="19" r="3"></circle>
+                                            <path d="M9 10a5 5 0 0 0 8 2"></path>
+                                            <path d="M6.7 8a5 5 0 0 0 3.8 7.6"></path>
+                                            <path d="M17 19a5 5 0 0 0-8-2"></path>
+                                            <path d="M15 14.5a5 5 0 0 0-3.3 5.5"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="ml-3 font-medium">Social</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Birthday Party -->
+                            <div class="event-type-card cursor-pointer border rounded-lg p-3 hover:border-blue-500 transition-colors" data-value="birthday">
+                                <div class="flex items-center mb-2">
+                                    <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center text-blue-600">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6">
+                                            <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a5 5 0 0 1-4.2-2.3L8 3"></path>
+                                            <path d="M19 16v1a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h9.5"></path>
+                                            <path d="M12 13v-2"></path>
+                                            <path d="M9 13h6"></path>
+                                            <path d="M9 17h6"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="ml-3 font-medium">Birthday</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Holiday Party -->
+                            <div class="event-type-card cursor-pointer border rounded-lg p-3 hover:border-blue-500 transition-colors" data-value="holiday">
+                                <div class="flex items-center mb-2">
+                                    <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center text-blue-600">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6">
+                                            <path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"></path>
+                                            <path d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v2H7v-2a2 2 0 0 0-4 0Z"></path>
+                                            <path d="M5 14h14"></path>
+                                            <path d="M9 16v4"></path>
+                                            <path d="M15 16v4"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="ml-3 font-medium">Holiday</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Fundraiser -->
+                            <div class="event-type-card cursor-pointer border rounded-lg p-3 hover:border-blue-500 transition-colors" data-value="fundraiser">
+                                <div class="flex items-center mb-2">
+                                    <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center text-blue-600">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6">
+                                            <path d="M12 2v20"></path>
+                                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="ml-3 font-medium">Fundraiser</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Conference/Meeting -->
+                            <div class="event-type-card cursor-pointer border rounded-lg p-3 hover:border-blue-500 transition-colors" data-value="conference">
+                                <div class="flex items-center mb-2">
+                                    <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center text-blue-600">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6">
+                                            <path d="M18 8a6 6 0 0 0-6-6 6 6 0 0 0-6 6c0 6 6 10 6 10s6-4 6-10Z"></path>
+                                            <circle cx="12" cy="8" r="2"></circle>
+                                        </svg>
+                                    </div>
+                                    <div class="ml-3 font-medium">Conference</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Other -->
+                            <div class="event-type-card cursor-pointer border rounded-lg p-3 hover:border-blue-500 transition-colors" data-value="other">
+                                <div class="flex items-center mb-2">
+                                    <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center text-blue-600">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <path d="M12 16v-4"></path>
+                                            <path d="M12 8h.01"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="ml-3 font-medium">Other</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Other Event Type Field - Shown conditionally -->
+                        <div id="other-event-type-container" class="hidden mt-3">
+                            <label for="other-event-type" class="block text-sm font-medium text-gray-700 mb-1">Please specify</label>
+                            <input type="text" id="other-event-type" name="other-event-type" 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
                     </div>
 
-                    <!-- Event Name Field - Full Width -->
-                    <div class="mb-6">
-                        <label for="event-name" class="block text-sm font-medium text-gray-700 mb-1">Event Name</label>
-                        <input type="text" id="event-name" name="event-name" 
-                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="e.g. Smith-Johnson Wedding, Annual Company Dinner">
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                        <div>
+                    <!-- Event Details Row (Name, Date, Time, Flexible) -->
+                    <div class="grid grid-cols-12 gap-6 mb-6">
+                        <!-- Event Name Field - Takes up 5/12 columns (less wide) -->
+                        <div class="col-span-5">
+                            <label for="event-name" class="block text-sm font-medium text-gray-700 mb-1">Event Name</label>
+                            <input type="text" id="event-name" name="event-name" 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="e.g. Smith-Johnson Wedding">
+                        </div>
+                        
+                        <!-- Event Date - Takes up 2/12 of row -->
+                        <div class="col-span-2">
                             <label for="event-date" class="block text-sm font-medium text-gray-700 mb-1 required-field">Event Date</label>
                             <input type="text" id="event-date" name="event-date" placeholder="Select date" required
                                 class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 datepicker">
                         </div>
-                        <div>
+                        
+                        <!-- Start Time - Takes up 2/12 of row -->
+                        <div class="col-span-2">
                             <label for="start-time" class="block text-sm font-medium text-gray-700 mb-1 required-field">Start Time</label>
                             <input type="text" id="start-time" name="start-time" placeholder="Select time" required
                                 class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 timepicker">
                         </div>
-                        <div>
-                            <label for="event-length" class="block text-sm font-medium text-gray-700 mb-1">Event Length (in hours)</label>
-                            <div class="space-y-2">
-                                <div class="flex space-x-2">
-                                    <button type="button" class="event-length-btn flex-1 py-1 px-2 bg-gray-100 text-gray-700 rounded border border-gray-300 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500" data-hours="1">1</button>
-                                    <button type="button" class="event-length-btn flex-1 py-1 px-2 bg-gray-100 text-gray-700 rounded border border-gray-300 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500" data-hours="2">2</button>
-                                    <button type="button" class="event-length-btn flex-1 py-1 px-2 bg-gray-100 text-gray-700 rounded border border-gray-300 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500" data-hours="3">3</button>
-                                    <button type="button" class="event-length-btn flex-1 py-1 px-2 bg-gray-100 text-gray-700 rounded border border-gray-300 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500" data-hours="4">4</button>
+                        
+                        <!-- Flexible dates option - now in its own column (3/12) -->
+                        <div class="col-span-3">
+                            <label class="invisible block text-sm font-medium text-gray-700 mb-1">Placeholder</label>
+                            <div class="flex items-center h-[42px]">
+                                <label class="toggle-switch my-auto">
+                                    <input type="checkbox" id="flexible-dates" name="flexible-dates">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <div class="ml-3">
+                                    <label for="flexible-dates" class="text-sm font-medium text-gray-700">Flexible on dates</label>
                                 </div>
-                                <select id="event-length" name="event-length" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="">Custom length...</option>
-                                    <option value="1">1 hour</option>
-                                    <option value="2">2 hours</option>
-                                    <option value="3">3 hours</option>
-                                    <option value="4">4 hours</option>
-                                    <option value="5">5 hours</option>
-                                    <option value="6">6 hours</option>
-                                    <option value="7">7 hours</option>
-                                    <option value="8">8 hours</option>
-                                    <option value="9">9 hours</option>
-                                    <option value="10">10 hours</option>
-                                </select>
-                                <input type="hidden" id="event-length-value" name="event-length-value" value="">
                             </div>
                         </div>
                     </div>
-
-                    <!-- Flexible dates option -->
-                    <div class="mb-6 pl-1">
-                        <div class="flex items-start">
-                            <label class="toggle-switch mt-0.5">
-                                <input type="checkbox" id="flexible-dates" name="flexible-dates">
-                                <span class="toggle-slider"></span>
-                            </label>
-                            <div class="ml-3">
-                                <label for="flexible-dates" class="text-sm font-medium text-gray-700">Flexible on dates</label>
-                                <p class="text-xs text-gray-500">You are open to dates in and around what you have selected</p>
+                    
+                    <!-- Event Length Row -->
+                    <div class="mb-6">
+                        <label for="event-length" class="block text-sm font-medium text-gray-700 mb-1">Event Length (in hours)</label>
+                        <div class="space-y-2">
+                            <div class="flex space-x-2">
+                                <button type="button" class="event-length-btn flex-1 py-1 px-2 bg-gray-100 text-gray-700 rounded border border-gray-300 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500" data-hours="1">1</button>
+                                <button type="button" class="event-length-btn flex-1 py-1 px-2 bg-gray-100 text-gray-700 rounded border border-gray-300 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500" data-hours="2">2</button>
+                                <button type="button" class="event-length-btn flex-1 py-1 px-2 bg-gray-100 text-gray-700 rounded border border-gray-300 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500" data-hours="3">3</button>
+                                <button type="button" class="event-length-btn flex-1 py-1 px-2 bg-gray-100 text-gray-700 rounded border border-gray-300 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500" data-hours="4">4</button>
                             </div>
+                            <select id="event-length" name="event-length" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">Custom length...</option>
+                                <option value="1">1 hour</option>
+                                <option value="2">2 hours</option>
+                                <option value="3">3 hours</option>
+                                <option value="4">4 hours</option>
+                                <option value="5">5 hours</option>
+                                <option value="6">6 hours</option>
+                                <option value="7">7 hours</option>
+                                <option value="8">8 hours</option>
+                                <option value="9">9 hours</option>
+                                <option value="10">10 hours</option>
+                            </select>
+                            <input type="hidden" id="event-length-value" name="event-length-value" value="">
                         </div>
                     </div>
 
@@ -762,6 +982,10 @@
             }
         };
 
+        // Global variables to track venue selection
+        let selectedVenueKey = null;
+        let selectedVenueName = null;
+
         // Initialize date and time pickers
         document.addEventListener('DOMContentLoaded', function() {
             // Date picker
@@ -928,7 +1152,9 @@
                                     </div>
                                 </div>
                                 <div class="mt-4 flex justify-between items-center">
-                                    <a href="${venue.website}" target="_blank" class="text-blue-600 text-sm hover:underline">More details</a>
+                                    <button type="button" class="more-details-btn px-3 py-1.5 bg-gray-200 text-gray-700 text-sm rounded hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-1" onclick="openModal('${venue.website}', '${venue.name}')">
+                                        More details
+                                    </button>
                                     <button type="button" class="select-venue-btn px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1">
                                         Select Venue
                                     </button>
@@ -956,8 +1182,11 @@
                     const venue = venueData[venueKey];
                     if (!venue) return;
                     
-                    // Update selected venue variable
+                    // Update selected venue variables
                     selectedVenueKey = venueKey;
+                    selectedVenueName = venue.name;
+                    
+                    console.log("Venue selected:", selectedVenueName, "Key:", selectedVenueKey);
                     
                     // Update UI to show selection
                     document.querySelectorAll('.venue-card').forEach(card => {
@@ -1002,6 +1231,19 @@
                     // Add the new input
                     document.getElementById('booking-form').appendChild(venueInput);
                     
+                    // CRITICAL: Direct update to summary bar
+                    const summaryVenueElement = document.querySelector('#summary-guests-venue .venue-name');
+                    if (summaryVenueElement) {
+                        summaryVenueElement.textContent = venue.name;
+                        console.log("DIRECT UPDATE to summary bar:", venue.name);
+                        
+                        // Ensure the guest-venue section is visible if we have guests
+                        const guestCount = document.getElementById('guest-count-slider')?.value;
+                        if (guestCount && document.getElementById('summary-guests-venue').classList.contains('hidden')) {
+                            document.getElementById('summary-guests-venue').classList.remove('hidden');
+                        }
+                    }
+                    
                     // Populate selected venue details
                     let detailsHtml = `
                         <div class="flex justify-between items-start">
@@ -1043,6 +1285,9 @@
                             <p><span class="font-medium">Address:</span> ${venue.address}</p>
                             <p><span class="font-medium">Capacity:</span> ${venue.capacity.max} people (${venue.capacity.seated} seated)</p>
                             <p class="mt-2 text-blue-700">This venue has been selected for your event.</p>
+                            <button type="button" class="mt-2 px-3 py-1.5 bg-gray-200 text-gray-700 text-sm rounded hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-1" onclick="openModal('${venue.website}', '${venue.name}')">
+                                View Website Details
+                            </button>
                         </div>
                     `;
                     
@@ -1053,6 +1298,9 @@
                     
                     // Scroll to the selected venue section
                     selectedVenueSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    
+                    // Force an update of the summary
+                    updateSummary();
                 }
             }
             
@@ -1446,6 +1694,10 @@
                 const currentStep = document.getElementById('step-1').classList.contains('hidden') ?
                     (document.getElementById('step-2').classList.contains('hidden') ? 3 : 2) : 1;
                 
+                // Initialize venue variables at function scope
+                let venueName = '';
+                let venueKey = null;
+                
                 // Organizer information
                 const firstName = document.getElementById('first-name')?.value || '';
                 const lastName = document.getElementById('last-name')?.value || '';
@@ -1462,7 +1714,18 @@
                 // Event details
                 const eventType = document.getElementById('event-type')?.value || '';
                 const eventName = document.getElementById('event-name')?.value || '';
-                const eventTypeText = eventType ? document.querySelector('#event-type option[value="' + eventType + '"]')?.textContent : '';
+                // Get event type text from the selected card instead of looking for a select option
+                let eventTypeText = '';
+                if (eventType) {
+                    const selectedCard = document.querySelector(`.event-type-card[data-value="${eventType}"]`);
+                    if (selectedCard) {
+                        eventTypeText = selectedCard.querySelector('.font-medium').textContent;
+                    } else if (eventType === 'other') {
+                        // For "Other" event type, check if there's a value in the other-event-type input
+                        const otherEventType = document.getElementById('other-event-type')?.value;
+                        eventTypeText = otherEventType || 'Other';
+                    }
+                }
                 
                 if (eventType || eventName) {
                     summaryEventDetailsEl.classList.remove('hidden');
@@ -1500,40 +1763,40 @@
                     const maxGuests = document.getElementById('guest-count-slider')?.max || '';
                     const isMaxGuests = guestCount >= maxGuests;
                     
-                    // Check for selected venue - using multiple methods to ensure we get it
-                    let venueName = '';
-                    
-                    // Method 1: Check for hidden input (most reliable)
-                    const venueInput = document.querySelector('input[name="selected-venue"]');
-                    let venueKey = venueInput ? venueInput.value : null;
-                    
-                    // Method 2: Check if venue details are visible (indicating selection)
-                    if (!venueKey && !document.getElementById('selected-venue-section').classList.contains('hidden')) {
-                        const venueDetailsText = document.getElementById('selected-venue-details').textContent;
-                        
-                        // Try to find which venue matches this text
-                        Object.keys(venueData).forEach(key => {
-                            if (venueDetailsText.includes(venueData[key].name)) {
-                                venueKey = key;
-                            }
-                        });
-                    }
-                    
-                    // Method 3: Use global selected venue variable as fallback
-                    if (!venueKey && typeof selectedVenueKey === 'string') {
+                    // Use the global venue variables as the primary source
+                    if (selectedVenueKey && selectedVenueName) {
                         venueKey = selectedVenueKey;
-                    }
-                    
-                    // Get venue name if we found a key
-                    if (venueKey && venueData[venueKey]) {
-                        venueName = venueData[venueKey].name;
-                    }
-                    
-                    // Check if there's a selected venue visually (backup method)
-                    if (!venueName) {
-                        const selectedVenueTitle = document.querySelector('#selected-venue-details h4');
-                        if (selectedVenueTitle) {
-                            venueName = selectedVenueTitle.textContent.trim();
+                        venueName = selectedVenueName;
+                    } else {
+                        // Fallback methods if global variables aren't set for some reason
+                        
+                        // Method 1: Check for hidden input
+                        const venueInput = document.querySelector('input[name="selected-venue"]');
+                        venueKey = venueInput ? venueInput.value : null;
+                        
+                        // Method 2: Check if venue details are visible (indicating selection)
+                        if (!venueKey && !document.getElementById('selected-venue-section').classList.contains('hidden')) {
+                            const venueDetailsText = document.getElementById('selected-venue-details').textContent;
+                            
+                            // Try to find which venue matches this text
+                            Object.keys(venueData).forEach(key => {
+                                if (venueDetailsText.includes(venueData[key].name)) {
+                                    venueKey = key;
+                                }
+                            });
+                        }
+                        
+                        // Get venue name if we found a key
+                        if (venueKey && venueData[venueKey]) {
+                            venueName = venueData[venueKey].name;
+                        }
+                        
+                        // Check if there's a selected venue visually (backup method)
+                        if (!venueName) {
+                            const selectedVenueTitle = document.querySelector('#selected-venue-details h4');
+                            if (selectedVenueTitle) {
+                                venueName = selectedVenueTitle.textContent.trim();
+                            }
                         }
                     }
                     
@@ -1570,7 +1833,12 @@
                     summaryGuestsVenueEl.classList.add('hidden');
                 }
                 
-                console.log('Summary updated - Selected venue:', venueName || 'None', 'Venue Key:', venueKey || 'None');
+                // Log info about the venue selection only when we're on step 2+
+                if (currentStep >= 2) {
+                    console.log('Summary updated - Selected venue:', (venueName || 'None'), 'Venue Key:', (venueKey || 'None'));
+                } else {
+                    console.log('Summary updated - On step 1, venue info not shown yet');
+                }
             }
             
             // Add listeners to update the summary when form inputs change
@@ -1593,21 +1861,46 @@
             const originalSelectVenue = selectVenue;
             if (typeof selectVenue === 'function') {
                 selectVenue = function(venueKey) {
+                    console.log('VENUE SELECT START - Selected:', venueKey);
                     originalSelectVenue(venueKey);
                     
-                    // Directly update the venue name in the summary bar
-                    if (venueKey && venueData[venueKey] && summaryGuestsVenueEl) {
-                        const venueName = venueData[venueKey].name;
+                    // Always update the summary bar immediately with venue name
+                    if (summaryGuestsVenueEl) {
                         const venueNameEl = summaryGuestsVenueEl.querySelector('.venue-name');
-                        if (venueNameEl) {
-                            venueNameEl.textContent = venueName;
+                        if (venueNameEl && selectedVenueName) {
+                            console.log('DIRECT UPDATE - Setting venue name to:', selectedVenueName);
+                            venueNameEl.textContent = selectedVenueName;
+                            
+                            // Make sure the section is visible
+                            if (summaryGuestsVenueEl.classList.contains('hidden')) {
+                                const guestCount = document.getElementById('guest-count-slider')?.value || '';
+                                if (guestCount) {
+                                    summaryGuestsVenueEl.classList.remove('hidden');
+                                }
+                            }
+                        } else {
+                            console.log('DIRECT UPDATE FAILED - venueNameEl not found or selectedVenueName not set');
                         }
+                    } else {
+                        console.log('DIRECT UPDATE SKIPPED - summaryGuestsVenueEl not found');
                     }
                     
                     // Force full summary update with a delay
-                    setTimeout(updateSummary, 100);
+                    console.log('SCHEDULING delayed summary update');
+                    setTimeout(() => {
+                        console.log('DELAYED UPDATE starting');
+                        updateSummary();
+                    }, 100);
                 };
             }
+            
+            // Add debug info to updateSummary function
+            const originalUpdateSummary = updateSummary;
+            updateSummary = function() {
+                console.log('UPDATE SUMMARY starting');
+                originalUpdateSummary();
+                console.log('UPDATE SUMMARY completed');
+            };
             
             // Initial summary update
             updateSummary();
@@ -1708,6 +2001,116 @@
                 });
             });
         }
+
+        // Update document for the changes
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+        
+        // Modal functions
+        function openModal(url, title) {
+            const modal = document.getElementById('iframe-modal');
+            const iframe = document.getElementById('venue-iframe');
+            const modalTitle = document.querySelector('.modal-title');
+            
+            if (modal && iframe) {
+                iframe.src = url;
+                if (modalTitle && title) {
+                    modalTitle.textContent = title + ' Details';
+                }
+                modal.style.display = 'block';
+                document.body.style.overflow = 'hidden'; // Prevent scrolling
+            }
+        }
+        
+        function closeModal() {
+            const modal = document.getElementById('iframe-modal');
+            const iframe = document.getElementById('venue-iframe');
+            
+            if (modal && iframe) {
+                iframe.src = '';
+                modal.style.display = 'none';
+                document.body.style.overflow = ''; // Re-enable scrolling
+            }
+        }
+        
+        // Clicking outside the modal closes it
+        document.getElementById('iframe-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // Event Type Card Selection
+        const eventTypeCards = document.querySelectorAll('.event-type-card');
+        const eventTypeInput = document.getElementById('event-type');
+        const otherEventTypeContainer = document.getElementById('other-event-type-container');
+        const otherEventTypeInput = document.getElementById('other-event-type');
+        
+        eventTypeCards.forEach(card => {
+            card.addEventListener('click', function() {
+                // Remove active class from all cards
+                eventTypeCards.forEach(c => {
+                    c.classList.remove('bg-blue-50', 'border-blue-500');
+                    c.classList.add('border');
+                });
+                
+                // Add active class to selected card
+                this.classList.add('bg-blue-50', 'border-blue-500');
+                
+                // Update hidden input value
+                const selectedValue = this.dataset.value;
+                eventTypeInput.value = selectedValue;
+                
+                // Trigger change event for the hidden input
+                const changeEvent = new Event('change', { bubbles: true });
+                eventTypeInput.dispatchEvent(changeEvent);
+                
+                // Show/hide Other field
+                if (selectedValue === 'other') {
+                    otherEventTypeContainer.classList.remove('hidden');
+                } else {
+                    otherEventTypeContainer.classList.add('hidden');
+                }
+                
+                // Update summary
+                updateSummary();
+            });
+        });
+        
+        // Add event listener for the "other" event type input to update summary when it changes
+        if (otherEventTypeInput) {
+            otherEventTypeInput.addEventListener('input', function() {
+                updateSummary();
+            });
+        }
+        
+        // Auto-save functionality
+        const autoSaveToggle = document.getElementById('auto-save');
+        
+        // Function to handle auto-save state changes
+        function handleAutoSaveToggle() {
+            const isAutoSaveEnabled = autoSaveToggle.checked;
+            console.log('Auto-save ' + (isAutoSaveEnabled ? 'enabled' : 'disabled'));
+            
+            // Store the preference in localStorage
+            localStorage.setItem('auto-save-enabled', isAutoSaveEnabled);
+            
+            // Additional logic for enabling/disabling auto-save functionality can be added here
+        }
+        
+        // Initialize auto-save state from localStorage (if available)
+        if (localStorage.getItem('auto-save-enabled') !== null) {
+            autoSaveToggle.checked = localStorage.getItem('auto-save-enabled') === 'true';
+        }
+        
+        // Set up event listener for the toggle
+        autoSaveToggle.addEventListener('change', handleAutoSaveToggle);
+        
+        // Initial handling of auto-save state
+        handleAutoSaveToggle();
     </script>
 </body>
 </html>
