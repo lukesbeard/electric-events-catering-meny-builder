@@ -3,84 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Electric Events Atlanta - Event Booking</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Date picker dependency -->
+    <title>Electric Events - Event Booking</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <style>
-        /* Custom styles to complement Tailwind */
-        .form-section {
-            transition: all 0.3s ease;
+        /* Custom styles for the booking form */
+        .venue-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
         }
-        .required-field::after {
-            content: '*';
-            color: #EF4444;
-            margin-left: 3px;
-        }
+        
         /* Venue photo gallery styles */
         .venue-photo-gallery {
             position: relative;
-            height: 180px;
+            height: 200px;
             overflow: hidden;
             background-color: #f3f4f6;
             border-radius: 0.375rem;
         }
-        .selected-venue-section .venue-photo-gallery {
-            height: 220px;
-        }
+        
         .venue-photo {
             position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
-            object-fit: cover;
             opacity: 0;
             transition: opacity 0.3s ease;
+            z-index: 1;
         }
+        
         .venue-photo.active {
             opacity: 1;
+            z-index: 2;
         }
+        
         .gallery-nav {
             position: absolute;
             top: 0;
             bottom: 0;
-            width: 30px;
+            width: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
-            background-color: rgba(0, 0, 0, 0.2);
+            background-color: rgba(0, 0, 0, 0.3);
             color: white;
             cursor: pointer;
             opacity: 0;
             transition: opacity 0.2s ease;
-            z-index: 10;
+            z-index: 5;
         }
+        
         .venue-photo-gallery:hover .gallery-nav {
             opacity: 1;
         }
+        
         .gallery-nav:hover {
-            background-color: rgba(0, 0, 0, 0.4);
+            background-color: rgba(0, 0, 0, 0.5);
         }
+        
         .gallery-nav.prev {
             left: 0;
             border-top-left-radius: 0.375rem;
             border-bottom-left-radius: 0.375rem;
         }
+        
         .gallery-nav.next {
             right: 0;
             border-top-right-radius: 0.375rem;
             border-bottom-right-radius: 0.375rem;
         }
+        
         .gallery-indicators {
             position: absolute;
-            bottom: 8px;
+            bottom: 10px;
             left: 0;
             right: 0;
             display: flex;
             justify-content: center;
-            gap: 4px;
-            z-index: 10;
+            gap: 5px;
+            z-index: 5;
         }
+        
         .gallery-indicator {
             width: 8px;
             height: 8px;
@@ -89,26 +96,46 @@
             cursor: pointer;
             transition: background-color 0.2s ease;
         }
+        
         .gallery-indicator.active {
             background-color: white;
         }
-        .gallery-indicator:hover {
-            background-color: rgba(255, 255, 255, 0.8);
+        
+        .step-indicator {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
+        
+        .step-bar {
+            height: 4px;
+            width: 100%;
+        }
+        
+        .required-field::after {
+            content: "*";
+            color: #FF4136;
+            margin-left: 4px;
+            font-weight: bold;
+        }
+
         /* Toggle Switch Styles */
         .toggle-switch {
             position: relative;
             display: inline-block;
-            width: 48px;
+            width: 50px;
             height: 24px;
-            flex-shrink: 0; /* Prevent shrinking in flex containers */
-            min-width: 48px; /* Ensure minimum width is maintained */
         }
+
         .toggle-switch input {
             opacity: 0;
             width: 0;
             height: 0;
         }
+
         .toggle-slider {
             position: absolute;
             cursor: pointer;
@@ -116,134 +143,92 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: #cbd5e1;
+            background-color: #ccc;
             transition: .4s;
-            border-radius: 24px;
+            border-radius: 34px;
         }
+
         .toggle-slider:before {
             position: absolute;
             content: "";
-            height: 18px;
-            width: 18px;
-            left: 3px;
-            bottom: 3px;
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
             background-color: white;
             transition: .4s;
             border-radius: 50%;
         }
+
         input:checked + .toggle-slider {
-            background-color: #2563eb;
+            background-color: #2563EB;
         }
-        input:focus + .toggle-slider {
-            box-shadow: 0 0 1px #2563eb;
-        }
+
         input:checked + .toggle-slider:before {
-            transform: translateX(24px);
+            transform: translateX(26px);
         }
         
-        /* Modal styles */
-        #iframe-modal {
-            display: none;
+        /* Full page background system styles */
+        .background-container {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: rgba(0, 0, 0, 0.75);
-            z-index: 50;
+            z-index: -10;
             overflow: hidden;
         }
         
-        .modal-container {
+        .background-item {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 90%;
-            max-width: 1000px;
-            height: 90%;
-            max-height: 800px;
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem;
-            background-color: #f8fafc;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        
-        .modal-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: #1e293b;
-        }
-        
-        .modal-close {
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 0.5rem;
-            border-radius: 0.375rem;
-            color: #64748b;
-            transition: all 0.2s;
-        }
-        
-        .modal-close:hover {
-            background-color: #e2e8f0;
-            color: #1e293b;
-        }
-        
-        .modal-body {
-            flex: 1;
-            overflow: hidden;
-        }
-        
-        .modal-iframe {
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
-            border: none;
+            object-fit: cover;
+            opacity: 0;
+            transition: opacity 1.5s ease-in-out;
+        }
+        
+        /* Ensure content is above the background */
+        body > * {
+            position: relative;
+            z-index: 1;
+        }
+        
+        #summary-bar {
+            z-index: 10;
+        }
+        
+        main {
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Mobile-specific styles */
+        @media (max-width: 768px) {
+            body {
+                padding-top: 20vh;
+            }
+            
+            .background-container {
+                height: 100vh;
+            }
+            
+            .background-item {
+                object-position: center top;
+            }
         }
     </style>
 </head>
-<body class="bg-gray-50 font-sans">
-    <!-- Header Section -->
-    <header class="bg-black text-white py-6">
-        <div class="container mx-auto px-4 md:px-6 lg:px-8">
-            <div class="flex justify-between items-center">
-                <h1 class="text-2xl font-bold">Electric Events Atlanta</h1>
-                <a href="https://www.electriceventsatl.com" class="text-sm hover:underline">Return to Website</a>
-            </div>
-        </div>
-    </header>
-
-    <!-- Modal for iframe content -->
-    <div id="iframe-modal">
-        <div class="modal-container">
-            <div class="modal-header">
-                <h3 class="modal-title">Venue Details</h3>
-                <button class="modal-close" onclick="closeModal()">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-            <div class="modal-body">
-                <iframe id="venue-iframe" class="modal-iframe" src="" title="Venue Details"></iframe>
-            </div>
-        </div>
+<body class="bg-black">
+    <!-- Background container -->
+    <div id="background-container" class="background-container">
     </div>
 
     <!-- Main Form Section -->
-    <main class="container mx-auto px-4 md:px-6 lg:px-8 py-10 pb-32">
-        <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
+    <main class="container px-4 md:px-6 lg:px-8 py-10 pb-32">
+        <div class="max-w-3xl bg-white rounded-lg shadow-lg overflow-hidden">
             <!-- Form Header -->
             <div class="bg-gray-800 text-white p-6">
                 <h2 class="text-2xl font-bold mb-2">Event Booking Request</h2>
@@ -258,7 +243,7 @@
                 </div>
                 <div class="flex items-center">
                     <div id="step-2-indicator" class="w-8 h-8 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center font-semibold">2</div>
-                    <span class="ml-2 font-medium text-gray-600">Event Details</span>
+                    <span class="ml-2 font-medium text-gray-600">Plan Your Event</span>
                 </div>
                 <div class="flex items-center">
                     <div id="step-3-indicator" class="w-8 h-8 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center font-semibold">3</div>
@@ -483,7 +468,7 @@
                     </div>
 
                     <!-- Event Details Row (Name, Date, Time, Flexible) -->
-                    <div class="grid grid-cols-12 gap-6 mb-6">
+                    <div class="grid grid-cols-12 gap-3 mb-6">
                         <!-- Event Name Field - Takes up 5/12 columns (less wide) -->
                         <div class="col-span-5">
                             <label for="event-name" class="block text-sm font-medium text-gray-700 mb-1">Event Name</label>
@@ -849,7 +834,7 @@
 
     <!-- Summary Bar -->
     <div id="summary-bar" class="fixed bottom-0 left-0 right-0 bg-white bg-opacity-95 border-t border-gray-200 shadow-lg py-3 px-4">
-        <div class="container mx-auto max-w-4xl">
+        <div class="container px-5  max-w-2xl">
             <div>
                 <h3 class="text-sm font-medium text-gray-500 mb-1">Event Summary</h3>
                 <div id="summary-content" class="text-gray-800">
@@ -879,7 +864,10 @@
                 socialHandle: "@electricroomatl",
                 website: "https://www.electriceventsatl.com/the-electric-room",
                 photos: [
-                    "assets/venues/electricroom-feature-photo-1.png"
+                    "assets/venues/electricroom-feature-photo-1.png",
+                     "assets/venues/Venue-ER-1.png",
+                     "assets/venues/Venue-ER-2.png",      
+                    
                 ],
                 features: ["Rooftop Terrace", "Skyline Views", "Elegant Interiors", "Private Floor"],
                 amenities: ["Bar Service", "AV Equipment", "Climate Control", "Restrooms", "Coat Check"],
@@ -898,7 +886,10 @@
                 socialHandle: "@ladybirdatlanta",
                 website: "https://www.electriceventsatl.com/ladybird",
                 photos: [
-                    "assets/venues/ladybird-feature-photo-1.png"
+                    "assets/venues/ladybird-feature-photo-1.png",
+                    "assets/venues/Venue-LB-1.png",
+                    "assets/venues/Venue-LB-2.png",
+                    "assets/venues/Venue-LB-3.png",   
                 ],
                 features: ["Beltline Views", "Outdoor Patio", "Multiple Bars", "Indoor/Outdoor Space"],
                 amenities: ["Full Catering", "Bar Service", "AV Equipment", "Restrooms", "Parking Nearby"],
@@ -955,7 +946,11 @@
                 socialHandle: "@tigersunatl",
                 website: "https://www.tigersunatl.com/",
                 photos: [
-                    "assets/venues/tigersun-feature-photo-1.png"
+                    "assets/venues/tigersun-feature-photo-1.png",
+                    "assets/venues/Venue-TS-1.jpg", 
+                    "assets/venues/Venue-TS-2.jpg",
+                    "assets/venues/Venue-TS-3.jpg",
+                    
                 ],
                 features: ["Distinctive Design", "Intimate Setting", "Unique Atmosphere", "Central Location"],
                 amenities: ["Full Bar", "Special Menu Options", "Music Setup", "Themed Experience"],
@@ -974,7 +969,10 @@
                 socialHandle: "@muchacho",
                 website: "https://www.muchachoatl.com/",
                 photos: [
-                    "assets/venues/muchacho-feature-photo-1.png"
+                    "assets/venues/muchacho-feature-photo-1.png",
+                    "assets/venues/Venue-M-1.png",   
+                    "assets/venues/Venue-M-2.png",
+                    "assets/venues/Venue-M-3.png",      
                 ],
                 features: ["Vibrant Space", "Unique Design", "Central Location", "Casual Atmosphere"],
                 amenities: ["Full Bar", "Catering Options", "Music Setup", "Indoor/Outdoor Space"],
@@ -985,6 +983,12 @@
         // Global variables to track venue selection
         let selectedVenueKey = null;
         let selectedVenueName = null;
+        
+        // Background system variables
+        let currentBackgroundIndex = 0;
+        let backgroundItems = [];
+        let backgroundTimer = null;
+        let isVideoPlaying = false;
 
         // Initialize date and time pickers
         document.addEventListener('DOMContentLoaded', function() {
@@ -1023,6 +1027,9 @@
                 step1Indicator.classList.add('bg-green-500', 'text-white');
                 step2Indicator.classList.remove('bg-gray-300', 'text-gray-600');
                 step2Indicator.classList.add('bg-blue-600', 'text-white');
+                
+                // Smooth scroll to top of form
+                document.querySelector('main').scrollIntoView({ behavior: 'smooth', block: 'start' });
             });
             
             // Step 2 to Step 1
@@ -1034,6 +1041,9 @@
                 step2Indicator.classList.add('bg-gray-300', 'text-gray-600');
                 step1Indicator.classList.remove('bg-green-500');
                 step1Indicator.classList.add('bg-blue-600');
+                
+                // Smooth scroll to top of form
+                document.querySelector('main').scrollIntoView({ behavior: 'smooth', block: 'start' });
             });
             
             // Step 2 to Step 3
@@ -1046,6 +1056,9 @@
                 step2Indicator.classList.add('bg-green-500');
                 step3Indicator.classList.remove('bg-gray-300', 'text-gray-600');
                 step3Indicator.classList.add('bg-blue-600', 'text-white');
+                
+                // Smooth scroll to top of form
+                document.querySelector('main').scrollIntoView({ behavior: 'smooth', block: 'start' });
             });
             
             // Step 3 to Step 2
@@ -1057,6 +1070,9 @@
                 step3Indicator.classList.add('bg-gray-300', 'text-gray-600');
                 step2Indicator.classList.remove('bg-green-500');
                 step2Indicator.classList.add('bg-blue-600');
+                
+                // Smooth scroll to top of form
+                document.querySelector('main').scrollIntoView({ behavior: 'smooth', block: 'start' });
             });
             
             // Show/hide "Other event type" field
@@ -1113,9 +1129,9 @@
                             <!-- Photo Gallery -->
                             <div class="venue-photo-gallery" data-venue="${venueKey}">
                                 ${venue.photos.map((photo, index) => `
-                                    <img src="${photo}" alt="${venue.name} photo ${index + 1}" 
-                                        class="venue-photo ${index === 0 ? 'active' : ''}" 
-                                        data-index="${index}">
+                                    <div class="venue-photo ${index === 0 ? 'active' : ''}" data-index="${index}">
+                                        <img src="${photo}" alt="${venue.name} photo ${index + 1}">
+                                    </div>
                                 `).join('')}
                                 
                                 ${venue.photos.length > 1 ? `
@@ -1153,7 +1169,10 @@
                                 </div>
                                 <div class="mt-4 flex justify-between items-center">
                                     <button type="button" class="more-details-btn px-3 py-1.5 bg-gray-200 text-gray-700 text-sm rounded hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-1" onclick="openModal('${venue.website}', '${venue.name}')">
-                                        More details
+                                        View Website
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                        </svg>
                                     </button>
                                     <button type="button" class="select-venue-btn px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1">
                                         Select Venue
@@ -1244,6 +1263,9 @@
                         }
                     }
                     
+                    // Update the background system with the selected venue's photos
+                    updateBackgroundSystem();
+                    
                     // Populate selected venue details
                     let detailsHtml = `
                         <div class="flex justify-between items-start">
@@ -1257,9 +1279,9 @@
                         <!-- Photo Gallery in Selected Venue -->
                         <div class="venue-photo-gallery mt-3" data-venue="${venueKey}">
                             ${venue.photos.map((photo, index) => `
-                                <img src="${photo}" alt="${venue.name} photo ${index + 1}" 
-                                    class="venue-photo ${index === 0 ? 'active' : ''}" 
-                                    data-index="${index}">
+                                <div class="venue-photo ${index === 0 ? 'active' : ''}" data-index="${index}">
+                                    <img src="${photo}" alt="${venue.name} photo ${index + 1}">
+                                </div>
                             `).join('')}
                             
                             ${venue.photos.length > 1 ? `
@@ -1286,7 +1308,10 @@
                             <p><span class="font-medium">Capacity:</span> ${venue.capacity.max} people (${venue.capacity.seated} seated)</p>
                             <p class="mt-2 text-blue-700">This venue has been selected for your event.</p>
                             <button type="button" class="mt-2 px-3 py-1.5 bg-gray-200 text-gray-700 text-sm rounded hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-1" onclick="openModal('${venue.website}', '${venue.name}')">
-                                View Website Details
+                                View Website
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
                             </button>
                         </div>
                     `;
@@ -1332,6 +1357,9 @@
                         
                         // Update tracked selection
                         selectedVenueKey = null;
+                        
+                        // Clear the background system when using external venue
+                        clearBackgroundSystem();
                     } else {
                         externalVenueContainer.classList.add('hidden');
                     }
@@ -1904,6 +1932,9 @@
             
             // Initial summary update
             updateSummary();
+
+            // Initialize the background system
+            initializeBackgroundSystem();
         });
 
         // Function to initialize photo galleries for all venue cards
@@ -2009,39 +2040,8 @@
             }
         });
         
-        // Modal functions
-        function openModal(url, title) {
-            const modal = document.getElementById('iframe-modal');
-            const iframe = document.getElementById('venue-iframe');
-            const modalTitle = document.querySelector('.modal-title');
-            
-            if (modal && iframe) {
-                iframe.src = url;
-                if (modalTitle && title) {
-                    modalTitle.textContent = title + ' Details';
-                }
-                modal.style.display = 'block';
-                document.body.style.overflow = 'hidden'; // Prevent scrolling
-            }
-        }
-        
-        function closeModal() {
-            const modal = document.getElementById('iframe-modal');
-            const iframe = document.getElementById('venue-iframe');
-            
-            if (modal && iframe) {
-                iframe.src = '';
-                modal.style.display = 'none';
-                document.body.style.overflow = ''; // Re-enable scrolling
-            }
-        }
-        
-        // Clicking outside the modal closes it
-        document.getElementById('iframe-modal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeModal();
-            }
-        });
+     
+      
 
         // Event Type Card Selection
         const eventTypeCards = document.querySelectorAll('.event-type-card');
@@ -2109,6 +2109,200 @@
         // Set up event listener for the toggle
         autoSaveToggle.addEventListener('change', handleAutoSaveToggle);
         
+        // Initial handling of auto-save state
+        handleAutoSaveToggle();
+
+        // Background System Functions
+        function initializeBackgroundSystem() {
+            console.log('🖼️ Background system initializing');
+            // Initialize with empty background
+            updateBackgroundSystem();
+            
+            // Listen for venue selection changes
+            document.querySelectorAll('.venue-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    // Update background based on selected venue
+                    updateBackgroundSystem();
+                });
+            });
+            console.log('🖼️ Background system initialized and listeners attached');
+        }
+        
+        function updateBackgroundSystem() {
+            console.log('🖼️ Updating background system');
+            // Clear existing background items and timer
+            clearBackgroundSystem();
+            
+            // If no venue is selected, use all photos from all venues
+            if (!selectedVenueKey || !venueData[selectedVenueKey]) {
+                console.log('🖼️ No venue selected, using photos from all venues');
+                
+                // Collect photos from all venues
+                const allPhotos = [];
+                Object.keys(venueData).forEach(key => {
+                    if (venueData[key].photos && venueData[key].photos.length > 0) {
+                        allPhotos.push(...venueData[key].photos);
+                    }
+                });
+                
+                if (allPhotos.length === 0) {
+                    console.log('🖼️ No photos available in any venue');
+                    return;
+                }
+                
+                console.log(`🖼️ Found ${allPhotos.length} backgrounds across all venues`);
+                backgroundItems = allPhotos;
+            } else {
+                // Get photos array from selected venue
+                const photos = venueData[selectedVenueKey].photos || [];
+                
+                // If no photos, return
+                if (photos.length === 0) {
+                    console.log('🖼️ No photos available for selected venue');
+                    return;
+                }
+                
+                console.log(`🖼️ Found ${photos.length} backgrounds for venue: ${selectedVenueName}`);
+                // Reset background items array
+                backgroundItems = photos;
+            }
+            
+            // Randomize the starting index
+            currentBackgroundIndex = Math.floor(Math.random() * backgroundItems.length);
+            console.log(`🖼️ Starting with random index: ${currentBackgroundIndex}`);
+            
+            // Start cycling through backgrounds
+            startBackgroundCycle();
+        }
+        
+        function clearBackgroundSystem() {
+            console.log('🖼️ Clearing background system');
+            // Clear the timer
+            if (backgroundTimer) {
+                clearTimeout(backgroundTimer);
+                backgroundTimer = null;
+                console.log('🖼️ Background timer cleared');
+            }
+            
+            // Remove all background items
+            const container = document.getElementById('background-container');
+            const existingItems = container.querySelectorAll('.background-item');
+            console.log(`🖼️ Removing ${existingItems.length} existing background items`);
+            existingItems.forEach(item => item.remove());
+            
+            // Reset counter
+            currentBackgroundIndex = 0;
+            backgroundItems = [];
+            isVideoPlaying = false;
+            console.log('🖼️ Background system reset');
+        }
+        
+        function startBackgroundCycle() {
+            console.log('🖼️ Starting background cycle');
+            // If no items, return
+            if (backgroundItems.length === 0) {
+                console.log('🖼️ No background items to cycle through');
+                return;
+            }
+            
+            // Get the container
+            const container = document.getElementById('background-container');
+            
+            // Create the first background item
+            showNextBackground(container);
+        }
+        
+        function showNextBackground(container) {
+            // Get the current item URL
+            const itemUrl = backgroundItems[currentBackgroundIndex];
+            console.log(`🖼️ Showing background ${currentBackgroundIndex + 1}/${backgroundItems.length}: ${itemUrl}`);
+            
+            // Determine if it's a video or image based on extension
+            const isVideo = itemUrl.match(/\.(mp4|webm|ogg)$/i);
+            
+            // Create the element
+            let element;
+            if (isVideo) {
+                console.log(`🖼️ Creating video element for: ${itemUrl}`);
+                element = document.createElement('video');
+                element.autoplay = true;
+                element.muted = true;
+                element.loop = false;
+                element.playsInline = true;
+                
+                // When video ends, show next background
+                element.onended = function() {
+                    console.log('🖼️ Video playback ended');
+                    isVideoPlaying = false;
+                    fadeOutCurrentBackground(element);
+                    goToNextBackground(container);
+                };
+                
+                // Set video playing flag
+                isVideoPlaying = true;
+                
+                // Add source
+                const source = document.createElement('source');
+                source.src = itemUrl;
+                source.type = `video/${itemUrl.split('.').pop()}`;
+                element.appendChild(source);
+            } else {
+                console.log(`🖼️ Creating image element for: ${itemUrl}`);
+                element = document.createElement('img');
+                element.src = itemUrl;
+                
+                // For images, set a timer to move to the next item
+                const randomDuration = Math.floor(Math.random() * 3000) + 5000; // Random between 5-8 seconds
+                console.log(`🖼️ Setting image duration timer for ${randomDuration}ms`);
+                backgroundTimer = setTimeout(() => {
+                    fadeOutCurrentBackground(element);
+                    goToNextBackground(container);
+                }, randomDuration);
+            }
+            
+            // Add common attributes
+            element.classList.add('background-item');
+            
+            // Add to container
+            container.appendChild(element);
+            
+            // Fade it in after a small delay
+            setTimeout(() => {
+                element.style.opacity = '1';
+                console.log('🖼️ Fading in background');
+            }, 50);
+        }
+        
+        function fadeOutCurrentBackground(element) {
+            console.log('🖼️ Fading out current background');
+            // Fade out the current element
+            element.style.opacity = '0';
+            
+            // Remove it after transition completes
+            setTimeout(() => {
+                element.remove();
+                console.log('🖼️ Background element removed from DOM');
+            }, 1500); // Match the CSS transition duration
+        }
+        
+        function goToNextBackground(container) {
+            // Pick a random index different from the current one
+            let newIndex;
+            if (backgroundItems.length > 1) {
+                do {
+                    newIndex = Math.floor(Math.random() * backgroundItems.length);
+                } while (newIndex === currentBackgroundIndex);
+                currentBackgroundIndex = newIndex;
+            } else {
+                currentBackgroundIndex = 0;
+            }
+            
+            console.log(`🖼️ Randomly selected next background (index: ${currentBackgroundIndex})`);
+            
+            // Show the next background
+            showNextBackground(container);
+        }
+
         // Initial handling of auto-save state
         handleAutoSaveToggle();
     </script>
