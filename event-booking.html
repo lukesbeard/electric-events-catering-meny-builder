@@ -95,6 +95,51 @@
         .gallery-indicator:hover {
             background-color: rgba(255, 255, 255, 0.8);
         }
+        /* Toggle Switch Styles */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 24px;
+            flex-shrink: 0; /* Prevent shrinking in flex containers */
+            min-width: 48px; /* Ensure minimum width is maintained */
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #cbd5e1;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .toggle-slider {
+            background-color: #2563eb;
+        }
+        input:focus + .toggle-slider {
+            box-shadow: 0 0 1px #2563eb;
+        }
+        input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+        }
     </style>
 </head>
 <body class="bg-gray-50 font-sans">
@@ -109,7 +154,7 @@
     </header>
 
     <!-- Main Form Section -->
-    <main class="container mx-auto px-4 md:px-6 lg:px-8 py-10">
+    <main class="container mx-auto px-4 md:px-6 lg:px-8 py-10 pb-32">
         <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
             <!-- Form Header -->
             <div class="bg-gray-800 text-white p-6">
@@ -243,9 +288,43 @@
                                 class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 timepicker">
                         </div>
                         <div>
-                            <label for="end-time" class="block text-sm font-medium text-gray-700 mb-1">End Time (estimated)</label>
-                            <input type="text" id="end-time" name="end-time" placeholder="Select time"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 timepicker">
+                            <label for="event-length" class="block text-sm font-medium text-gray-700 mb-1">Event Length (in hours)</label>
+                            <div class="space-y-2">
+                                <div class="flex space-x-2">
+                                    <button type="button" class="event-length-btn flex-1 py-1 px-2 bg-gray-100 text-gray-700 rounded border border-gray-300 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500" data-hours="1">1</button>
+                                    <button type="button" class="event-length-btn flex-1 py-1 px-2 bg-gray-100 text-gray-700 rounded border border-gray-300 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500" data-hours="2">2</button>
+                                    <button type="button" class="event-length-btn flex-1 py-1 px-2 bg-gray-100 text-gray-700 rounded border border-gray-300 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500" data-hours="3">3</button>
+                                    <button type="button" class="event-length-btn flex-1 py-1 px-2 bg-gray-100 text-gray-700 rounded border border-gray-300 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500" data-hours="4">4</button>
+                                </div>
+                                <select id="event-length" name="event-length" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Custom length...</option>
+                                    <option value="1">1 hour</option>
+                                    <option value="2">2 hours</option>
+                                    <option value="3">3 hours</option>
+                                    <option value="4">4 hours</option>
+                                    <option value="5">5 hours</option>
+                                    <option value="6">6 hours</option>
+                                    <option value="7">7 hours</option>
+                                    <option value="8">8 hours</option>
+                                    <option value="9">9 hours</option>
+                                    <option value="10">10 hours</option>
+                                </select>
+                                <input type="hidden" id="event-length-value" name="event-length-value" value="">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Flexible dates option -->
+                    <div class="mb-6 pl-1">
+                        <div class="flex items-start">
+                            <label class="toggle-switch mt-0.5">
+                                <input type="checkbox" id="flexible-dates" name="flexible-dates">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <div class="ml-3">
+                                <label for="flexible-dates" class="text-sm font-medium text-gray-700">Flexible on dates</label>
+                                <p class="text-xs text-gray-500">You are open to dates in and around what you have selected</p>
+                            </div>
                         </div>
                     </div>
 
@@ -268,7 +347,7 @@
                                     required
                                     class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
                                 >
-                                <span class="text-xs text-gray-500">500</span>
+                                <span class="text-xs text-gray-500">500+</span>
                             </div>
                             <div class="flex justify-between px-1 mt-1">
                                 <span class="text-xs text-gray-500">Smaller</span>
@@ -276,28 +355,39 @@
                             </div>
                         </div>
                         <div>
-                            <label for="budget-slider" class="block text-sm font-medium text-gray-700 mb-1">Approximate Budget</label>
+                            <label for="budget-slider" class="block text-sm font-medium text-gray-700 mb-1">Approximate Budget (per person)</label>
                             <div class="mt-1 mb-2">
-                                <div id="budget-display" class="text-lg font-semibold text-blue-600">$2,500</div>
+                                <div id="budget-display" class="text-lg font-semibold text-blue-600">$50 per person</div>
                             </div>
                             <div class="flex items-center space-x-3">
-                                <span class="text-xs text-gray-500">$500</span>
+                                <span class="text-xs text-gray-500">$15</span>
                                 <input 
                                     type="range" 
                                     id="budget-slider" 
                                     name="budget" 
-                                    min="500" 
-                                    max="10000" 
-                                    step="100" 
-                                    value="2500"
+                                    min="15" 
+                                    max="500" 
+                                    step="5" 
+                                    value="50"
                                     class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
                                 >
-                                <span class="text-xs text-gray-500">$10,000+</span>
+                                <span class="text-xs text-gray-500">$500+</span>
                             </div>
                             <div class="flex justify-between px-1 mt-1">
                                 <span class="text-xs text-gray-500">Lower</span>
                                 <span class="text-xs text-gray-500">Higher</span>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Estimated Total Cost Row -->
+                    <div class="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <span class="text-sm font-medium text-gray-700 bold">Estimated Total Cost:</span>
+                                <span class="ml-1 text-xs text-gray-500">based on guest count × per-person budget, price not guaranteed</span>
+                            </div>
+                            <div id="total-cost-display" class="text-xl font-bold text-blue-700">$2,500</div>
                         </div>
                     </div>
 
@@ -340,10 +430,24 @@
                     <div class="mb-6">
                         <label class="block text-sm font-medium text-gray-700 mb-3">Which services are you interested in? (Select all that apply)</label>
                         
+                        <!-- Select All option -->
+                        <div class="flex items-start mb-4 pb-3 border-b border-gray-100">
+                            <label class="toggle-switch mt-0.5">
+                                <input type="checkbox" id="select-all-services">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <div class="ml-3">
+                                <label for="select-all-services" class="font-medium text-gray-700">Select All Services</label>
+                                <p class="text-gray-500 text-sm">You want it all? Nice.</p>
+                            </div>
+                        </div>
+                        
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div class="flex items-start">
-                                <input type="checkbox" id="service-catering" name="services[]" value="catering" 
-                                    class="h-5 w-5 border-gray-300 rounded text-blue-600 focus:ring-blue-500 mt-0.5">
+                                <label class="toggle-switch mt-0.5">
+                                    <input type="checkbox" id="service-catering" name="services[]" value="catering" class="service-checkbox">
+                                    <span class="toggle-slider"></span>
+                                </label>
                                 <div class="ml-3">
                                     <label for="service-catering" class="font-medium text-gray-700">Catering</label>
                                     <p class="text-gray-500 text-sm">Full-service food & beverage</p>
@@ -351,8 +455,10 @@
                             </div>
                             
                             <div class="flex items-start">
-                                <input type="checkbox" id="service-bar" name="services[]" value="bar" 
-                                    class="h-5 w-5 border-gray-300 rounded text-blue-600 focus:ring-blue-500 mt-0.5">
+                                <label class="toggle-switch mt-0.5">
+                                    <input type="checkbox" id="service-bar" name="services[]" value="bar" class="service-checkbox">
+                                    <span class="toggle-slider"></span>
+                                </label>
                                 <div class="ml-3">
                                     <label for="service-bar" class="font-medium text-gray-700">Bar Service</label>
                                     <p class="text-gray-500 text-sm">Bartenders & beverage packages</p>
@@ -360,8 +466,10 @@
                             </div>
                             
                             <div class="flex items-start">
-                                <input type="checkbox" id="service-staffing" name="services[]" value="staffing" 
-                                    class="h-5 w-5 border-gray-300 rounded text-blue-600 focus:ring-blue-500 mt-0.5">
+                                <label class="toggle-switch mt-0.5">
+                                    <input type="checkbox" id="service-staffing" name="services[]" value="staffing" class="service-checkbox">
+                                    <span class="toggle-slider"></span>
+                                </label>
                                 <div class="ml-3">
                                     <label for="service-staffing" class="font-medium text-gray-700">Event Staffing</label>
                                     <p class="text-gray-500 text-sm">Servers, bussers & coat check</p>
@@ -369,8 +477,10 @@
                             </div>
                             
                             <div class="flex items-start">
-                                <input type="checkbox" id="service-planning" name="services[]" value="planning" 
-                                    class="h-5 w-5 border-gray-300 rounded text-blue-600 focus:ring-blue-500 mt-0.5">
+                                <label class="toggle-switch mt-0.5">
+                                    <input type="checkbox" id="service-planning" name="services[]" value="planning" class="service-checkbox">
+                                    <span class="toggle-slider"></span>
+                                </label>
                                 <div class="ml-3">
                                     <label for="service-planning" class="font-medium text-gray-700">Event Planning</label>
                                     <p class="text-gray-500 text-sm">Full or partial planning services</p>
@@ -378,8 +488,10 @@
                             </div>
                             
                             <div class="flex items-start">
-                                <input type="checkbox" id="service-decor" name="services[]" value="decor" 
-                                    class="h-5 w-5 border-gray-300 rounded text-blue-600 focus:ring-blue-500 mt-0.5">
+                                <label class="toggle-switch mt-0.5">
+                                    <input type="checkbox" id="service-decor" name="services[]" value="decor" class="service-checkbox">
+                                    <span class="toggle-slider"></span>
+                                </label>
                                 <div class="ml-3">
                                     <label for="service-decor" class="font-medium text-gray-700">Decor & Styling</label>
                                     <p class="text-gray-500 text-sm">Event design & decoration</p>
@@ -387,8 +499,10 @@
                             </div>
                             
                             <div class="flex items-start">
-                                <input type="checkbox" id="service-rentals" name="services[]" value="rentals" 
-                                    class="h-5 w-5 border-gray-300 rounded text-blue-600 focus:ring-blue-500 mt-0.5">
+                                <label class="toggle-switch mt-0.5">
+                                    <input type="checkbox" id="service-rentals" name="services[]" value="rentals" class="service-checkbox">
+                                    <span class="toggle-slider"></span>
+                                </label>
                                 <div class="ml-3">
                                     <label for="service-rentals" class="font-medium text-gray-700">Equipment Rentals</label>
                                     <p class="text-gray-500 text-sm">Tables, chairs, linens, etc.</p>
@@ -415,48 +529,60 @@
                         <label class="block text-sm font-medium text-gray-700 mb-3">How did you hear about us?</label>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div class="flex items-start">
-                                <input type="checkbox" id="heard-search" name="heard-about[]" value="search" 
-                                    class="h-5 w-5 border-gray-300 rounded text-blue-600 focus:ring-blue-500 mt-0.5">
+                                <label class="toggle-switch mt-0.5">
+                                    <input type="checkbox" id="heard-search" name="heard-about[]" value="search">
+                                    <span class="toggle-slider"></span>
+                                </label>
                                 <label for="heard-search" class="ml-3 text-sm text-gray-700">
                                     Search Engine
                                 </label>
                             </div>
                             
                             <div class="flex items-start">
-                                <input type="checkbox" id="heard-social" name="heard-about[]" value="social" 
-                                    class="h-5 w-5 border-gray-300 rounded text-blue-600 focus:ring-blue-500 mt-0.5">
+                                <label class="toggle-switch mt-0.5">
+                                    <input type="checkbox" id="heard-social" name="heard-about[]" value="social">
+                                    <span class="toggle-slider"></span>
+                                </label>
                                 <label for="heard-social" class="ml-3 text-sm text-gray-700">
                                     Social Media
                                 </label>
                             </div>
                             
                             <div class="flex items-start">
-                                <input type="checkbox" id="heard-referral" name="heard-about[]" value="referral" 
-                                    class="h-5 w-5 border-gray-300 rounded text-blue-600 focus:ring-blue-500 mt-0.5">
+                                <label class="toggle-switch mt-0.5">
+                                    <input type="checkbox" id="heard-referral" name="heard-about[]" value="referral">
+                                    <span class="toggle-slider"></span>
+                                </label>
                                 <label for="heard-referral" class="ml-3 text-sm text-gray-700">
                                     Friend/Family Referral
                                 </label>
                             </div>
                             
                             <div class="flex items-start">
-                                <input type="checkbox" id="heard-event" name="heard-about[]" value="event" 
-                                    class="h-5 w-5 border-gray-300 rounded text-blue-600 focus:ring-blue-500 mt-0.5">
+                                <label class="toggle-switch mt-0.5">
+                                    <input type="checkbox" id="heard-event" name="heard-about[]" value="event">
+                                    <span class="toggle-slider"></span>
+                                </label>
                                 <label for="heard-event" class="ml-3 text-sm text-gray-700">
                                     Past Event
                                 </label>
                             </div>
                             
                             <div class="flex items-start">
-                                <input type="checkbox" id="heard-website" name="heard-about[]" value="website" 
-                                    class="h-5 w-5 border-gray-300 rounded text-blue-600 focus:ring-blue-500 mt-0.5">
+                                <label class="toggle-switch mt-0.5">
+                                    <input type="checkbox" id="heard-website" name="heard-about[]" value="website">
+                                    <span class="toggle-slider"></span>
+                                </label>
                                 <label for="heard-website" class="ml-3 text-sm text-gray-700">
                                     Our Website
                                 </label>
                             </div>
                             
                             <div class="flex items-start">
-                                <input type="checkbox" id="heard-other" name="heard-about[]" value="other" 
-                                    class="h-5 w-5 border-gray-300 rounded text-blue-600 focus:ring-blue-500 mt-0.5">
+                                <label class="toggle-switch mt-0.5">
+                                    <input type="checkbox" id="heard-other" name="heard-about[]" value="other">
+                                    <span class="toggle-slider"></span>
+                                </label>
                                 <label for="heard-other" class="ml-3 text-sm text-gray-700">
                                     Other
                                 </label>
@@ -469,11 +595,15 @@
                         </div>
                     </div>
 
-                    <div class="mb-6">
+                    <!-- Enhanced terms agreement section -->
+                    <div class="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-5">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-3">Before you submit, please note:</h4>
                         <div class="flex items-start">
-                            <input type="checkbox" id="terms-agreement" name="terms-agreement" required
-                                class="h-5 w-5 border-gray-300 rounded text-blue-600 focus:ring-blue-500 mt-0.5">
-                            <label for="terms-agreement" class="ml-3 text-sm text-gray-600">
+                            <label class="toggle-switch mt-0.5">
+                                <input type="checkbox" id="terms-agreement" name="terms-agreement" required>
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <label for="terms-agreement" class="ml-3 text-sm text-gray-700">
                                 I understand this is an inquiry form and does not constitute a booking confirmation. A representative will contact me to discuss availability and details.
                             </label>
                         </div>
@@ -497,43 +627,20 @@
         </div>
     </main>
 
-    <!-- Footer Section -->
-    <footer class="bg-gray-800 text-white py-8 mt-12">
-        <div class="container mx-auto px-4 md:px-6 lg:px-8">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div>
-                    <h3 class="text-lg font-semibold mb-4">Electric Events Atlanta</h3>
-                    <p class="text-gray-300 text-sm">Creating unforgettable experiences for every occasion</p>
+    <!-- Summary Bar -->
+    <div id="summary-bar" class="fixed bottom-0 left-0 right-0 bg-white bg-opacity-95 border-t border-gray-200 shadow-lg py-3 px-4">
+        <div class="container mx-auto max-w-4xl">
+            <div>
+                <h3 class="text-sm font-medium text-gray-500 mb-1">Event Summary</h3>
+                <div id="summary-content" class="text-gray-800">
+                    <p id="summary-organizer" class="hidden"><span class="font-medium"></span>'s event</p>
+                    <p id="summary-event-details" class="hidden"><span class="event-type"></span><span class="event-name"></span></p>
+                    <p id="summary-datetime" class="hidden">On <span class="event-date"></span> at <span class="start-time"></span> for <span class="event-duration"></span></p>
+                    <p id="summary-guests-venue" class="hidden"><span class="guest-count"></span> at <span class="venue-name"></span></p>
                 </div>
-                <div>
-                    <h3 class="text-lg font-semibold mb-4">Contact Us</h3>
-                    <p class="text-gray-300 text-sm">Atlanta, GA</p>
-                    <p class="text-gray-300 text-sm">info@electriceventsatl.com</p>
-                    <p class="text-gray-300 text-sm">(404) 555-1234</p>
-                </div>
-                <div>
-                    <h3 class="text-lg font-semibold mb-4">Follow Us</h3>
-                    <div class="flex space-x-4">
-                        <a href="#" class="text-gray-300 hover:text-white">
-                            <span class="sr-only">Instagram</span>
-                            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-                                <path fill-rule="evenodd" d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465.668.25 1.272.644 1.772 1.153.509.5.902 1.104 1.153 1.772.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772c-.5.509-1.104.902-1.772 1.153-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427.25-.668.644-1.272 1.153-1.772.5-.509 1.104-.902 1.772-1.153.636-.247 1.363-.416 2.427-.465C9.516 2.013 9.871 2 12.315 2z" clip-rule="evenodd"></path>
-                            </svg>
-                        </a>
-                        <a href="#" class="text-gray-300 hover:text-white">
-                            <span class="sr-only">Facebook</span>
-                            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-                                <path fill-rule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clip-rule="evenodd"></path>
-                            </svg>
-                        </a>
-                    </div>
-                </div>
-            </div>
-            <div class="border-t border-gray-700 mt-8 pt-6 text-center text-sm text-gray-400">
-                <p>&copy; 2023 Electric Events Atlanta. All rights reserved.</p>
             </div>
         </div>
-    </footer>
+    </div>
 
     <!-- JavaScript for form functionality -->
     <script>
@@ -857,9 +964,24 @@
                         card.classList.remove('border-2', 'border-blue-500');
                     });
                     
+                    // Reset all select buttons
+                    document.querySelectorAll('.select-venue-btn').forEach(btn => {
+                        btn.innerHTML = 'Select Venue';
+                        btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                        btn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                    });
+                    
                     const selectedCard = document.querySelector(`[data-venue-key="${venueKey}"] .venue-card`);
                     if (selectedCard) {
                         selectedCard.classList.add('border-2', 'border-blue-500');
+                        
+                        // Update the button text for the selected venue
+                        const button = selectedCard.querySelector('.select-venue-btn');
+                        if (button) {
+                            button.innerHTML = 'Selected Venue';
+                            button.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                            button.classList.add('bg-green-600', 'hover:bg-green-700');
+                        }
                     }
                     
                     // Show selected venue section
@@ -984,42 +1106,6 @@
                 };
             }
             
-            // Budget slider functionality
-            const budgetSlider = document.getElementById('budget-slider');
-            const budgetDisplay = document.getElementById('budget-display');
-            
-            if (budgetSlider && budgetDisplay) {
-                // Initialize with the default value
-                updateBudgetDisplay(budgetSlider.value);
-                
-                // Update when the slider is moved
-                budgetSlider.addEventListener('input', function() {
-                    updateBudgetDisplay(this.value);
-                });
-                
-                // Function to format and display the budget
-                function updateBudgetDisplay(value) {
-                    // Convert to number and format with commas
-                    const numValue = parseInt(value);
-                    
-                    // Format with commas and handle the maximum case
-                    if (numValue >= 10000) {
-                        budgetDisplay.textContent = '$10,000+';
-                    } else {
-                        budgetDisplay.textContent = '$' + numValue.toLocaleString();
-                    }
-                    
-                    // Change color based on the value range
-                    if (numValue < 2000) {
-                        budgetDisplay.className = 'text-lg font-semibold text-green-600';
-                    } else if (numValue < 5000) {
-                        budgetDisplay.className = 'text-lg font-semibold text-blue-600';
-                    } else {
-                        budgetDisplay.className = 'text-lg font-semibold text-purple-600';
-                    }
-                }
-            }
-
             // Guest count slider functionality
             const guestCountSlider = document.getElementById('guest-count-slider');
             const guestCountDisplay = document.getElementById('guest-count-display');
@@ -1033,12 +1119,17 @@
                 guestCountSlider.addEventListener('input', function() {
                     updateGuestCountDisplay(this.value);
                     checkVenueCapacities(this.value);
+                    updateTotalCost();
                 });
                 
                 // Function to format and display the guest count
                 function updateGuestCountDisplay(value) {
                     const numValue = parseInt(value);
-                    guestCountDisplay.textContent = numValue.toLocaleString() + ' Guests';
+                    const maxValue = parseInt(guestCountSlider.max);
+                    const isMaxed = numValue >= maxValue;
+                    
+                    // Add "+" when at max value
+                    guestCountDisplay.textContent = numValue.toLocaleString() + (isMaxed ? '+ Guests' : ' Guests');
                     
                     // Change color based on the value range
                     if (numValue < 100) {
@@ -1053,6 +1144,8 @@
                 // Function to check venue capacities against current guest count
                 function checkVenueCapacities(guestCount) {
                     const guestValue = parseInt(guestCount);
+                    const maxValue = parseInt(guestCountSlider.max);
+                    const isMaxed = guestValue >= maxValue;
                     
                     // Check each venue card
                     document.querySelectorAll('[data-venue-key]').forEach(venueCard => {
@@ -1079,7 +1172,7 @@
                             if (!venueCard.querySelector('.capacity-warning')) {
                                 const warningEl = document.createElement('div');
                                 warningEl.className = 'capacity-warning text-xs bg-red-100 text-red-800 px-2 py-1 mt-2 rounded';
-                                warningEl.innerHTML = 'Cannot accommodate ' + guestValue + ' guests';
+                                warningEl.innerHTML = 'Cannot accommodate ' + guestValue + (isMaxed ? '+ guests' : ' guests');
                                 
                                 // Find a good place to insert the warning
                                 const insertPoint = venueCard.querySelector('.mt-4') || venueCard.querySelector('.mt-3');
@@ -1135,6 +1228,71 @@
                 }
             }
 
+            // Budget slider functionality
+            const budgetSlider = document.getElementById('budget-slider');
+            const budgetDisplay = document.getElementById('budget-display');
+            
+            if (budgetSlider && budgetDisplay) {
+                // Initialize with the default value
+                updateBudgetDisplay(budgetSlider.value);
+                
+                // Update when the slider is moved
+                budgetSlider.addEventListener('input', function() {
+                    updateBudgetDisplay(this.value);
+                    updateTotalCost();
+                });
+                
+                // Function to format and display the budget
+                function updateBudgetDisplay(value) {
+                    // Convert to number and format with commas
+                    const numValue = parseInt(value);
+                    
+                    // Format with commas and handle the maximum case
+                    if (numValue >= 500) {
+                        budgetDisplay.textContent = '$500+ per person';
+                    } else {
+                        budgetDisplay.textContent = '$' + numValue + ' per person';
+                    }
+                    
+                    // Change color based on the value range
+                    if (numValue < 50) {
+                        budgetDisplay.className = 'text-lg font-semibold text-green-600';
+                    } else if (numValue < 150) {
+                        budgetDisplay.className = 'text-lg font-semibold text-blue-600';
+                    } else {
+                        budgetDisplay.className = 'text-lg font-semibold text-purple-600';
+                    }
+                }
+            }
+
+            // Total cost calculation
+            const totalCostDisplay = document.getElementById('total-cost-display');
+            
+            function updateTotalCost() {
+                if (!guestCountSlider || !budgetSlider || !totalCostDisplay) return;
+                
+                const guestCount = parseInt(guestCountSlider.value);
+                const perPersonBudget = parseInt(budgetSlider.value);
+                
+                // Calculate total cost
+                const totalCost = guestCount * perPersonBudget;
+                
+                // Format with commas for better readability
+                totalCostDisplay.textContent = '$' + totalCost.toLocaleString();
+                
+                // Update color based on total cost amount
+                if (totalCost < 5000) {
+                    totalCostDisplay.className = 'text-xl font-bold text-green-700';
+                } else if (totalCost < 25000) {
+                    totalCostDisplay.className = 'text-xl font-bold text-blue-700';
+                } else {
+                    totalCostDisplay.className = 'text-xl font-bold text-purple-700';
+                }
+            }
+            
+            // Initialize total cost display
+            updateTotalCost();
+
             // Form submission
             document.getElementById('booking-form').addEventListener('submit', function(e) {
                 e.preventDefault();
@@ -1168,8 +1326,8 @@
                 
                 // Reset sliders to default values
                 if (budgetSlider) {
-                    budgetSlider.value = 2500;
-                    updateBudgetDisplay(2500);
+                    budgetSlider.value = 50;
+                    updateBudgetDisplay(50);
                 }
                 
                 if (guestCountSlider) {
@@ -1196,6 +1354,263 @@
                     externalVenueContainer.classList.add('hidden');
                 }
             });
+
+            // Initialize photo gallery navigation for all venue cards
+            initPhotoGalleries();
+            
+            // Service checkboxes "Select All" functionality
+            const selectAllServices = document.getElementById('select-all-services');
+            const serviceCheckboxes = document.querySelectorAll('.service-checkbox');
+            
+            if (selectAllServices && serviceCheckboxes.length > 0) {
+                // When "Select All" is clicked
+                selectAllServices.addEventListener('change', function() {
+                    const isChecked = this.checked;
+                    serviceCheckboxes.forEach(checkbox => {
+                        checkbox.checked = isChecked;
+                    });
+                });
+                
+                // Update "Select All" checkbox when individual checkboxes change
+                serviceCheckboxes.forEach(checkbox => {
+                    checkbox.addEventListener('change', updateSelectAllCheckbox);
+                });
+                
+                // Function to check if all service checkboxes are checked
+                function updateSelectAllCheckbox() {
+                    const allChecked = Array.from(serviceCheckboxes).every(checkbox => checkbox.checked);
+                    const anyChecked = Array.from(serviceCheckboxes).some(checkbox => checkbox.checked);
+                    
+                    // Set the "Select All" checkbox state
+                    selectAllServices.checked = allChecked;
+                    
+                    // Optional: Set indeterminate state if some but not all are checked
+                    selectAllServices.indeterminate = anyChecked && !allChecked;
+                }
+            }
+
+            // Initialize event length buttons
+            const eventLengthButtons = document.querySelectorAll('.event-length-btn');
+            const eventLengthSelect = document.getElementById('event-length');
+            const eventLengthValue = document.getElementById('event-length-value');
+            
+            if (eventLengthButtons.length > 0 && eventLengthSelect && eventLengthValue) {
+                // Handle button clicks
+                eventLengthButtons.forEach(button => {
+                    button.addEventListener('click', function() {
+                        // Remove active class from all buttons
+                        eventLengthButtons.forEach(btn => {
+                            btn.classList.remove('bg-blue-500', 'text-white');
+                            btn.classList.add('bg-gray-100', 'text-gray-700');
+                        });
+                        
+                        // Add active class to clicked button
+                        this.classList.remove('bg-gray-100', 'text-gray-700');
+                        this.classList.add('bg-blue-500', 'text-white');
+                        
+                        // Update select to match button
+                        const hours = this.dataset.hours;
+                        eventLengthSelect.value = hours;
+                        eventLengthValue.value = hours;
+                    });
+                });
+                
+                // Handle select changes
+                eventLengthSelect.addEventListener('change', function() {
+                    const selectedHours = this.value;
+                    eventLengthValue.value = selectedHours;
+                    
+                    // Update buttons to match select
+                    eventLengthButtons.forEach(btn => {
+                        if (btn.dataset.hours === selectedHours) {
+                            btn.classList.remove('bg-gray-100', 'text-gray-700');
+                            btn.classList.add('bg-blue-500', 'text-white');
+                        } else {
+                            btn.classList.remove('bg-blue-500', 'text-white');
+                            btn.classList.add('bg-gray-100', 'text-gray-700');
+                        }
+                    });
+                });
+            }
+
+            // Summary bar functionality
+            const summaryBar = document.getElementById('summary-bar');
+            const summaryOrganizerEl = document.getElementById('summary-organizer');
+            const summaryEventDetailsEl = document.getElementById('summary-event-details');
+            const summaryDatetimeEl = document.getElementById('summary-datetime');
+            const summaryGuestsVenueEl = document.getElementById('summary-guests-venue');
+            
+            // Update summary when inputs change
+            function updateSummary() {
+                // Get current step
+                const currentStep = document.getElementById('step-1').classList.contains('hidden') ?
+                    (document.getElementById('step-2').classList.contains('hidden') ? 3 : 2) : 1;
+                
+                // Organizer information
+                const firstName = document.getElementById('first-name')?.value || '';
+                const lastName = document.getElementById('last-name')?.value || '';
+                const company = document.getElementById('company')?.value || '';
+                
+                if (firstName || company) {
+                    summaryOrganizerEl.classList.remove('hidden');
+                    const organizerName = company || (firstName + (lastName ? ' ' + lastName : ''));
+                    summaryOrganizerEl.querySelector('span').textContent = organizerName;
+                } else {
+                    summaryOrganizerEl.classList.add('hidden');
+                }
+                
+                // Event details
+                const eventType = document.getElementById('event-type')?.value || '';
+                const eventName = document.getElementById('event-name')?.value || '';
+                const eventTypeText = eventType ? document.querySelector('#event-type option[value="' + eventType + '"]')?.textContent : '';
+                
+                if (eventType || eventName) {
+                    summaryEventDetailsEl.classList.remove('hidden');
+                    summaryEventDetailsEl.querySelector('.event-type').textContent = eventTypeText ? eventTypeText + ' ' : '';
+                    
+                    const nameDisplay = eventName ? ('"' + eventName + '"') : '';
+                    summaryEventDetailsEl.querySelector('.event-name').textContent = nameDisplay;
+                } else {
+                    summaryEventDetailsEl.classList.add('hidden');
+                }
+                
+                // Date and time
+                const eventDate = document.getElementById('event-date')?.value || '';
+                const startTime = document.getElementById('start-time')?.value || '';
+                const eventLength = document.getElementById('event-length-value')?.value || '';
+                
+                if (eventDate || startTime || eventLength) {
+                    summaryDatetimeEl.classList.remove('hidden');
+                    
+                    const dateDisplay = eventDate ? new Date(eventDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : 'TBD';
+                    summaryDatetimeEl.querySelector('.event-date').textContent = dateDisplay;
+                    
+                    summaryDatetimeEl.querySelector('.start-time').textContent = startTime || 'TBD';
+                    
+                    const lengthDisplay = eventLength ? (eventLength + (eventLength === '1' ? ' hour' : ' hours')) : 'TBD';
+                    summaryDatetimeEl.querySelector('.event-duration').textContent = lengthDisplay;
+                } else {
+                    summaryDatetimeEl.classList.add('hidden');
+                }
+                
+                // Only show guests and venue on step 2+
+                if (currentStep >= 2) {
+                    // Guests and venue
+                    const guestCount = document.getElementById('guest-count-slider')?.value || '';
+                    const maxGuests = document.getElementById('guest-count-slider')?.max || '';
+                    const isMaxGuests = guestCount >= maxGuests;
+                    
+                    // Check for selected venue - using multiple methods to ensure we get it
+                    let venueName = '';
+                    
+                    // Method 1: Check for hidden input (most reliable)
+                    const venueInput = document.querySelector('input[name="selected-venue"]');
+                    let venueKey = venueInput ? venueInput.value : null;
+                    
+                    // Method 2: Check if venue details are visible (indicating selection)
+                    if (!venueKey && !document.getElementById('selected-venue-section').classList.contains('hidden')) {
+                        const venueDetailsText = document.getElementById('selected-venue-details').textContent;
+                        
+                        // Try to find which venue matches this text
+                        Object.keys(venueData).forEach(key => {
+                            if (venueDetailsText.includes(venueData[key].name)) {
+                                venueKey = key;
+                            }
+                        });
+                    }
+                    
+                    // Method 3: Use global selected venue variable as fallback
+                    if (!venueKey && typeof selectedVenueKey === 'string') {
+                        venueKey = selectedVenueKey;
+                    }
+                    
+                    // Get venue name if we found a key
+                    if (venueKey && venueData[venueKey]) {
+                        venueName = venueData[venueKey].name;
+                    }
+                    
+                    // Check if there's a selected venue visually (backup method)
+                    if (!venueName) {
+                        const selectedVenueTitle = document.querySelector('#selected-venue-details h4');
+                        if (selectedVenueTitle) {
+                            venueName = selectedVenueTitle.textContent.trim();
+                        }
+                    }
+                    
+                    if (guestCount) {
+                        summaryGuestsVenueEl.classList.remove('hidden');
+                        
+                        const guestDisplay = guestCount + (isMaxGuests ? '+ guests' : ' guests');
+                        summaryGuestsVenueEl.querySelector('.guest-count').textContent = guestDisplay;
+                        
+                        // If we found a venue name, display it, otherwise TBD
+                        if (venueName) {
+                            summaryGuestsVenueEl.querySelector('.venue-name').textContent = venueName;
+                        } else {
+                            // Check if the selected venue section is visible
+                            const selectedVenueVisible = !document.getElementById('selected-venue-section').classList.contains('hidden');
+                            
+                            if (selectedVenueVisible) {
+                                // Try to extract venue name from the displayed content
+                                const venueHeading = document.querySelector('#selected-venue-details h4');
+                                if (venueHeading) {
+                                    summaryGuestsVenueEl.querySelector('.venue-name').textContent = venueHeading.textContent.trim();
+                                } else {
+                                    summaryGuestsVenueEl.querySelector('.venue-name').textContent = 'venue TBD';
+                                }
+                            } else {
+                                summaryGuestsVenueEl.querySelector('.venue-name').textContent = 'venue TBD';
+                            }
+                        }
+                    } else {
+                        summaryGuestsVenueEl.classList.add('hidden');
+                    }
+                } else {
+                    // Hide guest count on step 1
+                    summaryGuestsVenueEl.classList.add('hidden');
+                }
+                
+                console.log('Summary updated - Selected venue:', venueName || 'None', 'Venue Key:', venueKey || 'None');
+            }
+            
+            // Add listeners to update the summary when form inputs change
+            document.querySelectorAll('input, select, textarea').forEach(element => {
+                element.addEventListener('change', updateSummary);
+                element.addEventListener('input', updateSummary);
+            });
+            
+            // For the guest count slider
+            if (document.getElementById('guest-count-slider')) {
+                document.getElementById('guest-count-slider').addEventListener('input', updateSummary);
+            }
+            
+            // For event length buttons
+            document.querySelectorAll('.event-length-btn').forEach(btn => {
+                btn.addEventListener('click', updateSummary);
+            });
+            
+            // Also update summary when venue is selected
+            const originalSelectVenue = selectVenue;
+            if (typeof selectVenue === 'function') {
+                selectVenue = function(venueKey) {
+                    originalSelectVenue(venueKey);
+                    
+                    // Directly update the venue name in the summary bar
+                    if (venueKey && venueData[venueKey] && summaryGuestsVenueEl) {
+                        const venueName = venueData[venueKey].name;
+                        const venueNameEl = summaryGuestsVenueEl.querySelector('.venue-name');
+                        if (venueNameEl) {
+                            venueNameEl.textContent = venueName;
+                        }
+                    }
+                    
+                    // Force full summary update with a delay
+                    setTimeout(updateSummary, 100);
+                };
+            }
+            
+            // Initial summary update
+            updateSummary();
         });
 
         // Function to initialize photo galleries for all venue cards
