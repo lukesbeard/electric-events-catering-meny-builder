@@ -173,20 +173,26 @@
             // Update overall status
             const allPassed = data.results.form.status === 'Pass' && data.results.api.status === 'Pass';
             updateStatusElement(overallStatus, allPassed ? 'Pass' : 'Fail');
-            overallStatus.querySelector('span:last-child').textContent = allPassed ? 'All Systems Operational' : 'Issues Detected';
         }
 
         // Update a status element based on status value
         function updateStatusElement(element, status) {
             const indicator = element.querySelector('.status-indicator');
+            const textSpan = element.querySelector('span:last-child');
+            
+            // Remove all status classes
             indicator.classList.remove('status-unknown', 'status-pass', 'status-fail', 'pulse');
             
+            // Update indicator
             if (status === 'Pass') {
                 indicator.classList.add('status-pass');
+                textSpan.textContent = 'Operational';
             } else if (status === 'Fail') {
                 indicator.classList.add('status-fail');
+                textSpan.textContent = 'Issue Detected';
             } else {
                 indicator.classList.add('status-unknown');
+                textSpan.textContent = 'Unknown';
             }
         }
 
