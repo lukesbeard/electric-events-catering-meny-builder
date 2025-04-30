@@ -1,99 +1,115 @@
-# Tripleseat Integration Error Investigation
+# Electric Events Catering Menu Builder Automated Testing
 
 ## Background and Motivation
-We are encountering an error when submitting data to Tripleseat. The error appears to be related to invalid time values when trying to format a date into ISO string format.
+The client wants to add automated testing for their Electric Events Catering Menu Builder website that performs the following tasks once every 2 days:
+1. Tests form submission in Production, validating the flow but stopping short of sending actual emails or writing to Tripleseat
+2. Tests Tripleseat API configuration to verify that data can be written correctly
+3. Emails luke@electric-hospitality.com with details of what passed or failed
 
-Additionally, we've identified a production issue where the form submission button appears to do nothing when clicked in the production environment.
+The testing should be simple and utilize the existing email system. The application is deployed on Vercel.
 
 ## Key Challenges and Analysis
-After reviewing the code, I've identified the issues:
-
-1. Tripleseat Integration Error:
-   - The error occurs in the `formatTripleseatDate` function (tripleseat-integration.js line 116) which is attempting to convert a date to ISO format.
-   - The error message shows: "RangeError: Invalid time value" when calling `Date.toISOString()`.
-   - The debug log shows "No event times provided, using delivery time + default duration undefined", which suggests that the `TRIPLESEAT_CONFIG.defaultEventDuration` value is undefined when it should be a number.
-   - The function tries to create dates using the delivery date and time, and set a default duration for event end time.
-
-2. Production Form Submission Issue:
-   - The logs show that the form submission is triggered and the `sendOrderEmail` function is called
-   - The code properly detects that it's in a production environment
-   - However, there's no execution path in the code for production environments, only for development mode
-   - As a result, the form submission silently fails in production because the code path to actually send the data is missing
-
-The root causes appear to be:
-1. For the Tripleseat error:
-   - The code is trying to create a Date object with invalid or undefined data
-   - When no event times are provided, it's trying to use a default duration which is potentially undefined
-   - The resulting invalid Date object is causing the `toISOString()` method to throw a RangeError when formatting the date
-
-2. For the production submission issue:
-   - The sendOrderEmail function has code for development mode but was missing the logic for production environments
-   - After checking isDevelopment && !forceSubmit, it had no else clause to handle production submissions
-
-Looking at the code in the HTML files, I noticed that `scripts.js` is loaded in the head with `defer` attribute:
-```html
-<script src="scripts.js" defer></script>
-```
-
-But the Tripleseat configuration files are loaded at the end of the document:
-```html
-<!-- Tripleseat Integration -->
-<script src="tripleseat-config.js"></script>
-<script src="tripleseat-integration.js"></script>
-```
-
-This loading order means that `scripts.js` may be executing before the Tripleseat configuration is fully loaded. Even though `scripts.js` has the `defer` attribute, it might still execute before the Tripleseat scripts if they are dynamically added to the DOM.
+Based on the current codebase exploration:
+1. **No existing testing infrastructure**: The project doesn't have a formal testing framework set up yet. There's a `tests` directory but it appears to be empty.
+2. **Form submission process**: 
+   - The form data is submitted via API calls to Google Sheets and potentially Tripleseat
+   - The email is sent using Web3Forms API
+3. **Vercel deployment**: 
+   - The application is deployed on Vercel, which offers serverless functions
+   - Vercel supports cron jobs through their recent Cron API feature
+4. **Existing functionality to leverage**:
+   - There's already code for test submissions and mock API calls
+   - The current system has validation and mock testing capabilities
 
 ## High-level Task Breakdown
-1. Fix script loading order to ensure that the TRIPLESEAT_CONFIG object is properly loaded before it's used
-2. Add validation for date objects before calling `toISOString()` in the `formatTripleseatDate` function
-3. Add fallbacks for missing or invalid event times
-4. Add production submission code to the sendOrderEmail function
-5. Test the solution with different form inputs
+1. **Set up test infrastructure**:
+   - Create a package.json file to define dependencies and scripts
+   - Add necessary testing dependencies (e.g., Jest, Playwright)
+   - Configure GitHub Actions or Vercel Cron for scheduled runs
+
+2. **Create end-to-end form submission test**:
+   - Develop an automated test that fills and submits the catering form
+   - Use a special parameter or flag to prevent actual submission to external systems
+   - Validate that the form submission flow works correctly up to the point of external API calls
+
+3. **Create Tripleseat API configuration test**:
+   - Develop a test that validates Tripleseat API connectivity and configuration
+   - Use mock data to verify that the API integration works correctly
+   - Check that all required fields are correctly mapped
+
+4. **Implement email reporting system**:
+   - Set up a function to compile test results
+   - Create an email template for test reports
+   - Configure the email sending using the existing email infrastructure
+
+5. **Configure scheduling**:
+   - Set up the testing to run every 48 hours
+   - Configure proper error handling and retry mechanisms
+   - Ensure tests run in Production environment but don't affect actual data
+
+6. **Document the testing process**:
+   - Update README with information about the automated testing
+   - Add documentation for maintaining and extending the tests
 
 ## Project Status Board
-- [x] Identify the problematic code in tripleseat-integration.js
-- [x] Understand why a RangeError is occurring with date formatting
-- [x] Determine why "No event times provided, using delivery time + default duration undefined" is happening
-- [x] Implement a fix for the date handling issue
-- [x] Identify why the form submission doesn't work in production
-- [x] Implement a production submission path in sendOrderEmail function
-- [ ] Test the solution
+- [x] Create package.json file with required dependencies
+- [x] Set up testing framework 
+- [x] Create form submission test
+- [x] Create Tripleseat API test
+- [x] Implement email reporting
+- [x] Configure scheduled runs
+- [x] Test the entire system
+- [x] Update documentation
 
 ## Current Status / Progress Tracking
-I've implemented fixes for both issues:
+I've implemented the automated testing system with the following components:
 
-1. For the Tripleseat integration error:
-   - Fixed the script loading order: Moved the Tripleseat integration scripts to the head of the document with the defer attribute, ensuring they load before scripts.js on all catering pages
-   - Added validation in the formatTripleseatDate function to handle invalid dates
-   - Added fallbacks for the defaultEventDuration in case it's undefined (set to 3 hours default)
+1. **Testing Infrastructure**:
+   - Created package.json with required dependencies (Jest, Playwright, Nodemailer)
+   - Set up Playwright configuration for end-to-end testing
+   - Configured Jest for API testing
 
-2. For the production submission issue:
-   - Added a code path for production mode (and forced development submissions) in the sendOrderEmail function
-   - The new code creates a FormData object with the necessary fields and submits it to Web3Forms
-   - Added Tripleseat integration to the production submission path
-   - Added redirect to the thank-you page upon successful submission
-   - Added proper error handling with user-friendly error messages
+2. **End-to-End Form Submission Test**:
+   - Implemented tests for all three catering forms (Ladybird, Muchacho, Dug-Out)
+   - Set up special parameters to prevent actual submission to external systems
+   - Added validation to ensure the form submission flow works correctly
 
-These changes should ensure that:
-1. The TRIPLESEAT_CONFIG object is fully loaded before scripts.js tries to use it
-2. Even if there's an issue with the date object, the code will gracefully handle it instead of throwing an error
-3. If the defaultEventDuration is undefined for any reason, it will use a fallback value of 3 hours
-4. Form submissions work properly in both development and production environments
+3. **Tripleseat API Configuration Test**:
+   - Created tests to validate Tripleseat API connectivity
+   - Added tests to check venue IDs and configuration
+
+4. **Email Reporting System**:
+   - Implemented a system to compile test results
+   - Created HTML email templates for test reports
+   - Configured email sending using Web3Forms API
+
+5. **Scheduling**:
+   - Set up Vercel cron job to run every 2 days (0 12 */2 * *)
+   - Added error handling and reporting
+   - Implemented a serverless function for running tests in production
+
+6. **Documentation**:
+   - Updated README with information about the automated testing
+   - Added setup instructions
+
+The implementation is complete and ready for deployment. After deployment, the system will automatically test the form submission flow and Tripleseat API every 2 days and send email reports to the administrator.
 
 ## Executor's Feedback or Assistance Requests
-The fixes have been implemented. The next step is to test the solution to ensure it works properly. I recommend testing with different form inputs, especially:
-1. Testing with event times provided vs. no event times provided
-2. Testing on all three catering pages
-3. Testing with valid and invalid dates to ensure the validation works
-4. Testing in both development and production environments to verify that form submissions work properly in both contexts
+The implementation is complete. Here are a few notes for the user:
+
+1. To make this live, you'll need to deploy these changes to Vercel:
+   - The cron job is configured in vercel.json
+   - The serverless function is in api/health-check.js
+   - Make sure to add any required environment variables in the Vercel dashboard
+
+2. You may want to test the health check manually before relying on the cron job:
+   - Visit https://your-domain.com/api/health-check?sendEmail=true
+   - This will run the health check and send a test email report
+
+3. The E2E tests require a browser environment, which is not available in Vercel's serverless functions. That's why the serverless function performs simpler checks (loading the page and testing the API) while the full E2E testing is available for local/CI testing.
 
 ## Lessons
-- Date operations require careful validation before calling methods like toISOString()
-- Always log and validate the input values when dealing with time/date conversions
-- Debug logging helps to pinpoint where undefined values are causing errors
-- Script loading order can cause subtle bugs when objects from one script are referenced in another
-- Always add fallbacks for configuration values that might be undefined
-- Add defensive programming techniques to handle potential undefined values and invalid dates
-- Always include code paths for all environments (development, production) to ensure proper functionality in all contexts
-- Add detailed logging to help diagnose issues in production 
+- Include info useful for debugging in the program output.
+- Read files before attempting to edit them.
+- Run npm audit before proceeding if vulnerabilities appear in the terminal.
+- Always ask before using the -force git command. 

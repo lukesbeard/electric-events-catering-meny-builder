@@ -8,9 +8,19 @@
     {
       "src": "/api/sheet-proxy",
       "dest": "/api/sheet-proxy.js"
+    },
+    {
+      "src": "/api/health-check",
+      "dest": "/api/health-check.js"
     }
   ],
   "env": {
     "VERCEL_ENV": "production"
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/health-check",
+      "schedule": "0 12 */2 * *"
+    }
+  ]
 } 

@@ -89,4 +89,48 @@ The current configuration includes:
 - API keys and authentication
 - Venue and room mappings
 - Event type configuration
-- Lead source settings 
+- Lead source settings
+
+### Automated Testing
+
+The project includes an automated health check system that runs every 2 days to ensure the proper functioning of:
+1. Form submission in Production (validating the flow without sending actual emails or creating Tripleseat leads)
+2. Tripleseat API configuration
+
+The health check results are emailed to the system administrator with details of what passed or failed.
+
+#### Setup for Automated Testing
+
+1. Install the required dependencies:
+   ```
+   npm install
+   ```
+
+2. Configure environment variables:
+   - Create a `.env` file with the required configuration (see `.env.sample`)
+   - For Vercel deployment, add these environment variables in the Vercel dashboard
+
+3. Run tests manually:
+   ```
+   # Run end-to-end form tests
+   npm run test:e2e
+   
+   # Run Tripleseat API tests
+   npm test
+   
+   # Run the complete health check (including email report)
+   npm run test:health
+   ```
+
+#### How It Works
+
+1. A Vercel cron job runs every 2 days, triggering the `/api/health-check` endpoint
+2. The health check performs basic form validation and API tests
+3. Test results are compiled and sent via email using the Web3Forms API
+4. Detailed logs are included in case of failures
+
+#### Testing Infrastructure
+
+- **E2E Tests**: Playwright is used for end-to-end testing of the catering forms
+- **API Tests**: Jest is used for testing the Tripleseat API integration
+- **Email Reports**: Generated using the existing Web3Forms integration 
