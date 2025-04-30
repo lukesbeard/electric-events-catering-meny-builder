@@ -1453,6 +1453,75 @@ async function sendOrderEmail(event) {
                     }
                 }
             }
+        } else {
+            // PRODUCTION MODE or forced submission in development
+            console.log('PRODUCTION MODE: Sending actual submission');
+            
+            try {
+                // Create FormData object for email
+                const emailForm = new FormData();
+                emailForm.append('access_key', 'f890e702-fef2-4b76-84bf-0e5bf3262032');
+                emailForm.append('subject', `Electric Events Catering Quote - ${formData.contact.name} - Party of ${formData.partySize}`);
+                emailForm.append('name', formData.contact.name);
+                emailForm.append('email', formData.contact.email);
+                emailForm.append('from_name', "Electric Events Catering");
+                emailForm.append('replyto', "brad@electric-hospitality.com");
+                emailForm.append('message', formatEmailMessage(formData));
+                emailForm.append('ccemail', "michael@electric-hospitality.com;joe@electric-hospitality.com; brad@electric-hospitality.com; Landon@electric-hospitality.com");
+                emailForm.append('botcheck', '');
+                emailForm.append('autoresponse', 'true');
+
+                console.log('Sending email via Web3Forms in production mode');
+                const emailResponse = await fetch('https://api.web3forms.com/submit', {
+                    method: 'POST',
+                    body: emailForm
+                });
+
+                const result = await emailResponse.json();
+                console.log('Email submission result:', result);
+                
+                if (result.success) {
+                    // Attempt to send to Tripleseat after email success
+                    let tripleseatSuccess = false;
+                    
+                    if (typeof sendToTripleseat === 'function' && !currentConfig.skipTripleseat) {
+                        try {
+                            console.log('Sending to Tripleseat in production mode');
+                            const tripleseatResult = await sendToTripleseat(formData);
+                            console.log('Tripleseat production result:', tripleseatResult);
+                            
+                            if (tripleseatResult.success) {
+                                console.log('Successfully sent to Tripleseat:', tripleseatResult);
+                                tripleseatSuccess = true;
+                            } else {
+                                console.warn('Failed to send to Tripleseat:', tripleseatResult.error);
+                                if (tripleseatResult.userMessage) {
+                                    console.log('User message for Tripleseat error:', tripleseatResult.userMessage);
+                                }
+                            }
+                        } catch (tripleseatError) {
+                            console.error('Error sending to Tripleseat:', tripleseatError);
+                        }
+                    } else {
+                        console.warn('Tripleseat integration not available or disabled for this menu');
+                    }
+                    
+                    clearSavedData();
+                    
+                    // Show success message with Tripleseat status
+                    const tripleseatMsg = tripleseatSuccess ? ' Lead also created in Tripleseat.' : '';
+                    showNotification('Quote request submitted successfully!' + tripleseatMsg + ' We\'ll be in touch soon.', 'success');
+                    
+                    console.log('Form submitted successfully! Redirecting to thank-you page');
+                    window.location.href = 'thank-you.html';
+                } else {
+                    throw new Error(result.message || 'Failed to submit quote request');
+                }
+            } catch (error) {
+                console.error('Production submission error:', error);
+                showNotification('We encountered an issue submitting your quote request. Please try again or contact us directly.', 'error');
+                throw error; // Re-throw to be caught by the outer try-catch
+            }
         }
     } catch (error) {
         console.error('Failed to send form:', error);
