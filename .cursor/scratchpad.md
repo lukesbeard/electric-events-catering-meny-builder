@@ -172,8 +172,42 @@ The implementation is complete. Here are a few notes for the user:
 
 3. The E2E tests require a browser environment, which is not available in Vercel's serverless functions. That's why the serverless function performs simpler checks (loading the page and testing the API) while the full E2E testing is available for local/CI testing.
 
+## Clean URLs Implementation Update
+We encountered a compatibility issue with Vercel's configuration. The error message was:
+"If `rewrites`, `redirects`, `headers`, `cleanUrls` or `trailingSlash` are used, then `routes` cannot be present."
+
+This is because Vercel has two different configuration syntaxes:
+1. Older `routes` array
+2. Newer feature-specific configurations (`rewrites`, `redirects`, `cleanUrls`, etc.)
+
+The solution was to convert the existing `routes` configuration to the equivalent `rewrites`:
+
+```json
+// Old configuration with routes
+{
+  "routes": [
+    {
+      "src": "/api/tripleseat/(.*)",
+      "dest": "/api/tripleseat/$1"
+    },
+    // other routes...
+  ]
+}
+
+// New configuration with rewrites
+{
+  "rewrites": [
+    { "source": "/api/tripleseat/(.*)", "destination": "/api/tripleseat/$1" },
+    // other rewrites...
+  ]
+}
+```
+
+The updated vercel.json now uses the newer configuration format and should deploy without issues.
+
 ## Lessons
 - Include info useful for debugging in the program output.
 - Read files before attempting to edit them.
 - Run npm audit before proceeding if vulnerabilities appear in the terminal.
-- Always ask before using the -force git command. 
+- Always ask before using the -force git command.
+- In Vercel, newer configuration options like `cleanUrls` cannot be used alongside the older `routes` syntax. Use `rewrites`, `redirects`, and other specific options instead. 

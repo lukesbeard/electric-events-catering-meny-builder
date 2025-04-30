@@ -1,19 +1,10 @@
 {
   "version": 2,
   "cleanUrls": true,
-  "routes": [
-    {
-      "src": "/api/tripleseat/(.*)",
-      "dest": "/api/tripleseat/$1"
-    },
-    {
-      "src": "/api/sheet-proxy",
-      "dest": "/api/sheet-proxy.js"
-    },
-    {
-      "src": "/api/health-check",
-      "dest": "/api/health-check.js"
-    }
+  "rewrites": [
+    { "source": "/api/tripleseat/(.*)", "destination": "/api/tripleseat/$1" },
+    { "source": "/api/sheet-proxy", "destination": "/api/sheet-proxy.js" },
+    { "source": "/api/health-check", "destination": "/api/health-check.js" }
   ],
   "env": {
     "VERCEL_ENV": "production"
