@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electric Events ⚡︎ System Status</title>
+    <!-- Add Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="EE-logo-mark.png">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: 'rgb(255, 199, 0)',
+                        background: '#000000',
+                    },
+                    fontFamily: {
+                        'heading': ['"Bebas Neue"', 'cursive'],
+                        'sans': ['"DM Sans"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .status-indicator {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .status-pass {
+            background-color: #10B981;
+        }
+        .status-fail {
+            background-color: #EF4444;
+        }
+        .status-unknown {
+            background-color: #9CA3AF;
+        }
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body class="bg-background text-white min-h-screen font-sans">
+    <!-- Navigation -->
+    <nav>
+        <div class="max-w-6xl mx-auto px-4 sm:px-6">
+            <div class="flex items-center justify-center py-8 h-24">
+                <div class="flex-shrink-0">
+                    <a href="index.html">
+                        <img src="EE-wordmark.png" alt="Electric Events Logo" class="h-4">
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-12">
+        <!-- Header -->
+        <div class="text-center mb-16 mx-auto max-w-2xl">
+            <h1 class="text-3xl md:text-6xl font-heading text-primary mb-4">System Status</h1>
+            <p class="text-md text-gray-300">Check the current status of Electric Events Catering systems and services.</p>
+        </div>
+
+        <div class="max-w-4xl mx-auto">
+            <!-- Status Overview Card -->
+            <div class="bg-gray-900 rounded-lg shadow-xl p-6 mb-8 border border-gray-800">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-heading text-primary">Current System Status</h3>
+                    <div id="overall-status" class="flex items-center">
+                        <span class="status-indicator status-unknown"></span>
+                        <span class="text-gray-300">Loading...</span>
+                    </div>
+                </div>
+                <div id="last-checked" class="text-sm text-gray-400 mb-4">Last checked: Loading...</div>
+                
+                <!-- Status Cards Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                    <div class="bg-gray-800 rounded-lg p-5 border border-gray-700">
+                        <h4 class="font-heading text-lg text-primary mb-3">Form Submission</h4>
+                        <div id="form-status" class="flex items-center">
+                            <span class="status-indicator status-unknown"></span>
+                            <span class="text-gray-200">Loading...</span>
+                        </div>
+                        <div id="form-details" class="mt-2 text-sm text-gray-400"></div>
+                    </div>
+                    
+                    <div class="bg-gray-800 rounded-lg p-5 border border-gray-700">
+                        <h4 class="font-heading text-lg text-primary mb-3">Tripleseat API</h4>
+                        <div id="api-status" class="flex items-center">
+                            <span class="status-indicator status-unknown"></span>
+                            <span class="text-gray-200">Loading...</span>
+                        </div>
+                        <div id="api-details" class="mt-2 text-sm text-gray-400"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center">
+                <button id="refresh-btn" class="bg-primary hover:bg-yellow-400 text-black font-bold px-6 py-3 rounded transition">
+                    Refresh Status
+                </button>
+                <div class="mt-4 text-sm text-gray-400">
+                    Status automatically refreshes every 5 minutes
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-20 text-center">
+        <div class="flex flex-col items-center max-w-4xl mx-auto px-4">
+            <img src="EE-logo-mark.png" 
+                 alt="Electric Events Logo" 
+                 class="w-[200px] mb-8">
+            <p class="text-white">
+                Talk to a human at 
+                <a href="mailto:landon@electric-hospitality.com" 
+                   class="text-primary hover:underline">landon@electric-hospitality.com</a>
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // Elements
+        const overallStatus = document.getElementById('overall-status');
+        const lastChecked = document.getElementById('last-checked');
+        const formStatus = document.getElementById('form-status');
+        const formDetails = document.getElementById('form-details');
+        const apiStatus = document.getElementById('api-status');
+        const apiDetails = document.getElementById('api-details');
+        const refreshBtn = document.getElementById('refresh-btn');
+
+        // Format date for display
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleString();
+        }
+
+        // Update UI with health check results
+        function updateStatusUI(data) {
+            // Update last checked time
+            lastChecked.textContent = `Last checked: ${formatDate(data.results.timestamp)}`;
+
+            // Update form status
+            updateStatusElement(formStatus, data.results.form.status);
+            formDetails.textContent = data.results.form.details;
+
+            // Update API status
+            updateStatusElement(apiStatus, data.results.api.status);
+            apiDetails.textContent = data.results.api.details;
+
+            // Update overall status
+            const allPassed = data.results.form.status === 'Pass' && data.results.api.status === 'Pass';
+            updateStatusElement(overallStatus, allPassed ? 'Pass' : 'Fail');
+            overallStatus.querySelector('span:last-child').textContent = allPassed ? 'All Systems Operational' : 'Issues Detected';
+        }
+
+        // Update a status element based on status value
+        function updateStatusElement(element, status) {
+            const indicator = element.querySelector('.status-indicator');
+            indicator.classList.remove('status-unknown', 'status-pass', 'status-fail', 'pulse');
+            
+            if (status === 'Pass') {
+                indicator.classList.add('status-pass');
+            } else if (status === 'Fail') {
+                indicator.classList.add('status-fail');
+            } else {
+                indicator.classList.add('status-unknown');
+            }
+        }
+
+        // Show loading state
+        function showLoading() {
+            overallStatus.querySelector('.status-indicator').classList.add('pulse');
+            formStatus.querySelector('.status-indicator').classList.add('pulse');
+            apiStatus.querySelector('.status-indicator').classList.add('pulse');
+            
+            refreshBtn.disabled = true;
+            refreshBtn.classList.add('opacity-50');
+        }
+
+        // Hide loading state
+        function hideLoading() {
+            overallStatus.querySelector('.status-indicator').classList.remove('pulse');
+            formStatus.querySelector('.status-indicator').classList.remove('pulse');
+            apiStatus.querySelector('.status-indicator').classList.remove('pulse');
+            
+            refreshBtn.disabled = false;
+            refreshBtn.classList.remove('opacity-50');
+        }
+
+        // Fetch health check data
+        async function fetchHealthCheckData() {
+            showLoading();
+            
+            try {
+                const response = await fetch('/api/health-check');
+                
+                if (!response.ok) {
+                    throw new Error('Health check API request failed');
+                }
+                
+                const data = await response.json();
+                updateStatusUI(data);
+            } catch (error) {
+                console.error('Error fetching health check data:', error);
+                
+                // Update UI to show error state
+                updateStatusElement(overallStatus, 'Fail');
+                overallStatus.querySelector('span:last-child').textContent = 'Status Check Failed';
+                
+                updateStatusElement(formStatus, 'Fail');
+                formDetails.textContent = 'Unable to check status';
+                
+                updateStatusElement(apiStatus, 'Fail');
+                apiDetails.textContent = 'Unable to check status';
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', fetchHealthCheckData);
+        
+        // Set up refresh button
+        refreshBtn.addEventListener('click', fetchHealthCheckData);
+        
+        // Auto-refresh every 5 minutes
+        setInterval(fetchHealthCheckData, 5 * 60 * 1000);
+    </script>
+</body>
+</html> 
