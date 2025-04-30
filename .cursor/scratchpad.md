@@ -8,6 +8,10 @@ The client wants to add automated testing for their Electric Events Catering Men
 
 The testing should be simple and utilize the existing email system. The application is deployed on Vercel.
 
+## NEW REQUEST: Clean URLs Without HTML Extensions
+
+The client wants to remove the .html extensions from page URLs to create cleaner URLs, but without creating subdirectories for each page. The goal is to maintain a simple folder structure while having clean URLs like `/ladybird-catering` instead of `/ladybird-catering.html`.
+
 ## Key Challenges and Analysis
 Based on the current codebase exploration:
 1. **No existing testing infrastructure**: The project doesn't have a formal testing framework set up yet. There's a `tests` directory but it appears to be empty.
@@ -20,6 +24,66 @@ Based on the current codebase exploration:
 4. **Existing functionality to leverage**:
    - There's already code for test submissions and mock API calls
    - The current system has validation and mock testing capabilities
+
+## Key Challenges and Analysis for Clean URLs
+1. **Static Site with HTML Files**: The current site appears to be a static site with direct HTML files.
+2. **Vercel Platform**: The site is deployed on Vercel, which offers URL rewriting capabilities through the `rewrites` and `cleanUrls` configuration options.
+3. **Simple Structure Requirement**: The client wants to maintain a simple folder structure.
+4. **Internal Links**: All internal links in the HTML files likely reference the .html extensions and would need to be updated.
+
+## Implementation Strategy for Clean URLs
+There are two simple approaches to implement clean URLs on Vercel without changing the folder structure:
+
+### Option 1: Use Vercel's Built-in `cleanUrls` Feature (RECOMMENDED)
+Vercel offers a built-in configuration option called `cleanUrls` that automatically enables clean URLs. This is the simplest approach:
+
+1. Update vercel.json to include:
+```json
+{
+  "cleanUrls": true
+}
+```
+
+This single setting will:
+- Make `/ladybird-catering.html` accessible as `/ladybird-catering`
+- Automatically redirect requests from `/ladybird-catering.html` to `/ladybird-catering`
+- No need to create subdirectories
+
+### Option 2: Custom Rewrites/Redirects
+If more control is needed, we can manually implement rewrites:
+
+1. Update vercel.json to include rewrites for each HTML file:
+```json
+{
+  "rewrites": [
+    { "source": "/ladybird-catering", "destination": "/ladybird-catering.html" },
+    { "source": "/muchacho-catering", "destination": "/muchacho-catering.html" },
+    { "source": "/the-dug-out-catering", "destination": "/the-dug-out-catering.html" },
+    // Add rewrites for all HTML files...
+  ]
+}
+```
+
+## High-level Task Breakdown for Clean URLs
+1. **Update Vercel Configuration**:
+   - Modify vercel.json to add the `cleanUrls: true` option
+   - This will automatically handle all clean URL mapping without manual rewrites
+
+2. **Update Internal Links** (optional but recommended):
+   - Identify all internal links across HTML files
+   - Update links to remove .html extensions for consistency
+   - This step isn't strictly necessary since Vercel will handle redirects, but it's cleaner
+
+3. **Test All Navigation Paths**:
+   - Verify that all pages are accessible without .html extensions
+   - Test that form submissions work correctly
+   - Verify that internal navigation functions properly
+
+## Project Status Board for Clean URLs
+- [ ] Update vercel.json with `cleanUrls: true` configuration
+- [ ] Optionally: Update internal links in HTML files to remove .html extensions
+- [ ] Deploy and test clean URLs in production
+- [ ] Verify all navigation, forms, and redirects work correctly
 
 ## High-level Task Breakdown
 1. **Set up test infrastructure**:
