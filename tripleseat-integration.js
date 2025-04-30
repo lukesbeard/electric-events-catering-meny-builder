@@ -103,16 +103,26 @@ function convertFormDataForTripleseat(formData) {
         } else {
             // Fallback to delivery time + default duration if event times are invalid
             logTripleSeatDebug('Invalid event times, falling back to delivery time + default duration');
-            eventEndDate.setHours(eventEndDate.getHours() + TRIPLESEAT_CONFIG.defaultEventDuration);
+            const defaultDuration = TRIPLESEAT_CONFIG.defaultEventDuration || 3; // Fallback to 3 hours if undefined
+            eventEndDate.setHours(eventEndDate.getHours() + defaultDuration);
         }
     } else {
         // Use delivery time + default duration if no event times provided or they're empty
         logTripleSeatDebug('No event times provided, using delivery time + default duration');
-        eventEndDate.setHours(eventEndDate.getHours() + TRIPLESEAT_CONFIG.defaultEventDuration);
+        const defaultDuration = TRIPLESEAT_CONFIG.defaultEventDuration || 3; // Fallback to 3 hours if undefined
+        eventEndDate.setHours(eventEndDate.getHours() + defaultDuration);
     }
     
     // Format dates for Tripleseat
     const formatTripleseatDate = (date) => {
+        // Check if date is valid before attempting to format it
+        if (!(date instanceof Date) || isNaN(date.getTime())) {
+            console.error('Invalid date passed to formatTripleseatDate:', date);
+            // Return a default future date or the current time
+            const defaultDate = new Date();
+            defaultDate.setHours(defaultDate.getHours() + 24); // Default to 24 hours from now
+            return defaultDate.toISOString().split('.')[0] + 'Z';
+        }
         return date.toISOString().split('.')[0] + 'Z';  // Format as ISO string with Z
     };
     
