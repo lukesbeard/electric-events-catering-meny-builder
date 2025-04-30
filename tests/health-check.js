@@ -150,8 +150,8 @@ async function runAPITests() {
 async function sendEmailReport() {
   console.log('Sending email report...');
 
-  // Generate email content
-  const emailHtml = generateEmailHTML();
+  // Generate plain text email content
+  const emailText = generateEmailText();
   
   try {
     // Check if we have SMTP settings
@@ -171,7 +171,7 @@ async function sendEmailReport() {
         from: EMAIL_FROM,
         to: RECIPIENT_EMAIL,
         subject: `Electric Events Catering Health Check - ${getSummaryStatus()}`,
-        html: emailHtml
+        text: emailText
       });
       
       console.log('Email sent via SMTP:', info.messageId);
@@ -183,8 +183,7 @@ async function sendEmailReport() {
       formData.append('from_name', 'Catering Site Health Monitor');
       formData.append('replyto', EMAIL_FROM);
       formData.append('to', RECIPIENT_EMAIL);
-      formData.append('message', 'See HTML report');
-      formData.append('html', emailHtml);
+      formData.append('message', emailText);
       
       const response = await fetch('https://api.web3forms.com/submit', {
         method: 'POST',
@@ -221,111 +220,62 @@ function getSummaryStatus() {
 }
 
 /**
- * Generate HTML email content
+ * Generate plain text email content
  */
-function generateEmailHTML() {
-  return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }
-        h1 { color: #444; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
-        h2 { color: #555; margin-top: 30px; }
-        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-        .pass { color: green; font-weight: bold; }
-        .fail { color: red; font-weight: bold; }
-        .not-run { color: orange; font-weight: bold; }
-        .details { background-color: #f9f9f9; padding: 10px; border: 1px solid #ddd; margin-top: 10px; white-space: pre-wrap; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto; }
-      </style>
-    </head>
-    <body>
-      <h1>Electric Events Catering Health Check</h1>
-      <p>Report generated: ${new Date(testResults.timestamp).toLocaleString()}</p>
-      
-      <h2>Summary: ${getSummaryStatus()}</h2>
-      
-      <h2>Form Submission Tests</h2>
-      <table>
-        <tr>
-          <th>Test</th>
-          <th>Status</th>
-        </tr>
-        <tr>
-          <td>Ladybird Form</td>
-          <td class="${getStatusClass(testResults.e2e.ladybird.status)}">${testResults.e2e.ladybird.status}</td>
-        </tr>
-        <tr>
-          <td>Muchacho Form</td>
-          <td class="${getStatusClass(testResults.e2e.muchacho.status)}">${testResults.e2e.muchacho.status}</td>
-        </tr>
-        <tr>
-          <td>Dug-Out Form</td>
-          <td class="${getStatusClass(testResults.e2e.dugout.status)}">${testResults.e2e.dugout.status}</td>
-        </tr>
-      </table>
-      
-      <h2>Tripleseat API Tests</h2>
-      <table>
-        <tr>
-          <th>Test</th>
-          <th>Status</th>
-        </tr>
-        <tr>
-          <td>API Connection</td>
-          <td class="${getStatusClass(testResults.tripleseat.api.status)}">${testResults.tripleseat.api.status}</td>
-        </tr>
-        <tr>
-          <td>Configuration Validation</td>
-          <td class="${getStatusClass(testResults.tripleseat.config.status)}">${testResults.tripleseat.config.status}</td>
-        </tr>
-      </table>
-      
-      ${getFailureDetails()}
-      
-      <p>This is an automated health check report. Please do not reply to this email.</p>
-    </body>
-    </html>
-  `;
-}
+function generateEmailText() {
+  let text = `
+ELECTRIC EVENTS CATERING HEALTH CHECK
+======================================
+Report generated: ${new Date(testResults.timestamp).toLocaleString()}
 
-/**
- * Get CSS class for status
- */
-function getStatusClass(status) {
-  switch (status) {
-    case 'Pass': return 'pass';
-    case 'Fail': return 'fail';
-    case 'Not Run': return 'not-run';
-    default: return '';
+SUMMARY: ${getSummaryStatus()}
+
+FORM SUBMISSION TESTS
+---------------------
+Ladybird Form: ${testResults.e2e.ladybird.status}
+Muchacho Form: ${testResults.e2e.muchacho.status}
+Dug-Out Form: ${testResults.e2e.dugout.status}
+
+TRIPLESEAT API TESTS
+-------------------
+API Connection: ${testResults.tripleseat.api.status}
+Configuration Validation: ${testResults.tripleseat.config.status}
+`;
+
+  // Add failure details if present
+  const failures = getFailureDetailsText();
+  if (failures) {
+    text += `
+FAILURE DETAILS
+--------------
+${failures}
+`;
   }
+
+  text += `
+This is an automated health check report. Please do not reply to this email.
+`;
+
+  return text;
 }
 
 /**
  * Get failure details for email
  */
-function getFailureDetails() {
+function getFailureDetailsText() {
   const failures = [];
   
   // Check for failed E2E tests
   Object.entries(testResults.e2e).forEach(([name, test]) => {
     if (test.status === 'Fail') {
-      failures.push(`
-        <h3>${name} Form Submission Test Failed</h3>
-        <div class="details">${test.details}</div>
-      `);
+      failures.push(`${name} Form Submission Test Failed:\n${test.details.substring(0, 500)}...`);
     }
   });
   
   // Check for failed API tests
   Object.entries(testResults.tripleseat).forEach(([name, test]) => {
     if (test.status === 'Fail') {
-      failures.push(`
-        <h3>Tripleseat ${name} Test Failed</h3>
-        <div class="details">${test.details}</div>
-      `);
+      failures.push(`Tripleseat ${name} Test Failed:\n${test.details.substring(0, 500)}...`);
     }
   });
   
@@ -333,10 +283,7 @@ function getFailureDetails() {
     return '';
   }
   
-  return `
-    <h2>Failure Details</h2>
-    ${failures.join('')}
-  `;
+  return failures.join('\n\n');
 }
 
 /**

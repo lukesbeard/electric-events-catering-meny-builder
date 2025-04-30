@@ -102,53 +102,26 @@ async function testTripleseatAPI() {
 async function sendEmailReport(testResults) {
   console.log('Sending email report...');
   
-  // Generate HTML email
-  const emailHtml = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }
-        h1 { color: #444; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
-        h2 { color: #555; margin-top: 30px; }
-        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-        .pass { color: green; font-weight: bold; }
-        .fail { color: red; font-weight: bold; }
-        .details { background-color: #f9f9f9; padding: 10px; border: 1px solid #ddd; margin-top: 10px; white-space: pre-wrap; font-family: monospace; font-size: 12px; }
-      </style>
-    </head>
-    <body>
-      <h1>Electric Events Catering Health Check</h1>
-      <p>Report generated: ${new Date().toLocaleString()}</p>
-      
-      <h2>Summary: ${testResults.form.status === 'Pass' && testResults.api.status === 'Pass' 
-        ? 'All Tests Passed' 
-        : 'Issues Detected'}</h2>
-      
-      <table>
-        <tr>
-          <th>Test</th>
-          <th>Status</th>
-          <th>Details</th>
-        </tr>
-        <tr>
-          <td>Form Submission</td>
-          <td class="${testResults.form.status === 'Pass' ? 'pass' : 'fail'}">${testResults.form.status}</td>
-          <td>${testResults.form.details}</td>
-        </tr>
-        <tr>
-          <td>Tripleseat API</td>
-          <td class="${testResults.api.status === 'Pass' ? 'pass' : 'fail'}">${testResults.api.status}</td>
-          <td>${testResults.api.details}</td>
-        </tr>
-      </table>
-      
-      <p>This is an automated health check report. Please do not reply to this email.</p>
-    </body>
-    </html>
-  `;
+  // Generate plain text email
+  const emailText = `
+Electric Events Catering Health Check
+Report generated: ${new Date().toLocaleString()}
+
+Summary: ${testResults.form.status === 'Pass' && testResults.api.status === 'Pass' 
+  ? 'All Tests Passed' 
+  : 'Issues Detected'}
+
+TEST RESULTS:
+---------------------------------------------------------
+Form Submission: ${testResults.form.status}
+Details: ${testResults.form.details}
+
+Tripleseat API: ${testResults.api.status}
+Details: ${testResults.api.details}
+---------------------------------------------------------
+
+This is an automated health check report. Please do not reply to this email.
+`;
   
   try {
     // Use Web3Forms to send the email
@@ -162,8 +135,7 @@ async function sendEmailReport(testResults) {
     formData.append('from_name', 'Catering Site Health Monitor');
     formData.append('replyto', EMAIL_FROM);
     formData.append('to', RECIPIENT_EMAIL);
-    formData.append('message', 'See HTML report');
-    formData.append('html', emailHtml);
+    formData.append('message', emailText);
     
     const response = await fetch('https://api.web3forms.com/submit', {
       method: 'POST',
